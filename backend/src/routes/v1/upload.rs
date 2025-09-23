@@ -6,10 +6,10 @@ pub fn router() -> Router {
     Router::new()
         .route(
             "/ocel",
-            post(post_ocel_binary).layer(DefaultBodyLimit::max(50_000 * 1024)),
+            post(post_ocel_binary).layer(DefaultBodyLimit::max(50_0000 * 1024)),
         )
         .route(
             "/ocpt",
-            post(post_ocpt).layer(DefaultBodyLimit::max(50_000 * 1024)),
+            post(post_ocpt).layer(DefaultBodyLimit::max(50_0000 * 1024)),
         )
 }
