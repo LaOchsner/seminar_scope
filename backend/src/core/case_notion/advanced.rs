@@ -114,15 +114,19 @@ pub fn advanced_case_notion_for_ot(
                     Some((activity, related_objects)) => {
                         for object_id in related_objects.iter().filter(|id| !o_prime.contains(*id))
                         {
-                            // Check that the object's type is not the given type
-                            let obj_type = objects.get(object_id).unwrap().0.clone();
-                            if obj_type != given_object_type {
-                                // Now, if the divergence map for this activity includes the object's type,
-                                // It is added to the diverging set (o_triple_prime), otherwise to o_double_prime.
-                                if divergence_map.get(activity).unwrap().contains(&obj_type) {
-                                    o_triple_prime.insert(object_id.clone());
-                                } else {
-                                    o_double_prime.insert(object_id.clone());
+                            // Skip missing objects; events may reference objects filtered out earlier
+                            if let Some((obj_type, _)) = objects.get(object_id) {
+                                if obj_type != &given_object_type {
+                                    let diverges = divergence_map
+                                        .get(activity)
+                                        .map(|set| set.contains(obj_type))
+                                        .unwrap_or(false);
+
+                                    if diverges {
+                                        o_triple_prime.insert(object_id.clone());
+                                    } else {
+                                        o_double_prime.insert(object_id.clone());
+                                    }
                                 }
                             }
                         }
@@ -180,3 +184,4 @@ pub fn advanced_case_notion_for_ot(
 
     result
 }
+
