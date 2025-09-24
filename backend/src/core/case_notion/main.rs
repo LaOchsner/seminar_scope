@@ -19,6 +19,7 @@ use utils::{
 };
 
 use anyhow::{Context, Result, anyhow};
+use process_mining::ocel::ocel_struct::{OCELEvent, OCELObject, OCELRelationship, OCELType};
 use process_mining::{OCEL, import_ocel_json_from_path, import_ocel_xml_file};
 use rayon::prelude::*;
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -56,13 +57,13 @@ struct RuntimeCaseNotion {
     case_notions: Vec<ResultCaseNotion>,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 struct CaseNotionArch {
     source: String,
     target: String,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 struct CaseNotionCase {
     events: Vec<String>,
     objects: Vec<String>,
@@ -77,14 +78,24 @@ struct CaseNotionGraphOutput {
     cases: Vec<CaseNotionCase>,
 }
 
+#[derive(Serialize)]
+struct CaseNotionOcelOutput {
+    case_notion: String,
+    name_of_event_log: String,
+    object_type: String,
+    cases: Vec<OCEL>,
+}
+
 struct CaseNotionComputation {
     results: Vec<ResultCaseNotion>,
     graphs: Vec<CaseNotionGraphOutput>,
+    ocels: Vec<CaseNotionOcelOutput>,
 }
 
 struct MethodExecution {
     runtime: RuntimeCaseNotion,
     graphs: Vec<CaseNotionGraphOutput>,
+    ocels: Vec<CaseNotionOcelOutput>,
 }
 
 #[derive(Clone, Copy)]
@@ -159,6 +170,11 @@ fn run() -> Result<()> {
             .with_context(|| format!("failed to write graph data for {}", method.key()))?;
         println!("  wrote {}", graph_output_name);
 
+        let ocel_output_name = format!("{log_name_slug}_{}_ocels.json", method.file_suffix());
+        write_json(&method_execution.ocels, Path::new(&ocel_output_name))
+            .with_context(|| format!("failed to write OCEL cases for {}", method.key()))?;
+        println!("  wrote {}", ocel_output_name);
+
         runtime_results.push(method_execution.runtime);
     }
 
@@ -186,6 +202,7 @@ fn execute_method(log: &OCEL, log_name: &str, method: CaseMethod) -> MethodExecu
     MethodExecution {
         runtime,
         graphs: computation.graphs,
+        ocels: computation.ocels,
     }
 }
 
@@ -207,6 +224,17 @@ fn execute_case_notion(
         .event_types
         .iter()
         .map(|e| e.name.clone())
+        .collect();
+
+    let event_type_names: Vec<String> = log_res_ocel
+        .event_types
+        .iter()
+        .map(|e| e.name.clone())
+        .collect();
+    let object_type_names: Vec<String> = log_res_ocel
+        .object_types
+        .iter()
+        .map(|o| o.name.clone())
         .collect();
 
     let event_identifiers =
@@ -239,7 +267,11 @@ fn execute_case_notion(
             let case_label = method.case_label().to_string();
             let log_name_owned = log_name.to_string();
 
-            let mut outputs: Vec<(ResultCaseNotion, CaseNotionGraphOutput)> = sorted_object_types
+            let mut outputs: Vec<(
+                ResultCaseNotion,
+                CaseNotionGraphOutput,
+                CaseNotionOcelOutput,
+            )> = sorted_object_types
                 .par_iter()
                 .map(|object_type| {
                     let case_notion = advanced_case_notion_for_ot(
@@ -267,27 +299,55 @@ fn execute_case_notion(
                         total_score,
                     };
 
+                    let cases_for_graph = case_notion_to_cases(&case_notion);
+
                     let graph_output = CaseNotionGraphOutput {
                         case_notion: case_label.clone(),
                         name_of_event_log: log_name_owned.clone(),
                         object_type: object_type.clone(),
-                        cases: case_notion_to_cases(&case_notion),
+                        cases: cases_for_graph.clone(),
                     };
 
-                    (result, graph_output)
+                    let ocel_output = CaseNotionOcelOutput {
+                        case_notion: case_label.clone(),
+                        name_of_event_log: log_name_owned.clone(),
+                        object_type: object_type.clone(),
+                        cases: case_notion_to_ocels(
+                            &case_notion,
+                            &cleaned_event_identifiers,
+                            &object_identifiers,
+                            &event_type_names,
+                            &object_type_names,
+                        ),
+                    };
+
+                    (result, graph_output, ocel_output)
                 })
                 .collect();
 
             outputs.sort_by(|a, b| a.0.object_type.cmp(&b.0.object_type));
-            let (results, graphs): (Vec<_>, Vec<_>) = outputs.into_iter().unzip();
+            let mut results = Vec::new();
+            let mut graphs = Vec::new();
+            let mut ocels = Vec::new();
 
-            CaseNotionComputation { results, graphs }
+            for (result, graph, ocel) in outputs {
+                results.push(result);
+                graphs.push(graph);
+                ocels.push(ocel);
+            }
+
+            CaseNotionComputation {
+                results,
+                graphs,
+                ocels,
+            }
         }
         CaseMethod::Traditional => {
             let case_label = method.case_label().to_string();
             let log_name_owned = log_name.to_string();
             let mut results = Vec::new();
             let mut graphs = Vec::new();
+            let mut ocels = Vec::new();
 
             for object_type in &sorted_object_types {
                 let case_notion =
@@ -311,15 +371,33 @@ fn execute_case_notion(
                     total_score,
                 });
 
+                let cases_for_graph = case_notion_to_cases(&case_notion);
                 graphs.push(CaseNotionGraphOutput {
                     case_notion: case_label.clone(),
                     name_of_event_log: log_name_owned.clone(),
                     object_type: object_type.clone(),
-                    cases: case_notion_to_cases(&case_notion),
+                    cases: cases_for_graph.clone(),
+                });
+
+                ocels.push(CaseNotionOcelOutput {
+                    case_notion: case_label.clone(),
+                    name_of_event_log: log_name_owned.clone(),
+                    object_type: object_type.clone(),
+                    cases: case_notion_to_ocels(
+                        &case_notion,
+                        &cleaned_event_identifiers,
+                        &object_identifiers,
+                        &event_type_names,
+                        &object_type_names,
+                    ),
                 });
             }
 
-            CaseNotionComputation { results, graphs }
+            CaseNotionComputation {
+                results,
+                graphs,
+                ocels,
+            }
         }
         CaseMethod::ConnectedComponents => {
             let case_label = method.case_label().to_string();
@@ -347,14 +425,32 @@ fn execute_case_notion(
                 total_score,
             }];
 
+            let cases_for_graph = case_notion_to_cases(&case_notion);
             let graphs = vec![CaseNotionGraphOutput {
+                case_notion: case_label.clone(),
+                name_of_event_log: log_name_owned.clone(),
+                object_type: "None".to_string(),
+                cases: cases_for_graph.clone(),
+            }];
+
+            let ocels = vec![CaseNotionOcelOutput {
                 case_notion: case_label,
                 name_of_event_log: log_name_owned,
                 object_type: "None".to_string(),
-                cases: case_notion_to_cases(&case_notion),
+                cases: case_notion_to_ocels(
+                    &case_notion,
+                    &cleaned_event_identifiers,
+                    &object_identifiers,
+                    &event_type_names,
+                    &object_type_names,
+                ),
             }];
 
-            CaseNotionComputation { results, graphs }
+            CaseNotionComputation {
+                results,
+                graphs,
+                ocels,
+            }
         }
     }
 }
@@ -486,6 +582,122 @@ fn case_notion_to_cases(
     cases
 }
 
+fn case_notion_to_ocels(
+    case_notion: &FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>,
+    event_details: &FxHashMap<String, (String, BTreeSet<String>)>,
+    object_details: &FxHashMap<String, (String, Vec<String>)>,
+    event_type_names: &[String],
+    object_type_names: &[String],
+) -> Vec<OCEL> {
+    let event_type_defs: Vec<OCELType> = event_type_names
+        .iter()
+        .cloned()
+        .map(|name| OCELType {
+            name,
+            attributes: Vec::new(),
+        })
+        .collect();
+    let object_type_defs: Vec<OCELType> = object_type_names
+        .iter()
+        .cloned()
+        .map(|name| OCELType {
+            name,
+            attributes: Vec::new(),
+        })
+        .collect();
+    let default_timestamp = chrono::DateTime::parse_from_rfc3339("1970-01-01T00:00:00Z")
+        .expect("valid RFC3339 timestamp");
+
+    let mut entries: Vec<(Vec<String>, Vec<String>, Vec<(String, String)>)> =
+        case_notion.iter().cloned().collect();
+
+    for (events, objects, arcs) in &mut entries {
+        events.sort();
+        objects.sort();
+        arcs.sort_by(|a, b| {
+            let mut ordering = a.0.cmp(&b.0);
+            if ordering == Ordering::Equal {
+                ordering = a.1.cmp(&b.1);
+            }
+            ordering
+        });
+    }
+
+    entries.sort_by(|a, b| {
+        let mut ordering = a.0.cmp(&b.0);
+        if ordering == Ordering::Equal {
+            ordering = a.1.cmp(&b.1);
+        }
+        ordering
+    });
+
+    let mut ocels = Vec::new();
+
+    for (events, objects, arcs) in entries {
+        let mut event_records = Vec::new();
+        for event_id in &events {
+            let event_type = event_details
+                .get(event_id)
+                .map(|(activity, _)| activity.clone())
+                .unwrap_or_else(|| "Unknown".to_string());
+
+            let mut related_objects: Vec<String> = arcs
+                .iter()
+                .filter_map(|(source, target)| {
+                    if source == event_id {
+                        Some(target.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            related_objects.sort();
+
+            let relationships = related_objects
+                .into_iter()
+                .map(|object_id| OCELRelationship {
+                    object_id,
+                    qualifier: String::new(),
+                })
+                .collect();
+
+            let event = OCELEvent {
+                id: event_id.clone(),
+                event_type,
+                time: default_timestamp.clone(),
+                attributes: Vec::new(),
+                relationships,
+            };
+            event_records.push(event);
+        }
+
+        let mut object_records = Vec::new();
+        for object_id in &objects {
+            let object_type = object_details
+                .get(object_id)
+                .map(|(ty, _)| ty.clone())
+                .unwrap_or_else(|| "Unknown".to_string());
+
+            let object = OCELObject {
+                id: object_id.clone(),
+                object_type,
+                attributes: Vec::new(),
+                relationships: Vec::new(),
+            };
+            object_records.push(object);
+        }
+
+        ocels.push(OCEL {
+            events: event_records,
+            objects: object_records,
+            event_types: event_type_defs.clone(),
+            object_types: object_type_defs.clone(),
+        });
+    }
+
+    ocels
+}
+
 fn write_json<T: Serialize>(value: &T, output_path: &Path) -> Result<()> {
     let file =
         File::create(output_path).with_context(|| format!("create {}", output_path.display()))?;
@@ -524,7 +736,7 @@ fn load_log(path: &Path) -> Result<OCEL> {
         .unwrap_or_default();
 
     match ext.as_str() {
-        "json" => import_ocel_json_from_path(path_str)
+        "json" | "jsonocel" => import_ocel_json_from_path(path_str)
             .with_context(|| format!("failed to import json log {}", path.display())),
         "xml" | "xmlocel" => Ok(import_ocel_xml_file(path_str)),
         other => Err(anyhow!("unsupported log extension: {other}")),
