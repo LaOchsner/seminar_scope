@@ -21,7 +21,7 @@ type EdgeDatum = {
 
 const MAX_CHUNK = 500;
 
-const OcelVisualization = () => {
+const OcelVisualizationD3 = () => {
     const [params] = useSearchParams();
     const fileId = params.get('fileId');
     const { data, isLoading, error } = useGetOcel(fileId || '');
@@ -143,15 +143,12 @@ const OcelVisualization = () => {
                 {data.eventTypes?.map((type: any, idx: number) => {
                     const typeName = typeof type === 'string' ? type : type.name;
                     return (
-                        <div key={idx} className="flex items-center space-x-2 mb-2">
+                        <div key={idx} className="flex items-center gap-2 mb-2">
                             <Checkbox
-                                id={`type-${idx}`}
                                 checked={selectedTypes.includes(typeName)}
                                 onCheckedChange={() => toggleType(typeName)}
                             />
-                            <label htmlFor={`type-${idx}`} className="text-sm font-medium leading-none">
-                                {typeName}
-                            </label>
+                            <span>{typeName}</span>
                         </div>
                     );
                 })}
@@ -174,4 +171,4 @@ const OcelVisualization = () => {
     );
 };
 
-export default OcelVisualization;
+export default OcelVisualizationD3;
