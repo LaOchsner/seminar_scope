@@ -4,7 +4,7 @@ use serde::Deserialize;
 /// JSON structs for deserializing the user selection
 #[derive(Deserialize)]
 struct Selection {
-    name: Option<String>,
+    _name: Option<String>,
     filters: Vec<Filter>,
 }
 
@@ -20,37 +20,49 @@ struct SelectionPayload {
     selections: Vec<Selection>,
 }
 
-/*
-Example JSON input:
-one selection per output OCEL
-    - name could be used for filename
-    - each selection has multiple filters
-    - each filter specifies (event_type, object_type, ranges)
-    - treated as WHITELIST: keep events that match at least one range per filter
 
-{
-  "selections": [
-    {
-      "name": "small_trucks_and_depart_containers",
-      "filters": [
-        {
-          "event_type": "Arrive",
-          "object_type": "Truck",
-          "ranges": [[1, 1], [3, 3]]   // keep events with 1 or 2 trucks
-        },
-        {
-          "event_type": "Depart",
-          "object_type": "Container",
-          "ranges": [[2, 3]]           // keep events with 2–3 containers
-        }
-      ]
-    }
-  ]
-}
-
-  */
-
-/// Returns a Vec of filtered OCELs according to the user selection JSON
+/// This function applies one or more selection masks over the event-object frequency histograms.
+/// Each provided mask results in one output [`OCEL`], which is included in the returned array.
+/// 
+/// # Example JSON input:
+/// one output [`OCEL`] per selection
+///    - name could be used for filename
+///    - each selection has multiple filters
+///    - each filter specifies (event_type, object_type, ranges)
+///    - treated as WHITELIST: keep events that match at least one range per filter
+/// 
+/// ```json
+/// {
+///   "selections": [
+///     {
+///       "name": "small_trucks_and_depart_containers",
+///       "filters": [
+///         {
+///           "event_type": "Arrive",
+///           "object_type": "Truck",
+///           "ranges": [[1, 1], [3, 3]]   // keep events with 1 or 2 trucks
+///         },
+///         {
+///           "event_type": "Depart",
+///           "object_type": "Container",
+///           "ranges": [[2, 3]]           // keep events with 2–3 containers
+///         }
+///       ]
+///     }
+///   ]
+/// }
+/// ```
+/// 
+/// Only events that are within all specified filters of a selection are kept. 
+/// 
+/// # Arguments
+///
+/// * `log` - A reference to an [`OCEL`] log instance.
+/// * `filters_json` - A [`str`] containing the JSON representation of the selection filters.
+///
+/// # Returns
+///
+/// A [Vec<OCEL>] 
 pub fn filter_ocel_histograms(log: &OCEL, filters_json: &str) -> Vec<OCEL> {
     // 1. Deserialize the JSON payload
     let payload: SelectionPayload =
