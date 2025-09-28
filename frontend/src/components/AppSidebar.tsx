@@ -29,9 +29,10 @@ import CsvEventLogShowcase from '~/components/CsvEventLogShowcase';
 interface AppSidebarProps {
     objectTypes: string[];
     coloring: ScaleOrdinal<string, string, never>;
+    nodeId: string | undefined;
 }
 
-const AppSidebar: React.FC<AppSidebarProps> = ({ objectTypes, coloring }) => {
+const AppSidebar: React.FC<AppSidebarProps> = ({ objectTypes, coloring, nodeId }) => {
     const { setIsOcptMode } = useIsOcptMode();
     const { files } = useStoredFiles();
 
@@ -45,7 +46,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ objectTypes, coloring }) => {
                     <SidebarGroupContent>
                         <SidebarMenu>
                             <SidebarMenuItem className="ml-1">
-                                <ObjectTypeLegend objectTypes={objectTypes} coloring={coloring} />
+                                <ObjectTypeLegend objectTypes={objectTypes} coloring={coloring} nodeId={nodeId} />
                             </SidebarMenuItem>
                         </SidebarMenu>
                     </SidebarGroupContent>

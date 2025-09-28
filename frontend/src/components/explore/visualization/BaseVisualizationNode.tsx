@@ -1,4 +1,5 @@
-import { memo, useState } from 'react';
+import { memo } from 'react';
+import { scaleOrdinal } from '@visx/scale';
 import { ChevronDown, Eye } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import { Checkbox } from '~/components/ui/checkbox';
@@ -9,6 +10,7 @@ import {
     DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
 import BaseExploreNode from '~/components/explore/BaseExploreNode';
+import { useColorScaleStore, useFilteredObjectType } from '~/stores/store';
 import { isFullVisualizationData } from '~/lib/explore/exploreNodes.utils';
 import type {
     BaseExploreNodeDropdownActionType,
@@ -31,7 +33,15 @@ interface VisualizationNodeProps {
 const BaseVisualizationNode = memo<VisualizationNodeProps>((props) => {
     const { id, selected, data, title, iconName, handleOptions, dropdownOptions, visualize } = props;
     const { assets, processedData } = data;
-    const [selectedObjectTypes, setSelectedObjectTypes] = useState<string[]>([]);
+    const { colorScales } = useColorScaleStore();
+    const { filteredObjectTypes, setFilteredObjectTypes } = useFilteredObjectType();
+
+    const colorScaleData = colorScales.get(id);
+    const colorScale = colorScaleData
+        ? scaleOrdinal({ domain: colorScaleData.domain, range: colorScaleData.range })
+        : scaleOrdinal<string, string>({ domain: [], range: [] });
+
+    const currentFilteredOts = filteredObjectTypes.get(id) || [];
 
     const handleDropdownAction = (action: BaseExploreNodeDropdownActionType) => {
         switch (action) {
@@ -45,9 +55,10 @@ const BaseVisualizationNode = memo<VisualizationNodeProps>((props) => {
     };
 
     const handleObjectTypeToggle = (objectType: string) => {
-        setSelectedObjectTypes((prev) =>
-            prev.includes(objectType) ? prev.filter((ot) => ot !== objectType) : [...prev, objectType]
-        );
+        const newFilteredObjectTypes = currentFilteredOts.includes(objectType)
+            ? currentFilteredOts.filter((ot) => ot !== objectType)
+            : [...currentFilteredOts, objectType];
+        setFilteredObjectTypes(id, newFilteredObjectTypes);
     };
 
     const renderVisualizationActions = () => {
@@ -55,10 +66,10 @@ const BaseVisualizationNode = memo<VisualizationNodeProps>((props) => {
             return (
                 <div className="flex items-center">
                     <Button
-                        onClick={() => visualize(selectedObjectTypes.join(','))}
+                        onClick={() => visualize(currentFilteredOts.join(','))}
                         className="flex items-center h-6 px-2 bg-gray-100 text-gray-800 hover:bg-gray-200 rounded-md"
                     >
-                        <div className="bg-blue-100 rounded-full p-0.25">
+                        <div className="">
                             <Eye className="h-2.5 w-2.5 text-blue-600" />
                         </div>
                         <span className="text-xs text-blue-600">View</span>
@@ -73,9 +84,13 @@ const BaseVisualizationNode = memo<VisualizationNodeProps>((props) => {
                             {processedData?.ots.map((ot) => (
                                 <DropdownMenuItem key={ot} onSelect={(e) => e.preventDefault()}>
                                     <Checkbox
-                                        checked={selectedObjectTypes.includes(ot)}
+                                        checked={currentFilteredOts.includes(ot)}
                                         onCheckedChange={() => handleObjectTypeToggle(ot)}
                                         className="mr-2"
+                                        style={{
+                                            borderColor: colorScale(ot),
+                                            backgroundColor: currentFilteredOts.includes(ot) ? colorScale(ot) : 'white',
+                                        }}
                                     />
                                     {ot}
                                 </DropdownMenuItem>

@@ -3,6 +3,7 @@ import { scaleOrdinal } from '@visx/scale';
 import type { ScaleOrdinal } from 'd3-scale';
 import { schemeSet1 } from 'd3-scale-chromatic';
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { ExtendedFile } from '~/types/fileObject.types';
 import type { FlowJson } from '~/types/flow/flow.types';
 import type { ObjectFlowMapRecord, OcelEventData } from '~/types/ocel.types';
@@ -37,15 +38,15 @@ interface FileStore {
 }
 
 interface UseFilteredObjectType {
-    filteredObjectTypes: string[];
-    setFilteredObjectTypes: (filteredObjectTypes: string[]) => void;
+    filteredObjectTypes: Map<string, string[]>;
+    setFilteredObjectTypes: (nodeId: string, filteredObjectTypes: string[]) => void;
 }
 
 interface ColorScaleState {
-    colorScale: ScaleOrdinal<string, string, never>;
-    objectTypes: string[];
-    setColorScaleObjectTypes: (types: string[]) => void;
-    updateColorScale: () => void;
+    colorScales: Map<string, { domain: string[]; range: string[] }>;
+    objectTypes: Map<string, string[]>;
+    setColorScaleObjectTypes: (nodeId: string, types: string[]) => void;
+    updateColorScale: (nodeId: string) => void;
 }
 
 interface RenderedOcptStore {
@@ -121,33 +122,46 @@ export const useStoredFiles = create<FileStore>((set) => ({
     clearFiles: () => set((state) => ({ files: [] })),
 }));
 
-export const useFilteredObjectType = create<UseFilteredObjectType>((set) => ({
-    filteredObjectTypes: [],
-    setFilteredObjectTypes: (newFilteredObjectTypes) => set(() => ({ filteredObjectTypes: newFilteredObjectTypes })),
-}));
+export const useFilteredObjectType = create<UseFilteredObjectType>()(
+    persist(
+        (set) => ({
+            filteredObjectTypes: new Map(),
+            setFilteredObjectTypes: (nodeId, newFilteredObjectTypes) =>
+                set((state) => ({
+                    filteredObjectTypes: new Map(state.filteredObjectTypes).set(nodeId, newFilteredObjectTypes),
+                })),
+        }),
+        { name: 'filtered-object-type-storage' }
+    )
+);
 
 // Create the store
-export const useColorScaleStore = create<ColorScaleState>((set, get) => ({
-    colorScale: scaleOrdinal({
-        domain: [] as string[],
-        range: schemeSet1.slice(),
-    }),
-    objectTypes: [],
+export const useColorScaleStore = create<ColorScaleState>()(
+    persist(
+        (set, get) => ({
+            colorScales: new Map(),
+            objectTypes: new Map(),
 
-    setColorScaleObjectTypes: (types: string[]) => {
-        set({ objectTypes: types });
-        get().updateColorScale();
-    },
+            setColorScaleObjectTypes: (nodeId, types) => {
+                set((state) => ({
+                    objectTypes: new Map(state.objectTypes).set(nodeId, types),
+                }));
+                get().updateColorScale(nodeId);
+            },
 
-    updateColorScale: () => {
-        const { objectTypes } = get();
-        const newColorScale = scaleOrdinal({
-            domain: objectTypes,
-            range: schemeSet1.slice(),
-        });
-        set({ colorScale: newColorScale });
-    },
-}));
+            updateColorScale: (nodeId) => {
+                const { objectTypes, colorScales } = get();
+                const types = objectTypes.get(nodeId) || [];
+                const newColorScale = {
+                    domain: types,
+                    range: schemeSet1.slice(),
+                };
+                set({ colorScales: new Map(colorScales).set(nodeId, newColorScale) });
+            },
+        }),
+        { name: 'color-scale-storage' }
+    )
+);
 
 export const useRenderedOcpt = create<RenderedOcptStore>((set) => ({
     renderedOcpt: null,
