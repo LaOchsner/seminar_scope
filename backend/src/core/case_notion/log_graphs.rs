@@ -28,7 +28,7 @@ struct ArcEntry {
 /// The output JSON has three sections:
 /// - `event_types`: list of event type names
 /// - `object_types`: list of object type names
-/// - `arcs`: list of `{ event_type, object_type }` pairs (undirected edges)
+/// - `arcs`: list of `{ event_type, object_type }` pairs
 ///
 /// # Example JSON output
 ///

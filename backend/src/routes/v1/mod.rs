@@ -1,5 +1,6 @@
 pub mod conformance;
 pub mod event_object_frequencies;
+pub mod log_graphs;
 pub mod objects;
 pub mod upload;
 use axum::Router;
@@ -13,4 +14,5 @@ pub fn router() -> Router {
             "/event_object_frequencies",
             event_object_frequencies::router(),
         )
+        .nest("/log_graphs", log_graphs::router())
 }

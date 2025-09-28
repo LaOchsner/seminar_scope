@@ -4,4 +4,4 @@ pub mod main_richard;
 pub mod measures;
 pub mod traditional;
 pub mod utils;
-pub mod log_graph;
+pub mod log_graphs;
