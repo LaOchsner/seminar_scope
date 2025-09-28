@@ -103,9 +103,9 @@ export const useExploreFlowStore = create<ExploreFlowStore>((set, get) => ({
 
     savePipeline: (name = 'Pipeline') => {
         const { nodes, edges } = get();
-        
+
         // Create clean copies without function references or complex objects
-        const cleanNodes = nodes.map(node => ({
+        const cleanNodes = nodes.map((node) => ({
             id: node.id,
             type: node.type,
             position: node.position,
@@ -113,8 +113,8 @@ export const useExploreFlowStore = create<ExploreFlowStore>((set, get) => ({
             selected: false,
             dragging: false,
         }));
-        
-        const cleanEdges = edges.map(edge => ({
+
+        const cleanEdges = edges.map((edge) => ({
             id: edge.id,
             source: edge.source,
             target: edge.target,
@@ -122,7 +122,7 @@ export const useExploreFlowStore = create<ExploreFlowStore>((set, get) => ({
             targetHandle: edge.targetHandle,
             animated: edge.animated,
         }));
-        
+
         const pipeline: SavedPipeline = {
             id: Date.now().toString(),
             name: name,
@@ -141,15 +141,15 @@ export const useExploreFlowStore = create<ExploreFlowStore>((set, get) => ({
         const pipeline = pipelines.find((p: SavedPipeline) => p.id === pipelineId);
         if (pipeline) {
             // Restore nodes with placeholder functions that will be replaced when the hook initializes
-            const restoredNodes = pipeline.nodes.map(node => ({
+            const restoredNodes = pipeline.nodes.map((node) => ({
                 ...node,
                 data: {
                     ...node.data,
                     onDataChange: () => {}, // Placeholder - will be replaced by useExploreEventHandlers
-                    ...(node.data.visualize !== undefined && { visualize: () => {} }) // Placeholder for visualization nodes
-                }
+                    ...(node.data.visualize !== undefined && { visualize: () => {} }), // Placeholder for visualization nodes
+                },
             }));
-            
+
             set({ nodes: restoredNodes, edges: pipeline.edges });
         }
     },

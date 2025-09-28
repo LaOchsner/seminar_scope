@@ -1,28 +1,32 @@
 import { LegendItem, LegendLabel, LegendOrdinal } from '@visx/legend';
 import { ScaleOrdinal } from 'd3';
 import { Checkbox } from '~/components/ui/checkbox';
-import { useFilteredObjectType } from '~/stores/store';
 
 interface ObjectTypeLegendProps {
     objectTypes: string[];
     coloring: ScaleOrdinal<string, string, never>;
     nodeId: string | undefined;
+    filteredObjectTypes: string[];
+    onFilteredObjectTypesChange: (newFilteredObjectTypes: string[]) => void;
 }
 
-const ObjectTypeLegend: React.FC<ObjectTypeLegendProps> = ({ objectTypes, coloring, nodeId }: ObjectTypeLegendProps) => {
-    const { filteredObjectTypes, setFilteredObjectTypes } = useFilteredObjectType();
-    const currentFilteredOts = nodeId ? filteredObjectTypes.get(nodeId) || [] : [];
-
+const ObjectTypeLegend: React.FC<ObjectTypeLegendProps> = ({
+    objectTypes,
+    coloring,
+    nodeId,
+    filteredObjectTypes,
+    onFilteredObjectTypesChange,
+}: ObjectTypeLegendProps) => {
     if (!objectTypes) {
         return <div>Loading Legend</div>;
     }
 
     const handleCheckboxChange = (objectType: string) => {
         if (nodeId) {
-            const newFilteredObjectTypes = currentFilteredOts.includes(objectType)
-                ? currentFilteredOts.filter((ot) => ot !== objectType)
-                : [...currentFilteredOts, objectType];
-            setFilteredObjectTypes(nodeId, newFilteredObjectTypes);
+            const newFilteredObjectTypes = filteredObjectTypes.includes(objectType)
+                ? filteredObjectTypes.filter((ot) => ot !== objectType)
+                : [...filteredObjectTypes, objectType];
+            onFilteredObjectTypesChange(newFilteredObjectTypes);
         }
     };
 
@@ -35,9 +39,9 @@ const ObjectTypeLegend: React.FC<ObjectTypeLegendProps> = ({ objectTypes, colori
                             <Checkbox
                                 style={{
                                     borderColor: label.value,
-                                    backgroundColor: currentFilteredOts.includes(label.text) ? label.value : 'white',
+                                    backgroundColor: filteredObjectTypes.includes(label.text) ? label.value : 'white',
                                 }}
-                                checked={currentFilteredOts.includes(label.text)}
+                                checked={filteredObjectTypes.includes(label.text)}
                                 onCheckedChange={() => handleCheckboxChange(label.text)}
                             />
                             <LegendLabel align="left" margin="0 0 0 4px">

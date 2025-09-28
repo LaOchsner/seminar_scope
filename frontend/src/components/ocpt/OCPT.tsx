@@ -7,8 +7,8 @@ import { ScaleOrdinal } from 'd3';
 import HoverPointTooltip from '~/components/ocpt/HoverPointTooltip';
 import { RenderTree } from '~/components/ocpt/OcptRendering';
 import ZoomButtons from '~/components/ZoomButtons';
-import { useFilteredObjectType } from '~/stores/store';
-import { NodeId } from '~/types/explore';
+import { useExploreFlowStore } from '~/stores/exploreStore';
+import { NodeId, TVisualizationNode } from '~/types/explore';
 import { type TreeNode } from '~/types/ocpt/ocpt.types';
 
 export type OCPTProps = {
@@ -18,7 +18,7 @@ export type OCPTProps = {
     treeData: TreeNode | null;
     colorScale: ScaleOrdinal<string, string, never>;
     objectTypes: string[];
-    nodeId: NodeId;
+    node: TVisualizationNode;
 };
 
 const defaultMargin = { top: 30, left: 30, right: 30, bottom: 70 };
@@ -30,12 +30,12 @@ const OCPT: React.FC<OCPTProps> = ({
     treeData,
     colorScale,
     objectTypes,
-    nodeId,
+    node,
 }) => {
     const [hoveredNode, setHoveredNode] = useState<HierarchyPointNode<TreeNode> | null>(null);
     const [tree, setTree] = useState<HierarchyNode<TreeNode> | null>(null);
-    const { filteredObjectTypes } = useFilteredObjectType();
-    const nodeFilteredObjectTypes = nodeId ? filteredObjectTypes.get(nodeId) || [] : [];
+    const viewState = node.data.viewState;
+    const filteredObjectTypes = viewState?.filteredObjectTypes || [];
 
     useEffect(() => {
         const copyTreeData = JSON.parse(JSON.stringify(treeData));
@@ -97,7 +97,7 @@ const OCPT: React.FC<OCPTProps> = ({
                                         <RenderTree
                                             rootNode={tree}
                                             objectTypes={objectTypes}
-                                            filteredObjectTypes={nodeFilteredObjectTypes}
+                                            filteredObjectTypes={filteredObjectTypes}
                                             setHoveredNode={setHoveredNode}
                                             colorScale={colorScale}
                                             sizeWidth={sizeWidth}

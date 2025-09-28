@@ -1,17 +1,5 @@
-import { memo } from 'react';
-import { scaleOrdinal } from '@visx/scale';
-import { ChevronDown, Eye } from 'lucide-react';
-import { Button } from '~/components/ui/button';
-import { Checkbox } from '~/components/ui/checkbox';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '~/components/ui/dropdown-menu';
+import { memo, type ReactNode } from 'react';
 import BaseExploreNode from '~/components/explore/BaseExploreNode';
-import { useColorScaleStore, useFilteredObjectType } from '~/stores/store';
-import { isFullVisualizationData } from '~/lib/explore/exploreNodes.utils';
 import type {
     BaseExploreNodeDropdownActionType,
     BaseExploreNodeDropdownOption,
@@ -27,21 +15,12 @@ interface VisualizationNodeProps {
     iconName: string;
     handleOptions: BaseExploreNodeHandleOption[];
     dropdownOptions: BaseExploreNodeDropdownOption[];
-    visualize: (filter?: string) => void;
+    customActions?: ReactNode;
 }
 
 const BaseVisualizationNode = memo<VisualizationNodeProps>((props) => {
-    const { id, selected, data, title, iconName, handleOptions, dropdownOptions, visualize } = props;
-    const { assets, processedData } = data;
-    const { colorScales } = useColorScaleStore();
-    const { filteredObjectTypes, setFilteredObjectTypes } = useFilteredObjectType();
-
-    const colorScaleData = colorScales.get(id);
-    const colorScale = colorScaleData
-        ? scaleOrdinal({ domain: colorScaleData.domain, range: colorScaleData.range })
-        : scaleOrdinal<string, string>({ domain: [], range: [] });
-
-    const currentFilteredOts = filteredObjectTypes.get(id) || [];
+    const { id, selected, data, title, iconName, handleOptions, dropdownOptions, customActions } = props;
+    const { assets } = data;
 
     const handleDropdownAction = (action: BaseExploreNodeDropdownActionType) => {
         switch (action) {
@@ -52,55 +31,6 @@ const BaseVisualizationNode = memo<VisualizationNodeProps>((props) => {
                 // Handle source file change for visualization
                 break;
         }
-    };
-
-    const handleObjectTypeToggle = (objectType: string) => {
-        const newFilteredObjectTypes = currentFilteredOts.includes(objectType)
-            ? currentFilteredOts.filter((ot) => ot !== objectType)
-            : [...currentFilteredOts, objectType];
-        setFilteredObjectTypes(id, newFilteredObjectTypes);
-    };
-
-    const renderVisualizationActions = () => {
-        if (assets.length === 1 && isFullVisualizationData(data)) {
-            return (
-                <div className="flex items-center">
-                    <Button
-                        onClick={() => visualize(currentFilteredOts.join(','))}
-                        className="flex items-center h-6 px-2 bg-gray-100 text-gray-800 hover:bg-gray-200 rounded-md"
-                    >
-                        <div className="">
-                            <Eye className="h-2.5 w-2.5 text-blue-600" />
-                        </div>
-                        <span className="text-xs text-blue-600">View</span>
-                    </Button>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 ml-1">
-                                <ChevronDown className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            {processedData?.ots.map((ot) => (
-                                <DropdownMenuItem key={ot} onSelect={(e) => e.preventDefault()}>
-                                    <Checkbox
-                                        checked={currentFilteredOts.includes(ot)}
-                                        onCheckedChange={() => handleObjectTypeToggle(ot)}
-                                        className="mr-2"
-                                        style={{
-                                            borderColor: colorScale(ot),
-                                            backgroundColor: currentFilteredOts.includes(ot) ? colorScale(ot) : 'white',
-                                        }}
-                                    />
-                                    {ot}
-                                </DropdownMenuItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-            );
-        }
-        return null;
     };
 
     const renderVisualizationContent = () => {
@@ -133,7 +63,7 @@ const BaseVisualizationNode = memo<VisualizationNodeProps>((props) => {
             handleOptions={handleOptions}
             dropdownOptions={dropdownOptions}
             onDropdownAction={handleDropdownAction}
-            customActions={renderVisualizationActions()}
+            customActions={customActions}
             customContent={renderVisualizationContent()}
         />
     );
