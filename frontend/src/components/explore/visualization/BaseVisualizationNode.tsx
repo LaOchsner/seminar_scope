@@ -41,10 +41,12 @@ const BaseVisualizationNode = memo<VisualizationNodeProps>((props) => {
             return (
                 <Button
                     onClick={visualize}
-                    className="flex bg-blue-500 items-around rounded-lg w-20 h-8 px-1 justify-center"
+                    className="flex items-center h-6 px-2 bg-gray-100 text-gray-800 hover:bg-gray-200 rounded-md"
                 >
-                    <Eye className="h-4 w-4" />
-                    <span>View</span>
+                    <div className="">
+                        <Eye className="h-2.5 w-2.5 text-blue-600" />
+                    </div>
+                    <span className="text-xs text-blue-600">View</span>
                 </Button>
             );
         }

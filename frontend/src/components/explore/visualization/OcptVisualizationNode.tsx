@@ -8,7 +8,7 @@ import type { TVisualizationNode } from '~/types/explore';
 
 const OcptVisualizationNode = memo<NodeProps<TVisualizationNode>>((node) => {
     const [fileId, setFileId] = useState<null | string>(null);
-    const { data, isLoading } = useGetOcpt(fileId);
+    const { data, isLoading } = useGetOcpt(fileId, true);
     const navigate = useNavigate();
 
     const visualize = () => {
@@ -27,7 +27,7 @@ const OcptVisualizationNode = memo<NodeProps<TVisualizationNode>>((node) => {
     return (
         <BaseVisualizationNode
             {...node}
-            title="OCPT Viewer"
+            title="OCPT Visualization"
             iconName="network"
             handleOptions={[
                 { position: Position.Left, type: 'target' as const },
