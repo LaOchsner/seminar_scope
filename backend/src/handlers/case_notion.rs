@@ -1,25 +1,20 @@
-﻿use crate::core::case_notion::main::{
-    best_advanced_case_notion,
-    best_traditional_case_notion,
-    case_notion_to_cases,
-    case_notion_to_ocels,
-    connected_components_case_notion,
-    sanitize_for_file_name,
-    CaseMeasure,
-    CaseNotionCase,
-    CaseNotionContext,
-    CaseNotionEvaluation,
+use crate::core::case_notion::main::{
+    CaseMeasure, CaseNotionCase, CaseNotionContext, CaseNotionEvaluation,
+    best_advanced_case_notion, best_traditional_case_notion, case_notion_to_cases,
+    case_notion_to_ocels, connected_components_case_notion, sanitize_for_file_name,
 };
 use crate::models::ocel::OCEL;
-use axum::{extract::Path, http::StatusCode, response::IntoResponse, Json};
+use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
 use serde::Serialize;
 use serde_json;
 use tokio::fs;
+use uuid::Uuid;
 
 #[derive(Serialize)]
 struct CaseNotionResponse {
     case_notion: &'static str,
     file_id: String,
+    export_id: String,
     object_type: Option<String>,
     cases: Vec<CaseNotionCase>,
     measures: Vec<CaseMeasure>,
@@ -31,6 +26,7 @@ struct CaseNotionResponse {
 #[derive(Serialize)]
 struct CaseOcelFile {
     case_notion: &'static str,
+    export_id: String,
     file_id: String,
     object_type: Option<String>,
     measures: Vec<CaseMeasure>,
@@ -71,7 +67,9 @@ pub async fn get_advanced_case_notion(Path(file_id): Path<String>) -> impl IntoR
     }
 }
 
-pub async fn get_connected_components_case_notion(Path(file_id): Path<String>) -> impl IntoResponse {
+pub async fn get_connected_components_case_notion(
+    Path(file_id): Path<String>,
+) -> impl IntoResponse {
     match compute_response(CaseKind::ConnectedComponents, file_id).await {
         Ok(payload) => (StatusCode::OK, Json(payload)).into_response(),
         Err((status, msg)) => (status, msg).into_response(),
@@ -85,7 +83,10 @@ pub async fn get_traditional_case_notion(Path(file_id): Path<String>) -> impl In
     }
 }
 
-async fn compute_response(kind: CaseKind, file_id: String) -> Result<CaseNotionResponse, (StatusCode, String)> {
+async fn compute_response(
+    kind: CaseKind,
+    file_id: String,
+) -> Result<CaseNotionResponse, (StatusCode, String)> {
     let path = format!("./temp/ocel_v2_{}.json", file_id);
     let content = fs::read_to_string(&path).await.map_err(|err| {
         eprintln!("read OCEL log failed: {err}");
@@ -145,17 +146,12 @@ async fn build_response(
         context.object_lookup(),
     );
 
-    let saved_as = persist_case_ocels(
-        &file_id,
-        kind,
-        &evaluation,
-        ocels,
-    )
-    .await?;
+    let (export_id, saved_as) = persist_case_ocels(&file_id, kind, &evaluation, ocels).await?;
 
     Ok(CaseNotionResponse {
         case_notion: kind.label(),
         file_id,
+        export_id,
         object_type: evaluation.object_type.clone(),
         cases,
         measures: evaluation.measures.clone(),
@@ -170,21 +166,20 @@ async fn persist_case_ocels(
     kind: CaseKind,
     evaluation: &CaseNotionEvaluation,
     ocels: Vec<OCEL>,
-) -> Result<String, (StatusCode, String)> {
+) -> Result<(String, String), (StatusCode, String)> {
     ensure_temp_dir().await?;
 
-    let filename = match evaluation.object_type.as_deref() {
-        Some(object_type) => format!(
-            "./temp/case_notion_{}_{}_{}.json",
-            kind.key(),
-            file_id,
-            sanitize_for_file_name(object_type)
-        ),
-        None => format!("./temp/case_notion_{}_{}.json", kind.key(), file_id),
-    };
+    let export_id = Uuid::new_v4().to_string();
+    let mut filename = format!("./temp/case_notion_{}_{}", kind.key(), &export_id);
+    if let Some(object_type) = evaluation.object_type.as_deref() {
+        filename.push('_');
+        filename.push_str(&sanitize_for_file_name(object_type));
+    }
+    filename.push_str(".json");
 
     let payload = CaseOcelFile {
         case_notion: kind.label(),
+        export_id: export_id.clone(),
         file_id: file_id.to_string(),
         object_type: evaluation.object_type.clone(),
         measures: evaluation.measures.clone(),
@@ -209,7 +204,7 @@ async fn persist_case_ocels(
         )
     })?;
 
-    Ok(filename)
+    Ok((export_id, filename))
 }
 
 async fn ensure_temp_dir() -> Result<(), (StatusCode, String)> {
