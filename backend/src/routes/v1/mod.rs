@@ -2,6 +2,7 @@ pub mod conformance;
 pub mod event_object_frequencies;
 pub mod objects;
 pub mod upload;
+pub mod case_notion;
 use axum::Router;
 
 pub fn router() -> Router {
@@ -13,4 +14,5 @@ pub fn router() -> Router {
             "/event_object_frequencies",
             event_object_frequencies::router(),
         )
+        .nest("/case_notion", crate::routes::v1::case_notion::router())
 }

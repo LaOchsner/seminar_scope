@@ -1,22 +1,17 @@
-mod advanced;
-mod connected_component;
-mod measures;
-mod traditional;
-mod utils;
-
-use advanced::advanced_case_notion_for_ot;
-use connected_component::connected_components_notion;
-use measures::{
+use crate::core::case_notion::advanced::advanced_case_notion_for_ot;
+use crate::core::case_notion::connected_component::connected_components_notion;
+use crate::core::case_notion::measures::{
     absolute_simplicity_of_case_notion, correctness_of_case_notion,
     extended_simplicity_of_case_notion, fuzzy_homogeneity_of_case_notion,
     fuzzy_homogeneity_of_case_notion_v2, normal_simplicity_of_case_notion,
     strict_homogeneity_of_case_notion,
 };
-use traditional::traditional_case_notion_for_ot;
-use utils::{
+use crate::core::case_notion::traditional::traditional_case_notion_for_ot;
+use crate::core::case_notion::utils::{
     build_event_identifiers, build_object_identifiers, detect_diverging_object_types,
     map_object_id_to_type,
 };
+
 
 use anyhow::{Context, Result, anyhow};
 use process_mining::ocel::ocel_struct::{OCELEvent, OCELObject, OCELRelationship, OCELType};
@@ -34,10 +29,10 @@ use std::{
     time::Instant,
 };
 
-#[derive(Serialize)]
-struct Measure {
-    name: String,
-    value: f64,
+#[derive(Clone, Serialize)]
+pub struct CaseMeasure {
+    pub name: String,
+    pub value: f64,
 }
 
 #[derive(Serialize)]
@@ -45,7 +40,7 @@ struct ResultCaseNotion {
     case_notion: String,
     name_of_event_log: String,
     object_type: String,
-    measures: Vec<Measure>,
+    measures: Vec<CaseMeasure>,
     total_score: f64,
 }
 
@@ -58,20 +53,20 @@ struct RuntimeCaseNotion {
 }
 
 #[derive(Clone, Serialize)]
-struct CaseNotionArch {
+pub struct CaseNotionArch {
     source: String,
     target: String,
 }
 
 #[derive(Clone, Serialize)]
-struct CaseNotionCase {
+pub struct CaseNotionCase {
     events: Vec<String>,
     objects: Vec<String>,
     arches: Vec<CaseNotionArch>,
 }
 
 #[derive(Serialize)]
-struct CaseNotionGraphOutput {
+pub struct CaseNotionGraphOutput {
     case_notion: String,
     name_of_event_log: String,
     object_type: String,
@@ -79,12 +74,22 @@ struct CaseNotionGraphOutput {
 }
 
 #[derive(Serialize)]
-struct CaseNotionOcelOutput {
-    case_notion: String,
-    name_of_event_log: String,
-    object_type: String,
-    cases: Vec<OCEL>,
+pub struct CaseNotionOcelOutput {
+    pub case_notion: String,
+    pub name_of_event_log: String,
+    pub object_type: String,
+    pub cases: Vec<OCEL>,
 }
+
+#[derive(Clone)]
+pub struct CaseNotionEvaluation {
+    pub object_type: Option<String>,
+    pub measures: Vec<CaseMeasure>,
+    pub total_score: f64,
+    pub f1_score: Option<f64>,
+    pub case_notion: FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>,
+}
+
 
 struct CaseNotionComputation {
     results: Vec<ResultCaseNotion>,
@@ -98,7 +103,7 @@ struct MethodExecution {
     ocels: Vec<CaseNotionOcelOutput>,
 }
 
-struct CaseNotionContext {
+pub struct CaseNotionContext {
     total_number_of_events: usize,
     total_number_of_objects: usize,
     event_identifiers: FxHashMap<
@@ -122,7 +127,7 @@ struct CaseNotionContext {
 }
 
 impl CaseNotionContext {
-    fn new(log: &OCEL) -> Self {
+    pub fn new(log: &OCEL) -> Self {
         let total_number_of_events = log.events.len();
         let total_number_of_objects = log.objects.len();
 
@@ -199,8 +204,211 @@ impl CaseNotionContext {
             default_timestamp,
         }
     }
+    pub fn cleaned_event_identifiers(&self) -> &FxHashMap<String, (String, BTreeSet<String>)> {
+        &self.cleaned_event_identifiers
+    }
+
+    pub fn object_identifiers(&self) -> &FxHashMap<String, (String, Vec<String>)> {
+        &self.object_identifiers
+    }
+
+    pub fn divergence_map(&self) -> &FxHashMap<String, FxHashSet<String>> {
+        &self.divergence_map
+    }
+
+    pub fn event_lookup(&self) -> &FxHashMap<String, OCELEvent> {
+        &self.event_lookup
+    }
+
+    pub fn total_number_of_events(&self) -> usize {
+        self.total_number_of_events
+    }
+
+    pub fn total_number_of_objects(&self) -> usize {
+        self.total_number_of_objects
+    }
+
+    pub fn event_identifiers(&self) -> &FxHashMap<
+        String,
+        (
+            String,
+            BTreeSet<String>,
+            FxHashMap<String, BTreeSet<String>>,
+        ),
+    > {
+        &self.event_identifiers
+    }
+
+    pub fn arches(&self) -> &FxHashSet<(String, String)> {
+        &self.arches
+    }
+
+    pub fn sorted_object_types(&self) -> &[String] {
+        &self.sorted_object_types
+    }
+
+    pub fn object_lookup(&self) -> &FxHashMap<String, OCELObject> {
+        &self.object_lookup
+    }
+
+    pub fn event_type_defs(&self) -> &[OCELType] {
+        &self.event_type_defs
+    }
+
+    pub fn object_type_defs(&self) -> &[OCELType] {
+        &self.object_type_defs
+    }
+
+    pub fn default_timestamp(&self) -> &chrono::DateTime<chrono::FixedOffset> {
+        &self.default_timestamp
+    }
 }
 
+const EPSILON: f64 = 1e-9;
+
+fn measure_value(measures: &[CaseMeasure], target: &str) -> Option<f64> {
+    measures.iter().find(|m| m.name == target).map(|m| m.value)
+}
+
+fn f1_from_measures(measures: &[CaseMeasure]) -> Option<f64> {
+    let simplicity = measure_value(measures, "Normal Simplicity")?;
+    let correctness = measure_value(measures, "Correctness")?;
+    if simplicity + correctness > 0.0 {
+        Some((2.0 * simplicity * correctness) / (simplicity + correctness))
+    } else {
+        Some(0.0)
+    }
+}
+
+fn is_better_evaluation(
+    candidate: &CaseNotionEvaluation,
+    current: Option<&CaseNotionEvaluation>,
+) -> bool {
+    match current {
+        None => true,
+        Some(best) => {
+            let cand_f1 = candidate.f1_score.unwrap_or(0.0);
+            let best_f1 = best.f1_score.unwrap_or(0.0);
+            if (cand_f1 - best_f1).abs() > EPSILON {
+                cand_f1 > best_f1
+            } else {
+                let cand_corr = measure_value(&candidate.measures, "Correctness").unwrap_or(0.0);
+                let best_corr = measure_value(&best.measures, "Correctness").unwrap_or(0.0);
+                if (cand_corr - best_corr).abs() > EPSILON {
+                    cand_corr > best_corr
+                } else {
+                    candidate.total_score > best.total_score
+                }
+            }
+        }
+    }
+}
+
+pub fn best_advanced_case_notion(context: &CaseNotionContext) -> Option<CaseNotionEvaluation> {
+    let mut best: Option<CaseNotionEvaluation> = None;
+    for object_type in context.sorted_object_types() {
+        let case_notion = advanced_case_notion_for_ot(
+            context.cleaned_event_identifiers(),
+            context.object_identifiers(),
+            object_type.clone(),
+            context.divergence_map(),
+        );
+
+        if case_notion.is_empty() {
+            continue;
+        }
+
+        let measures = calculate_measures(
+            &case_notion,
+            context.event_identifiers(),
+            context.object_identifiers(),
+            context.arches(),
+            context.total_number_of_objects(),
+            context.total_number_of_events(),
+        );
+        let total_score = average_score(&measures);
+        let f1_score = f1_from_measures(&measures);
+
+        let evaluation = CaseNotionEvaluation {
+            object_type: Some(object_type.clone()),
+            measures,
+            total_score,
+            f1_score,
+            case_notion,
+        };
+
+        if is_better_evaluation(&evaluation, best.as_ref()) {
+            best = Some(evaluation);
+        }
+    }
+
+    best
+}
+
+pub fn best_traditional_case_notion(context: &CaseNotionContext) -> Option<CaseNotionEvaluation> {
+    let mut best: Option<CaseNotionEvaluation> = None;
+    for object_type in context.sorted_object_types() {
+        let case_notion = traditional_case_notion_for_ot(
+            context.object_identifiers(),
+            object_type.clone(),
+        );
+
+        if case_notion.is_empty() {
+            continue;
+        }
+
+        let measures = calculate_measures(
+            &case_notion,
+            context.event_identifiers(),
+            context.object_identifiers(),
+            context.arches(),
+            context.total_number_of_objects(),
+            context.total_number_of_events(),
+        );
+        let total_score = average_score(&measures);
+        let f1_score = f1_from_measures(&measures);
+
+        let evaluation = CaseNotionEvaluation {
+            object_type: Some(object_type.clone()),
+            measures,
+            total_score,
+            f1_score,
+            case_notion,
+        };
+
+        if is_better_evaluation(&evaluation, best.as_ref()) {
+            best = Some(evaluation);
+        }
+    }
+
+    best
+}
+
+pub fn connected_components_case_notion(context: &CaseNotionContext) -> CaseNotionEvaluation {
+    let case_notion = connected_components_notion(
+        context.cleaned_event_identifiers().clone(),
+        context.object_identifiers().clone(),
+    );
+
+    let measures = calculate_measures(
+        &case_notion,
+        context.event_identifiers(),
+        context.object_identifiers(),
+        context.arches(),
+        context.total_number_of_objects(),
+        context.total_number_of_events(),
+    );
+    let total_score = average_score(&measures);
+    let f1_score = f1_from_measures(&measures);
+
+    CaseNotionEvaluation {
+        object_type: None,
+        measures,
+        total_score,
+        f1_score,
+        case_notion,
+    }
+}
 #[derive(Clone, Copy)]
 enum CaseMethod {
     AdvancedMt,
@@ -531,7 +739,7 @@ fn execute_case_notion(
     }
 }
 
-fn calculate_measures(
+pub fn calculate_measures(
     case_notion: &FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>,
     event_identifiers: &FxHashMap<
         String,
@@ -545,7 +753,7 @@ fn calculate_measures(
     arches: &FxHashSet<(String, String)>,
     total_number_of_objects: usize,
     total_number_of_events: usize,
-) -> Vec<Measure> {
+) -> Vec<CaseMeasure> {
     let normal_simplicity = normal_simplicity_of_case_notion(
         case_notion,
         total_number_of_events,
@@ -573,38 +781,38 @@ fn calculate_measures(
         strict_homogeneity_of_case_notion(case_notion, event_identifiers, object_identifiers);
 
     vec![
-        Measure {
+        CaseMeasure {
             name: "Normal Simplicity".to_string(),
             value: normal_simplicity,
         },
-        Measure {
+        CaseMeasure {
             name: "Extended Simplicity".to_string(),
             value: extended_simplicity,
         },
-        Measure {
+        CaseMeasure {
             name: "Absolute Simplicity".to_string(),
             value: absolute_simplicity,
         },
-        Measure {
+        CaseMeasure {
             name: "Correctness".to_string(),
             value: correctness,
         },
-        Measure {
+        CaseMeasure {
             name: "Fuzzy Homogeneity".to_string(),
             value: fuzzy_homogeneity,
         },
-        Measure {
+        CaseMeasure {
             name: "Fuzzy Homogeneity V2".to_string(),
             value: fuzzy_homogeneity_v2,
         },
-        Measure {
+        CaseMeasure {
             name: "Strict Homogeneity".to_string(),
             value: strict_homogeneity,
         },
     ]
 }
 
-fn average_score(measures: &[Measure]) -> f64 {
+pub fn average_score(measures: &[CaseMeasure]) -> f64 {
     if measures.is_empty() {
         0.0
     } else {
@@ -612,7 +820,7 @@ fn average_score(measures: &[Measure]) -> f64 {
     }
 }
 
-fn case_notion_to_cases(
+pub fn case_notion_to_cases(
     case_notion: &FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>,
 ) -> Vec<CaseNotionCase> {
     let mut cases: Vec<CaseNotionCase> = Vec::with_capacity(case_notion.len());
@@ -657,7 +865,7 @@ fn case_notion_to_cases(
     cases
 }
 
-fn case_notion_to_ocels(
+pub fn case_notion_to_ocels(
     case_notion: &FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>,
     event_details: &FxHashMap<String, (String, BTreeSet<String>)>,
     object_details: &FxHashMap<String, (String, Vec<String>)>,
@@ -835,7 +1043,7 @@ fn extract_log_name(path: &Path) -> Result<String> {
         .ok_or_else(|| anyhow!("failed to derive log name from {}", path.display()))
 }
 
-fn sanitize_for_file_name(input: &str) -> String {
+pub fn sanitize_for_file_name(input: &str) -> String {
     input
         .chars()
         .map(|c| {
@@ -847,3 +1055,11 @@ fn sanitize_for_file_name(input: &str) -> String {
         })
         .collect()
 }
+
+
+
+
+
+
+
+

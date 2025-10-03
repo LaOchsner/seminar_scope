@@ -30,6 +30,4 @@ uuid = "1.17.0"
 name = "main_richard"
 path = "src/core/case_notion/main_richard.rs"
 
-[[bin]]
-name = "case_notion"
-path = "src/core/case_notion/main.rs"
+

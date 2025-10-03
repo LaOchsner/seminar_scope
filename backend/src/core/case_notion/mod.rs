@@ -1,3 +1,4 @@
+pub mod main;
 pub mod advanced;
 pub mod connected_component;
 pub mod main_richard;
