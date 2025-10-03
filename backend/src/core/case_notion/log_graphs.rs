@@ -85,7 +85,10 @@ pub fn build_log_graph_type_level(log: &OCEL) -> Value {
 
     let arcs: Vec<ArcEntry> = arcs_set
         .into_iter()
-        .map(|(event_type, object_type)| ArcEntry { event_type, object_type })
+        .map(|(event_type, object_type)| ArcEntry {
+            event_type,
+            object_type,
+        })
         .collect();
 
     let graph = LogGraphTypeLevel {
@@ -96,7 +99,6 @@ pub fn build_log_graph_type_level(log: &OCEL) -> Value {
 
     serde_json::to_value(&graph).unwrap()
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -122,8 +124,7 @@ mod tests {
         let graph = build_log_graph_type_level(&ocel);
 
         // 5. Serialize to pretty JSON string
-        let json_str =
-            serde_json::to_string_pretty(&graph).expect("failed to serialize log graph");
+        let json_str = serde_json::to_string_pretty(&graph).expect("failed to serialize log graph");
 
         // 6. Print to console
         println!("{}", json_str);

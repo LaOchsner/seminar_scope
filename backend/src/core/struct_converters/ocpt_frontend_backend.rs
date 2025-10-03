@@ -296,7 +296,7 @@ mod tests {
         use crate::models::ocpt::{OCPT, OcptFE};
         use tokio::fs;
 
-        // Hard-coded file 
+        // Hard-coded file
         let path = "../example_data/ocel/ocel_v2_123.json";
 
         // Read file content

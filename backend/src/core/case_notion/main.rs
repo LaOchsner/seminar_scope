@@ -12,7 +12,6 @@ use crate::core::case_notion::utils::{
     map_object_id_to_type,
 };
 
-
 use anyhow::{Context, Result, anyhow};
 use process_mining::ocel::ocel_struct::{OCELEvent, OCELObject, OCELRelationship, OCELType};
 use process_mining::{OCEL, import_ocel_json_from_path, import_ocel_xml_file};
@@ -90,7 +89,6 @@ pub struct CaseNotionEvaluation {
     pub case_notion: FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>,
 }
 
-
 struct CaseNotionComputation {
     results: Vec<ResultCaseNotion>,
     graphs: Vec<CaseNotionGraphOutput>,
@@ -132,16 +130,10 @@ impl CaseNotionContext {
         let total_number_of_objects = log.objects.len();
 
         let obj_id_to_type = map_object_id_to_type(&log.objects);
-        let unique_object_types: FxHashSet<String> = log
-            .object_types
-            .iter()
-            .map(|o| o.name.clone())
-            .collect();
-        let unique_activities: FxHashSet<String> = log
-            .event_types
-            .iter()
-            .map(|e| e.name.clone())
-            .collect();
+        let unique_object_types: FxHashSet<String> =
+            log.object_types.iter().map(|o| o.name.clone()).collect();
+        let unique_activities: FxHashSet<String> =
+            log.event_types.iter().map(|e| e.name.clone()).collect();
 
         let event_identifiers =
             build_event_identifiers(&log.events, &obj_id_to_type, &unique_object_types);
@@ -228,7 +220,9 @@ impl CaseNotionContext {
         self.total_number_of_objects
     }
 
-    pub fn event_identifiers(&self) -> &FxHashMap<
+    pub fn event_identifiers(
+        &self,
+    ) -> &FxHashMap<
         String,
         (
             String,
@@ -348,10 +342,8 @@ pub fn best_advanced_case_notion(context: &CaseNotionContext) -> Option<CaseNoti
 pub fn best_traditional_case_notion(context: &CaseNotionContext) -> Option<CaseNotionEvaluation> {
     let mut best: Option<CaseNotionEvaluation> = None;
     for object_type in context.sorted_object_types() {
-        let case_notion = traditional_case_notion_for_ot(
-            context.object_identifiers(),
-            object_type.clone(),
-        );
+        let case_notion =
+            traditional_case_notion_for_ot(context.object_identifiers(), object_type.clone());
 
         if case_notion.is_empty() {
             continue;
@@ -499,7 +491,11 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-fn execute_method(log_name: &str, method: CaseMethod, context: &CaseNotionContext) -> MethodExecution {
+fn execute_method(
+    log_name: &str,
+    method: CaseMethod,
+    context: &CaseNotionContext,
+) -> MethodExecution {
     let start = Instant::now();
     let computation = execute_case_notion(log_name, method, context);
     let elapsed = start.elapsed().as_secs_f64();
@@ -943,8 +939,7 @@ pub fn case_notion_to_ocels(
                         qualifier: String::new(),
                     })
                     .collect();
-                relationships
-                    .sort_unstable_by(|a, b| a.object_id.cmp(&b.object_id));
+                relationships.sort_unstable_by(|a, b| a.object_id.cmp(&b.object_id));
                 event_records.push(OCELEvent {
                     id: event_id.clone(),
                     event_type,
@@ -1055,11 +1050,3 @@ pub fn sanitize_for_file_name(input: &str) -> String {
         })
         .collect()
 }
-
-
-
-
-
-
-
-

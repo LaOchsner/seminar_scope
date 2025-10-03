@@ -1,11 +1,6 @@
 use crate::core::case_notion::log_graphs::build_log_graph_type_level;
 use crate::models::ocel::OCEL;
-use axum::{
-    extract::Path as AxumPath,
-    http::StatusCode,
-    response::IntoResponse,
-    Json as AxumJson,
-};
+use axum::{Json as AxumJson, extract::Path as AxumPath, http::StatusCode, response::IntoResponse};
 use tokio::fs as tokio_fs;
 
 /// GET /v1/log_graph/:file_id

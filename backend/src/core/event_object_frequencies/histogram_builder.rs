@@ -28,17 +28,16 @@ fn build_object_index(log: &OCEL) -> HashMap<&str, &str> {
         .collect()
 }
 
-
 /// Build event-object frequency histograms for an [`OCEL`].
 /// Each histogram corresponds to a unique (event_type, object_type) pair
 /// and shows how many objects of that type are associated with events of that type.
-/// 
+///
 /// # Example JSON output:
 /// one histogram per (event_type, object_type) pair
 ///    - histogram x: count
 ///    - histogram y: frequency
-/// 
-/// 
+///
+///
 /// ```json
 /// {
 ///   "histograms": [
@@ -64,10 +63,10 @@ fn build_object_index(log: &OCEL) -> HashMap<&str, &str> {
 /// ```
 ///     
 ///
-/// 
+///
 /// # Arguments
 /// * `log` - A reference to an [`OCEL`] log instance.
-/// 
+///
 /// # Returns
 /// A [`serde_json::Value`] containing the JSON representation of the histograms.
 pub fn build_event_object_histograms(log: &OCEL) -> Value {

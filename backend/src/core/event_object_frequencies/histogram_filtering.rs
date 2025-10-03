@@ -20,17 +20,16 @@ struct SelectionPayload {
     selections: Vec<Selection>,
 }
 
-
 /// This function applies one or more selection masks over the event-object frequency histograms.
 /// Each provided mask results in one output [`OCEL`], which is included in the returned array.
-/// 
+///
 /// # Example JSON input:
 /// one output [`OCEL`] per selection
 ///    - name could be used for filename
 ///    - each selection has multiple filters
 ///    - each filter specifies (event_type, object_type, ranges)
 ///    - treated as WHITELIST: keep events that match at least one range per filter
-/// 
+///
 /// ```json
 /// {
 ///   "selections": [
@@ -52,9 +51,9 @@ struct SelectionPayload {
 ///   ]
 /// }
 /// ```
-/// 
-/// Only events that are within all specified filters of a selection are kept. 
-/// 
+///
+/// Only events that are within all specified filters of a selection are kept.
+///
 /// # Arguments
 ///
 /// * `log` - A reference to an [`OCEL`] log instance.
@@ -62,7 +61,7 @@ struct SelectionPayload {
 ///
 /// # Returns
 ///
-/// A [Vec<OCEL>] 
+/// A [Vec<OCEL>]
 pub fn filter_ocel_histograms(log: &OCEL, filters_json: &str) -> Vec<OCEL> {
     // 1. Deserialize the JSON payload
     let payload: SelectionPayload =
