@@ -375,6 +375,8 @@ mod tests {
         // 4. Define start types and relations
         let start_types = vec![OCELType { name: "worker".to_string(), attributes: vec![] }];
         let o2o_relations= vec![];
+
+        // this should result in empty cases
         // let e2o_relations= vec![
         //     (OCELType { name: "Worker arrival".to_string(), attributes: vec![] },
         //      OCELType { name: "worker".to_string(), attributes: vec![] }),
@@ -385,6 +387,8 @@ mod tests {
         //     (OCELType { name: "Unload materials".to_string(), attributes: vec![] },
         //      OCELType { name: "worker".to_string(), attributes: vec![] }),
         // ];
+
+        // eq to trad CN for worker: this should result in non-empty cases
         let e2o_relations= vec![
             (OCELType { name: "worker".to_string(), attributes: vec![] },
              OCELType { name: "Worker arrival".to_string(), attributes: vec![] }),
