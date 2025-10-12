@@ -1,7 +1,6 @@
 use process_mining::OCEL;
 use process_mining::ocel::ocel_struct::{OCELEvent, OCELObject, OCELType};
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::collections::BTreeSet;
 
 use log::LevelFilter;
 use env_logger::Builder;
@@ -38,9 +37,10 @@ fn generic_case_notion_to_ocels(
     // used to make lookups faster
     let start_type_names: FxHashSet<_> = generic_case_notion.start_types.iter().map(|t| &t.name).collect();
 
-    let mut start_objects: Vec<_> = log.objects
+    let mut start_objects: FxHashSet<&String> = log.objects
         .iter()
         .filter(|obj| start_type_names.contains(&obj.object_type))
+        .map(|o| &o.id)
         .collect();
 
     let o2o_map = build_o2o_map(log, &generic_case_notion.o2o_relations);
@@ -51,16 +51,17 @@ fn generic_case_notion_to_ocels(
     print_relation_maps(&o2o_map, &e2o_map, &o2e_map);
 
 
-    while !start_objects.is_empty() {
+    while let Some(&start_object) = start_objects.iter().next() {
+        start_objects.remove(start_object);
+
         let mut events: FxHashSet<&String> = FxHashSet::default();
         let mut objects: FxHashSet<&String> = FxHashSet::default();
 
         let mut events_to_analyse: FxHashSet<&String> = FxHashSet::default();
         let mut objects_to_analyse: FxHashSet<&String> = FxHashSet::default();
 
-        let o = start_objects.pop().unwrap();
-        objects.insert(&o.id);
-        objects_to_analyse.insert(&o.id);
+        objects.insert(start_object);
+        objects_to_analyse.insert(start_object);
 
         loop {
             let mut new_objects: FxHashSet<&String> = FxHashSet::default();
@@ -72,6 +73,8 @@ fn generic_case_notion_to_ocels(
                     for o in neigh {
                         if objects.insert(o) {
                             new_objects.insert(o);
+                            
+                            start_objects.remove(o); // ensure no new case will be created from this object
                         }
                     }
                 }
@@ -82,6 +85,8 @@ fn generic_case_notion_to_ocels(
                     for o in objs {
                         if objects.insert(o) {
                             new_objects.insert(o);
+
+                            start_objects.remove(o);
                         }
                     }
                 }
@@ -308,6 +313,16 @@ fn build_case(
     let mut used_event_types: FxHashSet<&String> = FxHashSet::default();
     let mut used_object_types: FxHashSet<&String> = FxHashSet::default();
 
+    // Collect filtered objects efficiently via lookup
+    let filtered_objects: Vec<OCELObject> = objects
+        .iter()
+        .filter_map(|id| object_lookup.get(*id))
+        .map(|o| {
+            used_object_types.insert(&o.object_type);
+            o.clone()
+        })
+        .collect();
+
     // Collect filtered events efficiently via lookup
     let filtered_events: Vec<OCELEvent> = events
         .iter()
@@ -316,15 +331,19 @@ fn build_case(
             used_event_types.insert(&e.event_type);
             e.clone()
         })
-        .collect();
+        .map(|e| {
+            // Filter relationships to only include those pointing to included objects
+            let filtered_rels: Vec<_> = e
+                .relationships
+                .iter()
+                .filter(|rel| objects.contains(&rel.object_id))
+                .cloned()
+                .collect();
 
-    // Collect filtered objects efficiently via lookup
-    let filtered_objects: Vec<OCELObject> = objects
-        .iter()
-        .filter_map(|id| object_lookup.get(*id))
-        .map(|o| {
-            used_object_types.insert(&o.object_type);
-            o.clone()
+            OCELEvent {
+                relationships: filtered_rels,
+                ..e
+            }
         })
         .collect();
 
@@ -399,6 +418,41 @@ mod tests {
             (OCELType { name: "worker".to_string(), attributes: vec![] },
              OCELType { name: "Unload materials".to_string(), attributes: vec![] }),
         ];
+
+        // eq to CCCN: should result in a single case for simple construction-site.json
+        // let e2o_relations= vec![
+        //     //worker
+        //     (OCELType { name: "worker".to_string(), attributes: vec![] },
+        //      OCELType { name: "Worker arrival".to_string(), attributes: vec![] }),
+        //     (OCELType { name: "worker".to_string(), attributes: vec![] },
+        //      OCELType { name: "Worker departure".to_string(), attributes: vec![] }),
+        //     (OCELType { name: "Worker arrival".to_string(), attributes: vec![] },
+        //      OCELType { name: "worker".to_string(), attributes: vec![] }),
+        //     (OCELType { name: "Worker departure".to_string(), attributes: vec![] },
+        //      OCELType { name: "worker".to_string(), attributes: vec![] }),
+        //     (OCELType { name: "worker".to_string(), attributes: vec![] },
+        //      OCELType { name: "Load materials".to_string(), attributes: vec![] }),
+        //     (OCELType { name: "Load materials".to_string(), attributes: vec![] },
+        //      OCELType { name: "worker".to_string(), attributes: vec![] }),
+        //     (OCELType { name: "worker".to_string(), attributes: vec![] },
+        //      OCELType { name: "Unload materials".to_string(), attributes: vec![] }),
+        //     (OCELType { name: "Unload materials".to_string(), attributes: vec![] },
+        //      OCELType { name: "worker".to_string(), attributes: vec![] }),
+        //     //truck
+        //     (OCELType { name: "truck".to_string(), attributes: vec![] },
+        //      OCELType { name: "Load materials".to_string(), attributes: vec![] }),
+        //     (OCELType { name: "Load materials".to_string(), attributes: vec![] },
+        //      OCELType { name: "truck".to_string(), attributes: vec![] }),
+        //     (OCELType { name: "truck".to_string(), attributes: vec![] },
+        //      OCELType { name: "Unload materials".to_string(), attributes: vec![] }),
+        //     (OCELType { name: "Unload materials".to_string(), attributes: vec![] },
+        //      OCELType { name: "truck".to_string(), attributes: vec![] }),
+        //     //crane
+        //     (OCELType { name: "crane".to_string(), attributes: vec![] },
+        //      OCELType { name: "Unload materials".to_string(), attributes: vec![] }),
+        //     (OCELType { name: "Unload materials".to_string(), attributes: vec![] },
+        //      OCELType { name: "crane".to_string(), attributes: vec![] }),
+        // ];
 
         // 5. Apply the generic notion function
         let generic_case_notion = GenericCaseNotion {
