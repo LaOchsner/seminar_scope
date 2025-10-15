@@ -4,11 +4,21 @@ use crate::core::case_notion::main::{
     case_notion_to_ocels, connected_components_case_notion, sanitize_for_file_name,
 };
 use crate::models::ocel::OCEL;
-use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
-use serde::Serialize;
+use axum::{
+    Json,
+    extract::{Path, Query},
+    http::StatusCode,
+    response::IntoResponse,
+};
+use serde::{Deserialize, Serialize};
 use serde_json;
 use tokio::fs;
 use uuid::Uuid;
+
+#[derive(Deserialize)]
+pub(crate) struct CaseNotionQuery {
+    object_type: Option<String>,
+}
 
 #[derive(Serialize)]
 struct CaseNotionResponse {
@@ -33,6 +43,34 @@ struct CaseOcelFile {
     total_score: f64,
     f1_score: Option<f64>,
     cases: Vec<OCEL>,
+}
+
+enum ObjectTypeSelection {
+    Default,
+    Specific(String),
+}
+
+impl ObjectTypeSelection {
+    fn from_query_param(param: Option<String>) -> Self {
+        match param {
+            Some(value) => {
+                let trimmed = value.trim();
+                if trimmed.is_empty() || trimmed.eq_ignore_ascii_case("default") {
+                    ObjectTypeSelection::Default
+                } else {
+                    ObjectTypeSelection::Specific(trimmed.to_string())
+                }
+            }
+            None => ObjectTypeSelection::Default,
+        }
+    }
+
+    fn as_option(&self) -> Option<&str> {
+        match self {
+            ObjectTypeSelection::Default => None,
+            ObjectTypeSelection::Specific(value) => Some(value.as_str()),
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -60,8 +98,40 @@ impl CaseKind {
     }
 }
 
-pub async fn get_advanced_case_notion(Path(file_id): Path<String>) -> impl IntoResponse {
-    match compute_response(CaseKind::Advanced, file_id).await {
+fn not_found_response(kind: CaseKind, selection: &ObjectTypeSelection) -> (StatusCode, String) {
+    let message = match kind {
+        CaseKind::Advanced => match selection {
+            ObjectTypeSelection::Default => {
+                "No advanced case notion could be derived for any object type".to_string()
+            }
+            ObjectTypeSelection::Specific(value) => format!(
+                "No advanced case notion could be derived for object type: {}",
+                value
+            ),
+        },
+        CaseKind::Traditional => match selection {
+            ObjectTypeSelection::Default => {
+                "No traditional case notion could be derived for any object type".to_string()
+            }
+            ObjectTypeSelection::Specific(value) => format!(
+                "No traditional case notion could be derived for object type: {}",
+                value
+            ),
+        },
+        CaseKind::ConnectedComponents => unreachable!(
+            "not_found_response should not be called for connected components case notion"
+        ),
+    };
+
+    (StatusCode::NOT_FOUND, message)
+}
+
+pub async fn get_advanced_case_notion(
+    Path(file_id): Path<String>,
+    Query(query): Query<CaseNotionQuery>,
+) -> impl IntoResponse {
+    let selection = ObjectTypeSelection::from_query_param(query.object_type);
+    match compute_response(CaseKind::Advanced, file_id, selection).await {
         Ok(payload) => (StatusCode::OK, Json(payload)).into_response(),
         Err((status, msg)) => (status, msg).into_response(),
     }
@@ -70,14 +140,24 @@ pub async fn get_advanced_case_notion(Path(file_id): Path<String>) -> impl IntoR
 pub async fn get_connected_components_case_notion(
     Path(file_id): Path<String>,
 ) -> impl IntoResponse {
-    match compute_response(CaseKind::ConnectedComponents, file_id).await {
+    match compute_response(
+        CaseKind::ConnectedComponents,
+        file_id,
+        ObjectTypeSelection::Default,
+    )
+    .await
+    {
         Ok(payload) => (StatusCode::OK, Json(payload)).into_response(),
         Err((status, msg)) => (status, msg).into_response(),
     }
 }
 
-pub async fn get_traditional_case_notion(Path(file_id): Path<String>) -> impl IntoResponse {
-    match compute_response(CaseKind::Traditional, file_id).await {
+pub async fn get_traditional_case_notion(
+    Path(file_id): Path<String>,
+    Query(query): Query<CaseNotionQuery>,
+) -> impl IntoResponse {
+    let selection = ObjectTypeSelection::from_query_param(query.object_type);
+    match compute_response(CaseKind::Traditional, file_id, selection).await {
         Ok(payload) => (StatusCode::OK, Json(payload)).into_response(),
         Err((status, msg)) => (status, msg).into_response(),
     }
@@ -86,6 +166,7 @@ pub async fn get_traditional_case_notion(Path(file_id): Path<String>) -> impl In
 async fn compute_response(
     kind: CaseKind,
     file_id: String,
+    selection: ObjectTypeSelection,
 ) -> Result<CaseNotionResponse, (StatusCode, String)> {
     let path = format!("./temp/ocel_v2_{}.json", file_id);
     let content = fs::read_to_string(&path).await.map_err(|err| {
@@ -114,14 +195,10 @@ async fn compute_response(
     let context = CaseNotionContext::new(&ocel);
 
     let evaluation = match kind {
-        CaseKind::Advanced => best_advanced_case_notion(&context).ok_or((
-            StatusCode::NOT_FOUND,
-            "No advanced case notion could be derived for any object type".to_string(),
-        ))?,
-        CaseKind::Traditional => best_traditional_case_notion(&context).ok_or((
-            StatusCode::NOT_FOUND,
-            "No traditional case notion could be derived for any object type".to_string(),
-        ))?,
+        CaseKind::Advanced => best_advanced_case_notion(&context, selection.as_option())
+            .ok_or_else(|| not_found_response(kind, &selection))?,
+        CaseKind::Traditional => best_traditional_case_notion(&context, selection.as_option())
+            .ok_or_else(|| not_found_response(kind, &selection))?,
         CaseKind::ConnectedComponents => connected_components_case_notion(&context),
     };
 
