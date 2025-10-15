@@ -3,6 +3,8 @@ use crate::core::case_notion::main::{
     best_advanced_case_notion, best_traditional_case_notion, case_notion_to_cases,
     case_notion_to_ocels, connected_components_case_notion, sanitize_for_file_name,
 };
+use crate::core::case_notion::generic::generic_case_notion_to_ocels;
+use crate::models::case_notion::GenericCaseNotion;
 use crate::models::ocel::OCEL;
 use axum::{
     Json,
@@ -161,6 +163,16 @@ pub async fn get_traditional_case_notion(
         Ok(payload) => (StatusCode::OK, Json(payload)).into_response(),
         Err((status, msg)) => (status, msg).into_response(),
     }
+}
+
+pub async fn post_generic_case_notion(
+    Path(file_id): Path<String>,
+    Json(payload): Json<GenericCaseNotion>,
+) -> impl IntoResponse {
+    log::debug!("Received GenericCaseNotion for file_id: {}", file_id);
+    log::debug!("Payload: {:?}", payload);
+
+
 }
 
 async fn compute_response(

@@ -1,31 +1,127 @@
 use process_mining::OCEL;
 use process_mining::ocel::ocel_struct::{OCELEvent, OCELObject, OCELType};
 use rustc_hash::{FxHashMap, FxHashSet};
-
+use crate::models::case_notion::GenericCaseNotion;
 use log::LevelFilter;
 use env_logger::Builder;
 
-struct GenericCaseNotion {
-    start_types: Vec<OCELType>,
-    o2o_relations: Vec<(OCELType, OCELType)>,
-    e2o_relations: Vec<(OCELType, OCELType)>
+
+pub fn generic_case_notion(
+    generic_case_notion: &GenericCaseNotion,
+    log: &OCEL,
+
+) -> FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>{
+
+    Builder::new().filter_level(LevelFilter::Debug).init();
+
+    let mut result = FxHashSet::default();
+
+    // used to make lookups faster
+    let start_type_names: FxHashSet<_> = generic_case_notion.start_types.iter().map(|t| &t.name).collect();
+
+    let mut start_objects: FxHashSet<&String> = log.objects
+        .iter()
+        .filter(|obj| start_type_names.contains(&obj.object_type))
+        .map(|o| &o.id)
+        .collect();
+
+    let o2o_map = build_o2o_map(log, &generic_case_notion.o2o_relations);
+    let e2o_map = build_e2o_map(log, &generic_case_notion.e2o_relations);
+    let o2e_map = build_o2e_map(log, &generic_case_notion.e2o_relations);
+
+
+    print_relation_maps(&o2o_map, &e2o_map, &o2e_map);
+
+
+    while let Some(&start_object) = start_objects.iter().next() {
+        start_objects.remove(start_object);
+
+        let mut events: FxHashSet<&String> = FxHashSet::default();
+        let mut objects: FxHashSet<&String> = FxHashSet::default();
+
+        let mut events_to_analyse: FxHashSet<&String> = FxHashSet::default();
+        let mut objects_to_analyse: FxHashSet<&String> = FxHashSet::default();
+
+        objects.insert(start_object);
+        objects_to_analyse.insert(start_object);
+
+        loop {
+            let mut new_objects: FxHashSet<&String> = FxHashSet::default();
+            let mut new_events: FxHashSet<&String>  = FxHashSet::default();
+
+            // Step 1: from objects → other objects (O2O)
+            for obj_id in &objects_to_analyse {
+                if let Some(neigh) = o2o_map.get(*obj_id) {
+                    for o in neigh {
+                        if objects.insert(o) {
+                            new_objects.insert(o);
+                            
+                            start_objects.remove(o); // ensure no new case will be created from this object
+                        }
+                    }
+                }
+            }
+
+            for evn_id in &events_to_analyse {
+                if let Some(objs) = e2o_map.get(*evn_id) {
+                    for o in objs {
+                        if objects.insert(o) {
+                            new_objects.insert(o);
+
+                            start_objects.remove(o);
+                        }
+                    }
+                }
+            }
+
+            for obj_id in &objects_to_analyse {
+                if let Some(evns) = o2e_map.get(*obj_id) {
+                    for e in evns {
+                        if events.insert(e) {
+                            new_events.insert(e);
+                        }
+                    }
+                }
+            }
+
+            if new_objects.is_empty() && new_events.is_empty() {
+                break; // nothing new discovered → convergence
+            }
+
+            objects_to_analyse = new_objects;
+            events_to_analyse = new_events;
+        }
+
+        // Create a case as tuple of (events, objects, arcs)
+        let arcs: Vec<(String, String)> = events
+            .iter()
+            .flat_map(|event_id| {
+                e2o_map
+                    .get(*event_id)
+                    .unwrap_or(&vec![])
+                    .iter()
+                    .filter(|object_id| objects.contains(object_id))
+                    .map(|object_id| ((*event_id).clone(), object_id.clone()))
+                    .collect::<Vec<(String, String)>>()
+            })
+            .collect();
+
+        let case = (
+            events.iter().cloned().cloned().collect(),
+            objects.iter().cloned().cloned().collect(),
+            arcs,
+        );
+        // Append the new log to the result
+        result.insert(case);
+
+    }
+    result
 }
 
-fn generic_case_notion_to_ocels(
+pub fn generic_case_notion_to_ocels(
     generic_case_notion: &GenericCaseNotion,
-
-    // probably not sufficient: o2o cannot be encoded here
-    // event_details: &FxHashMap<String, (String, BTreeSet<String>)>,
-    // object_details: &FxHashMap<String, (String, Vec<String>)>,
-    // event_type_defs: &[OCELType],
-    // object_type_defs: &[OCELType],
-    // default_timestamp: &chrono::DateTime<chrono::FixedOffset>,
-
-    // for building the new OCELs efficiently - TODO: pass to build_case
     event_lookup: &FxHashMap<String, OCELEvent>,
     object_lookup: &FxHashMap<String, OCELObject>,
-
-    // maybe try to replace with log encoding above. might not be possible -> figure out what to do
     log: &OCEL,
 
 ) -> Vec<OCEL>{
@@ -102,35 +198,6 @@ fn generic_case_notion_to_ocels(
                 }
             }
 
-
-
-
-
-
-
-            // // Step 2: from objects → events (O2E)
-            // for obj_id in &objects_to_analyse {
-            //     if let Some(evns) = o2e_map.get(*obj_id) {
-            //         for e in evns {
-            //             if events.insert(e) {
-            //                 new_events.insert(e);
-            //             }
-            //         }
-            //     }
-            // }
-
-            // // Step 3: from events → objects (E2O)
-            // for evn_id in &events_to_analyse {
-            //     if let Some(objs) = e2o_map.get(*evn_id) {
-            //         for o in objs {
-            //             if objects.insert(o) {
-            //                 new_objects.insert(o);
-            //             }
-            //         }
-            //     }
-            // }
-
-            // Update frontier sets
             if new_objects.is_empty() && new_events.is_empty() {
                 break; // nothing new discovered → convergence
             }
