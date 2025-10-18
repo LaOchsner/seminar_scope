@@ -1,21 +1,32 @@
-import { DragEvent, useCallback, useEffect } from 'react';
+import { DragEvent, useCallback, useMemo, useEffect } from 'react';
 import { Background, Controls, ReactFlow, ReactFlowProvider } from '@xyflow/react';
-import { SidebarProvider } from '~/components/ui/sidebar';
+import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import BreadcrumbNav from '~/components/BreadcrumbNav';
 import { DnDProvider, useDnD } from '~/components/explore/DndContext';
 import ExploreSidebar from '~/components/explore/ExploreSidebar';
-import FileExploreNode from '~/components/explore/FileExploreNode';
-import FileSelectionDialog from '~/components/explore/FileSelectionDialog';
-import MinerExploreNode from '~/components/explore/MinerExploreNode';
-import VisualizationExploreNode from '~/components/explore/VisualizationExploreNode';
+import OcelFileNode from '~/components/explore/file/OcelFileNode';
+import OcptFileNode from '~/components/explore/file/OcptFileNode';
+import FileSelectionDialog from '~/components/explore/file/ui/FileSelectionDialog';
+import OcptMinerNode from '~/components/explore/miner/OcptMinerNode';
+import OcptVisualizationNode from '~/components/explore/visualization/OcptVisualizationNode';
 import { useExploreEventHandlers } from '~/hooks/useExploreEventHandlers';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore } from '~/stores/store';
+import { Logger } from '~/lib/logger';
+import EventGraphVisualizationNode from '~/components/explore/visualization/EventGraphVisualizationNode';
+import OcelMinerNode from '~/components/explore/miner/OcelMinerNode';
+
+const logger = Logger.getInstance();
 
 const nodeTypes = {
-    file: FileExploreNode,
-    visualization: VisualizationExploreNode,
-    miner: MinerExploreNode,
+    // file: FileExploreNode,
+    // visualization: VisualizationExploreNode,
+    ocptMinerNode: OcptMinerNode,
+    ocptVisualizationNode: OcptVisualizationNode,
+    ocelFileNode: OcelFileNode,
+    ocptFileNode: OcptFileNode,
+    eventGraphVisualizationNode: EventGraphVisualizationNode,
+    ocelMinerNode: OcelMinerNode,
 };
 
 const Explore: React.FC = () => {
@@ -26,14 +37,14 @@ const Explore: React.FC = () => {
         useExploreEventHandlers();
     const handleDrop = useCallback((event: DragEvent<HTMLElement>) => onDrop(event, type), [onDrop, type]);
 
-    useEffect(() => {
-        console.log(nodes);
+    useMemo(() => {
+        logger.log(nodes);
     }, [nodes]);
 
     return (
         <>
             <SidebarProvider>
-                <div className="h-screen w-screen overflow-hidden">
+                <SidebarInset>
                     <BreadcrumbNav />
                     <div className="h-full w-full">
                         <ReactFlow
@@ -52,13 +63,14 @@ const Explore: React.FC = () => {
                             <Controls position="top-left" />
                         </ReactFlow>
                     </div>
-                    <ExploreSidebar />
-                </div>
+                </SidebarInset>
+                <ExploreSidebar />
             </SidebarProvider>
             <FileSelectionDialog isOpen={Boolean(dialogNodeId)} />
         </>
     );
 };
+
 
 const ExploreApp = () => {
     return (

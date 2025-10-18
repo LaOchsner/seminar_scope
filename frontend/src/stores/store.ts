@@ -63,6 +63,11 @@ interface IsOcptModeStore {
     setIsOcptMode: (newIsOcptMode: boolean) => void;
 }
 
+interface IsOcelModeStore {
+    isOcelMode: boolean;
+    setIsOcelMode: (newIsOcelMode: boolean) => void;
+}
+
 interface FlowJsonStore {
     flowJson: FlowJson | null;
     setFlowJson: (newFlowJson: FlowJson) => void;
@@ -157,6 +162,11 @@ export const useRenderedOcpt = create<RenderedOcptStore>((set) => ({
 export const useIsOcptMode = create<IsOcptModeStore>((set) => ({
     isOcptMode: true,
     setIsOcptMode: (newIsOcptMode) => set(() => ({ isOcptMode: newIsOcptMode })),
+}));
+
+export const useIsOcelMode = create<IsOcelModeStore>((set) => ({
+    isOcelMode: true,
+    setIsOcelMode: (newIsOcelMode) => set(() => ({ isOcelMode: newIsOcelMode })),
 }));
 
 export const useFlowJson = create<FlowJsonStore>((set) => ({

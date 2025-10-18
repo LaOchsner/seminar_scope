@@ -1,4 +1,3 @@
-import type { ElementType } from 'react';
 import type { Position } from '@xyflow/react';
 import type { ExploreNodeCategory, ExploreNodeType } from '~/types/explore/definitions/node-types';
 import type { AssetType, FileType } from '~/types/files.types';
@@ -31,7 +30,7 @@ export interface BaseExploreNodeAsset {
 
 export interface BaseExploreNodeDisplay {
     title: string;
-    Icon: ElementType;
+    iconName: string;
 }
 
 export interface BaseExploreNodeConfig {
@@ -41,10 +40,9 @@ export interface BaseExploreNodeConfig {
 }
 
 export interface BaseExploreNodeData extends Record<string, unknown> {
-    display: BaseExploreNodeDisplay;
-    config: BaseExploreNodeConfig;
     assets: BaseExploreNodeAsset[];
     nodeType: ExploreNodeType;
     nodeCategory: ExploreNodeCategory;
+    allowedAssetTypes: readonly AssetType[];
     onDataChange: (id: string, newData: Partial<BaseExploreNodeData>) => void;
 }
