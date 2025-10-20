@@ -45,6 +45,9 @@ const ExploreSidebar: React.FC<ExploreSidebarProps> = ({}) => {
                             <SidebarMenuItem className="ml-1">
                                 <DndCard title="LBOF Visualization" Icon={Workflow} nodeType="lbofVisualizationNode" />
                             </SidebarMenuItem>
+                            <SidebarMenuItem className="ml-1">
+                                <DndCard title="Event Graph" Icon={Network} nodeType="eventGraphVisualizationNode" />
+                            </SidebarMenuItem>
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>

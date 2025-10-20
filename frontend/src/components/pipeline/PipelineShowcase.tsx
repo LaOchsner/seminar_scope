@@ -15,8 +15,11 @@ const PipelineShowcase: React.FC<PipelineShowcaseProps> = ({ pipeline, onDelete 
 
     const handleLoad = () => {
         loadPipeline(pipeline.id);
+        console.log(pipeline.id);
         navigate('/data/pipeline/explore');
     };
+
+
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', {

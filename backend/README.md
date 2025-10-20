@@ -51,3 +51,17 @@ curl -X DELETE http://localhost:3000/v1/objects/ocpt/123
 
 curl -X DELETE http://localhost:3000/v1/objects/ocpt/123
 ```
+
+### Case notion test curl
+
+```bash
+
+curl "http://localhost:3000/v1/case_notion/traditional/<file_id>?object_type=<object_type>"
+
+curl "http://localhost:3000/v1/case_notion/traditional/<file_id>?object_type=default"
+
+curl "http://localhost:3000/v1/case_notion/advanced/<file_id>?object_type=<object_type>"
+
+curl "http://localhost:3000/v1/case_notion/advanced/<file_id>?object_type=default"
+
+```
