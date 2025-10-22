@@ -6,8 +6,7 @@ use crate::models::ocel::OCEL;
 use axum::{
     extract::Json as AxumJson, extract::Path as AxumPath, http::StatusCode, response::IntoResponse,
 };
-use tokio::fs as tokio_fs;
-use crate::models::ocel::ImportableFromPath;
+use crate::traits::import_export::ImportableFromPath;
 
 /// GET /v1/event_object_frequencies/:file_id
 /// -> loads ./temp/ocpt_{file_id}.json and ./temp/ocel_{file_id}.json

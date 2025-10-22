@@ -2,6 +2,7 @@ mod core;
 mod handlers;
 mod models;
 mod routes;
+mod traits;
 
 use anyhow::Result;
 use core::struct_converters::ocel_1_ocel_2_converter::convert_file;

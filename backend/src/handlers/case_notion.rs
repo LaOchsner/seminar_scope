@@ -3,7 +3,7 @@ use crate::core::case_notion::main::{
     best_advanced_case_notion, best_traditional_case_notion, case_notion_to_cases,
     case_notion_to_ocels, connected_components_case_notion, sanitize_for_file_name, calculate_measures, average_score, f1_from_measures,
 };
-use crate::models::ocel::ImportableFromPath;
+use crate::traits::import_export::ImportableFromPath;
 use crate::core::case_notion::generic::generic_case_notion;
 use crate::models::case_notion::GenericCaseNotion;
 use crate::models::ocel::OCEL;
