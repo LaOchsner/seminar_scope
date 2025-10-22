@@ -37,13 +37,32 @@ pub struct CaseMeasure {
 }
 
 #[derive(Serialize)]
-struct ResultCaseNotion {
+pub struct ResultCaseNotion {
     case_notion: String,
     name_of_event_log: String,
     object_type: String,
     measures: Vec<CaseMeasure>,
     total_score: f64,
 }
+
+impl ResultCaseNotion {
+    pub fn new(
+        case_notion: String,
+        name_of_event_log: String,
+        object_type: String,
+        measures: Vec<CaseMeasure>,
+        total_score: f64,
+    ) -> Self {
+        Self {
+            case_notion,
+            name_of_event_log,
+            object_type,
+            measures,
+            total_score,
+        }
+    }
+}
+
 
 #[derive(Serialize)]
 struct RuntimeCaseNotion {
@@ -73,6 +92,21 @@ pub struct CaseNotionGraphOutput {
     object_type: String,
     cases: Vec<CaseNotionCase>,
 }
+impl CaseNotionGraphOutput {
+    pub fn new(
+        case_notion: String,
+        name_of_event_log: String,
+        object_type: String,
+        cases: Vec<CaseNotionCase>,
+    ) -> Self {
+        Self {
+            case_notion,
+            name_of_event_log,
+            object_type,
+            cases,
+        }
+    }
+}
 
 #[derive(Serialize)]
 pub struct CaseNotionOcelOutput {
@@ -91,10 +125,20 @@ pub struct CaseNotionEvaluation {
     pub case_notion: FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>,
 }
 
-struct CaseNotionComputation {
+pub struct CaseNotionComputation {
     results: Vec<ResultCaseNotion>,
     graphs: Vec<CaseNotionGraphOutput>,
     ocels: Vec<CaseNotionOcelOutput>,
+}
+
+impl CaseNotionComputation {
+    pub fn new(
+        results: Vec<ResultCaseNotion>,
+        graphs: Vec<CaseNotionGraphOutput>,
+        ocels: Vec<CaseNotionOcelOutput>,
+    ) -> Self {
+        Self { results, graphs, ocels }
+    }
 }
 
 struct MethodExecution {
@@ -124,6 +168,69 @@ pub struct CaseNotionContext {
     event_type_defs: Vec<OCELType>,
     object_type_defs: Vec<OCELType>,
     default_timestamp: chrono::DateTime<chrono::FixedOffset>,
+}
+
+impl CaseNotionContext {
+    pub fn total_number_of_events_ref(&self) -> &usize {
+        &self.total_number_of_events
+    }
+
+    pub fn total_number_of_objects_ref(&self) -> &usize {
+        &self.total_number_of_objects
+    }
+
+    pub fn event_identifiers_ref(
+        &self,
+    ) -> &FxHashMap<
+        String,
+        (
+            String,
+            BTreeSet<String>,
+            FxHashMap<String, BTreeSet<String>>,
+        ),
+    > {
+        &self.event_identifiers
+    }
+
+    pub fn object_identifiers_ref(&self) -> &FxHashMap<String, (String, Vec<String>)> {
+        &self.object_identifiers
+    }
+
+    pub fn event_lookup_ref(&self) -> &FxHashMap<String, OCELEvent> {
+        &self.event_lookup
+    }
+
+    pub fn object_lookup_ref(&self) -> &FxHashMap<String, OCELObject> {
+        &self.object_lookup
+    }
+
+    pub fn cleaned_event_identifiers_ref(&self) -> &FxHashMap<String, (String, BTreeSet<String>)> {
+        &self.cleaned_event_identifiers
+    }
+
+    pub fn arches_ref(&self) -> &FxHashSet<(String, String)> {
+        &self.arches
+    }
+
+    pub fn sorted_object_types_ref(&self) -> &Vec<String> {
+        &self.sorted_object_types
+    }
+
+    pub fn divergence_map_ref(&self) -> &FxHashMap<String, FxHashSet<String>> {
+        &self.divergence_map
+    }
+
+    pub fn event_type_defs_ref(&self) -> &Vec<OCELType> {
+        &self.event_type_defs
+    }
+
+    pub fn object_type_defs_ref(&self) -> &Vec<OCELType> {
+        &self.object_type_defs
+    }
+
+    pub fn default_timestamp_ref(&self) -> &chrono::DateTime<chrono::FixedOffset> {
+        &self.default_timestamp
+    }
 }
 
 impl CaseNotionContext {
@@ -266,7 +373,7 @@ fn measure_value(measures: &[CaseMeasure], target: &str) -> Option<f64> {
     measures.iter().find(|m| m.name == target).map(|m| m.value)
 }
 
-fn f1_from_measures(measures: &[CaseMeasure]) -> Option<f64> {
+pub fn f1_from_measures(measures: &[CaseMeasure]) -> Option<f64> {
     let simplicity = measure_value(measures, "Normal Simplicity")?;
     let correctness = measure_value(measures, "Correctness")?;
     if simplicity + correctness > 0.0 {

@@ -6,10 +6,10 @@ use log::LevelFilter;
 use env_logger::Builder;
 
 
-pub fn generic_case_notion(
-    generic_case_notion: &GenericCaseNotion,
-    log: &OCEL,
 
+pub fn generic_case_notion(
+    log: &OCEL,
+    generic_case_notion: &GenericCaseNotion,
 ) -> FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>{
 
     Builder::new().filter_level(LevelFilter::Debug).init();
@@ -93,27 +93,22 @@ pub fn generic_case_notion(
         }
 
         // Create a case as tuple of (events, objects, arcs)
-        let arcs: Vec<(String, String)> = events
-            .iter()
-            .flat_map(|event_id| {
-                e2o_map
-                    .get(*event_id)
-                    .unwrap_or(&vec![])
-                    .iter()
-                    .filter(|object_id| objects.contains(object_id))
-                    .map(|object_id| ((*event_id).clone(), object_id.clone()))
-                    .collect::<Vec<(String, String)>>()
-            })
-            .collect();
+        let arcs: Vec<(String, String)> = events.iter().flat_map(|&event_id| {
+            e2o_map
+                .get(event_id)
+                .into_iter()
+                .flatten()
+                .filter(|object_id| objects.contains(object_id))
+                .map(|object_id| (event_id.clone(), object_id.clone()))
+        }).collect();
 
         let case = (
-            events.iter().cloned().cloned().collect(),
-            objects.iter().cloned().cloned().collect(),
+            events.iter().map(|s| (*s).clone()).collect::<Vec<String>>(),
+            objects.iter().map(|s| (*s).clone()).collect::<Vec<String>>(),
             arcs,
         );
         // Append the new log to the result
         result.insert(case);
-
     }
     result
 }
