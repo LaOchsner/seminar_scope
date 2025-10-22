@@ -3,16 +3,12 @@ use process_mining::ocel::ocel_struct::{OCELEvent, OCELObject, OCELType};
 use rustc_hash::{FxHashMap, FxHashSet};
 use crate::models::case_notion::GenericCaseNotion;
 use log::LevelFilter;
-use env_logger::Builder;
-
 
 
 pub fn generic_case_notion(
     log: &OCEL,
     generic_case_notion: &GenericCaseNotion,
 ) -> FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>{
-
-    Builder::new().filter_level(LevelFilter::Debug).init();
 
     let mut result = FxHashSet::default();
 
@@ -120,8 +116,6 @@ pub fn generic_case_notion_to_ocels(
     log: &OCEL,
 
 ) -> Vec<OCEL>{
-
-    Builder::new().filter_level(LevelFilter::Debug).init();
 
     let mut result = vec![];
 
