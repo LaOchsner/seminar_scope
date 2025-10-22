@@ -18,6 +18,7 @@ use serde_json;
 use tokio::fs;
 use uuid::Uuid;
 
+
 #[derive(Deserialize)]
 pub(crate) struct CaseNotionQuery {
     object_type: Option<String>,
@@ -75,6 +76,7 @@ impl ObjectTypeSelection {
         }
     }
 }
+
 
 #[derive(Clone, Copy)]
 enum CaseKind {

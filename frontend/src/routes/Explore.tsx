@@ -15,6 +15,11 @@ import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore } from '~/stores/store';
 import { Logger } from '~/lib/logger';
 
+import EventGraphVisualizationNode from '~/components/explore/visualization/EventGraphVisualizationNode';
+import OcelMinerNode from '~/components/explore/miner/OcelMinerNode';
+
+
+
 const logger = Logger.getInstance();
 
 const nodeTypes = {
@@ -24,6 +29,8 @@ const nodeTypes = {
     ocptVisualizationNode: OcptVisualizationNode,
     ocelFileNode: OcelFileNode,
     ocptFileNode: OcptFileNode,
+    eventGraphVisualizationNode: EventGraphVisualizationNode,
+    ocelMinerNode: OcelMinerNode,
 };
 
 const Explore: React.FC = () => {
@@ -67,6 +74,7 @@ const Explore: React.FC = () => {
         </>
     );
 };
+
 
 const ExploreApp = () => {
     return (
