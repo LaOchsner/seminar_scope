@@ -396,67 +396,6 @@ impl CaseMethod {
     }
 }
 
-fn main() {
-    if let Err(err) = run() {
-        eprintln!("Error: {err:?}");
-        std::process::exit(1);
-    }
-}
-
-fn run() -> Result<()> {
-    let log_path = obtain_input_path()?;
-    if !log_path.exists() {
-        return Err(anyhow!("input path does not exist: {}", log_path.display()));
-    }
-
-    let log = load_log(&log_path)?;
-    let log_name = extract_log_name(&log_path)?;
-    let log_name_slug = sanitize_for_file_name(&log_name);
-
-    println!("Loaded log \"{log_name}\" from {}", log_path.display());
-
-    let context = CaseNotionContext::new(&log);
-
-    let methods = [
-        CaseMethod::AdvancedMt,
-        CaseMethod::Traditional,
-        CaseMethod::ConnectedComponents,
-    ];
-
-    let mut runtime_results = Vec::new();
-
-    for &method in &methods {
-        println!("Executing {}...", method.case_label());
-        let method_execution = execute_method(&log_name, method, &context);
-        let output_name = format!("{log_name_slug}_{}.json", method.file_suffix());
-        write_json(
-            &method_execution.runtime.case_notions,
-            Path::new(&output_name),
-        )
-        .with_context(|| format!("failed to write results for {}", method.key()))?;
-        println!("  wrote {}", output_name);
-
-        let graph_output_name = format!("{log_name_slug}_{}_graphs.json", method.file_suffix());
-        write_json(&method_execution.graphs, Path::new(&graph_output_name))
-            .with_context(|| format!("failed to write graph data for {}", method.key()))?;
-        println!("  wrote {}", graph_output_name);
-
-        let ocel_output_name = format!("{log_name_slug}_{}_ocels.json", method.file_suffix());
-        write_json(&method_execution.ocels, Path::new(&ocel_output_name))
-            .with_context(|| format!("failed to write OCEL cases for {}", method.key()))?;
-        println!("  wrote {}", ocel_output_name);
-
-        runtime_results.push(method_execution.runtime);
-    }
-
-    let summary_file = format!("{log_name_slug}_summary.json");
-    write_json(&runtime_results, Path::new(&summary_file))
-        .context("failed to write runtime summary")?;
-    println!("Summary written to {summary_file}");
-
-    Ok(())
-}
-
 fn execute_method(
     log_name: &str,
     method: CaseMethod,
