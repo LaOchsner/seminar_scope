@@ -1,9 +1,10 @@
+use crate::core::case_notion::advanced::best_advanced_case_notion;
 use crate::core::case_notion::connected_component::connected_components_notion;
 use crate::core::case_notion::log_graphs::build_log_graph_type_level;
 use crate::core::case_notion::main::{
     CaseMeasure, CaseNotionCase, CaseNotionContext, CaseNotionEvaluation, average_score,
-    best_advanced_case_notion, case_notion_to_cases, case_notion_to_ocels, calculate_measures,
-    f1_from_measures, sanitize_for_file_name,
+    case_notion_to_cases, case_notion_to_ocels, calculate_measures, f1_from_measures,
+    sanitize_for_file_name,
 };
 use crate::core::case_notion::traditional::{
     traditional_case_notion, traditional_case_notion_type_level,
