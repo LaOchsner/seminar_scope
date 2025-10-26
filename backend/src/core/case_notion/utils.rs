@@ -1,7 +1,11 @@
-use process_mining::ocel::ocel_struct::{OCELEvent, OCELObject};
+use crate::core::case_notion::main::{CaseNotionArch, CaseNotionCase, CaseNotionEvaluation};
+use crate::core::case_notion::measures::measure_value;
+use process_mining::ocel::ocel_struct::{OCELEvent, OCELObject, OCELRelationship, OCELType};
+use process_mining::OCEL;
 
 // Import BTreeSet for ordered sets, usable as FxHashMap keys
 use rustc_hash::{FxHashMap, FxHashSet};
+use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::default::Default;
 
@@ -301,4 +305,212 @@ pub fn detect_diverging_object_types(
     }
 
     divergent_object_types_map
+}
+
+const EPSILON: f64 = 1e-9;
+
+pub(crate) fn is_better_evaluation(
+    candidate: &CaseNotionEvaluation,
+    current: Option<&CaseNotionEvaluation>,
+) -> bool {
+    match current {
+        None => true,
+        Some(best) => {
+            let cand_f1 = candidate.f1_score.unwrap_or(0.0);
+            let best_f1 = best.f1_score.unwrap_or(0.0);
+            if (cand_f1 - best_f1).abs() > EPSILON {
+                cand_f1 > best_f1
+            } else {
+                let cand_corr = measure_value(&candidate.measures, "Correctness").unwrap_or(0.0);
+                let best_corr = measure_value(&best.measures, "Correctness").unwrap_or(0.0);
+                if (cand_corr - best_corr).abs() > EPSILON {
+                    cand_corr > best_corr
+                } else {
+                    candidate.total_score > best.total_score
+                }
+            }
+        }
+    }
+}
+pub fn case_notion_to_cases(
+    case_notion: &FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>,
+) -> Vec<CaseNotionCase> {
+    let mut cases: Vec<CaseNotionCase> = Vec::with_capacity(case_notion.len());
+
+    for (events, objects, arches) in case_notion {
+        let mut events_sorted = events.clone();
+        events_sorted.sort_unstable();
+
+        let mut objects_sorted = objects.clone();
+        objects_sorted.sort_unstable();
+
+        let mut edges: Vec<CaseNotionArch> = arches
+            .iter()
+            .map(|(source, target)| CaseNotionArch {
+                source: source.clone(),
+                target: target.clone(),
+            })
+            .collect();
+        edges.sort_unstable_by(|a, b| {
+            let mut ordering = a.source.cmp(&b.source);
+            if ordering == Ordering::Equal {
+                ordering = a.target.cmp(&b.target);
+            }
+            ordering
+        });
+
+        cases.push(CaseNotionCase {
+            events: events_sorted,
+            objects: objects_sorted,
+            arches: edges,
+        });
+    }
+
+    cases.sort_unstable_by(|a, b| {
+        let mut ordering = a.events.cmp(&b.events);
+        if ordering == Ordering::Equal {
+            ordering = a.objects.cmp(&b.objects);
+        }
+        ordering
+    });
+
+    cases
+}
+
+pub fn case_notion_to_ocels(
+    case_notion: &FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>,
+    event_details: &FxHashMap<String, (String, BTreeSet<String>)>,
+    object_details: &FxHashMap<String, (String, Vec<String>)>,
+    event_type_defs: &[OCELType],
+    object_type_defs: &[OCELType],
+    default_timestamp: &chrono::DateTime<chrono::FixedOffset>,
+    event_lookup: &FxHashMap<String, OCELEvent>,
+    object_lookup: &FxHashMap<String, OCELObject>,
+) -> Vec<OCEL> {
+    let mut entries: Vec<(Vec<String>, Vec<String>, Vec<(String, String)>)> =
+        case_notion.iter().cloned().collect();
+
+    for (events, objects, arcs) in &mut entries {
+        events.sort_unstable();
+        objects.sort_unstable();
+        arcs.sort_unstable_by(|a, b| {
+            let mut ordering = a.0.cmp(&b.0);
+            if ordering == Ordering::Equal {
+                ordering = a.1.cmp(&b.1);
+            }
+            ordering
+        });
+    }
+
+    entries.sort_unstable_by(|a, b| {
+        let mut ordering = a.0.cmp(&b.0);
+        if ordering == Ordering::Equal {
+            ordering = a.1.cmp(&b.1);
+        }
+        ordering
+    });
+
+    let mut ocels = Vec::with_capacity(entries.len());
+
+    for (events, objects, arcs) in entries {
+        let object_id_set: FxHashSet<String> = objects.iter().cloned().collect();
+        let mut arcs_by_event: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
+        for (event_id, object_id) in &arcs {
+            arcs_by_event
+                .entry(event_id.clone())
+                .or_default()
+                .insert(object_id.clone());
+        }
+
+        let mut event_records = Vec::with_capacity(events.len());
+        for event_id in &events {
+            if let Some(original_event) = event_lookup.get(event_id) {
+                let mut event = original_event.clone();
+                if let Some(allowed_objects) = arcs_by_event.get(event_id) {
+                    event
+                        .relationships
+                        .retain(|rel| allowed_objects.contains(&rel.object_id));
+                } else {
+                    event.relationships.clear();
+                }
+                event
+                    .relationships
+                    .sort_unstable_by(|a, b| a.object_id.cmp(&b.object_id));
+                event_records.push(event);
+            } else {
+                let event_type = event_details
+                    .get(event_id)
+                    .map(|(activity, _)| activity.clone())
+                    .unwrap_or_else(|| "Unknown".to_string());
+                let mut relationships: Vec<OCELRelationship> = arcs_by_event
+                    .get(event_id)
+                    .into_iter()
+                    .flat_map(|set| {
+                        let mut ids: Vec<String> = set.iter().cloned().collect();
+                        ids.sort_unstable();
+                        ids.into_iter()
+                    })
+                    .map(|object_id| OCELRelationship {
+                        object_id,
+                        qualifier: String::new(),
+                    })
+                    .collect();
+                relationships.sort_unstable_by(|a, b| a.object_id.cmp(&b.object_id));
+                event_records.push(OCELEvent {
+                    id: event_id.clone(),
+                    event_type,
+                    time: default_timestamp.clone(),
+                    attributes: Vec::new(),
+                    relationships,
+                });
+            }
+        }
+
+        let mut object_records = Vec::with_capacity(objects.len());
+        for object_id in &objects {
+            if let Some(original_object) = object_lookup.get(object_id) {
+                let mut object = original_object.clone();
+                object
+                    .relationships
+                    .retain(|rel| object_id_set.contains(&rel.object_id));
+                object
+                    .relationships
+                    .sort_unstable_by(|a, b| a.object_id.cmp(&b.object_id));
+                object_records.push(object);
+            } else {
+                let object_type = object_details
+                    .get(object_id)
+                    .map(|(ty, _)| ty.clone())
+                    .unwrap_or_else(|| "Unknown".to_string());
+                object_records.push(OCELObject {
+                    id: object_id.clone(),
+                    object_type,
+                    attributes: Vec::new(),
+                    relationships: Vec::new(),
+                });
+            }
+        }
+
+        ocels.push(OCEL {
+            events: event_records,
+            objects: object_records,
+            event_types: event_type_defs.to_vec(),
+            object_types: object_type_defs.to_vec(),
+        });
+    }
+
+    ocels
+}
+
+pub fn sanitize_for_file_name(input: &str) -> String {
+    input
+        .chars()
+        .map(|c| {
+            if matches!(c, 'a'..='z' | 'A'..='Z' | '0'..='9' | '_' | '-') {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect()
 }
