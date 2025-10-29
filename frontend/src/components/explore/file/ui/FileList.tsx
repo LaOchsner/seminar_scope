@@ -2,14 +2,14 @@ import { useCallback } from 'react';
 import { FolderOpen } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '~/components/ui/button';
-import FileShowcase from '~/components/data/FileShowcase';
+import FileShowcase from '~/components/explore/file/ui/FileShowcase';
 import { useStoredFiles } from '~/stores/store';
 import { useUploadFileMutation } from '~/services/mutation';
 import type { ExtendedFile } from '~/types/fileObject.types';
 import type { FileType } from '~/types/files.types';
 
 const FileList: React.FC = () => {
-    const { files, addFile } = useStoredFiles();
+    const { files, addFile, removeFile } = useStoredFiles();
     const uploadFileMutation = useUploadFileMutation();
 
     const handleFileUpload = useCallback(
@@ -60,7 +60,9 @@ const FileList: React.FC = () => {
                 </div>
             )}
             {files.length > 0 &&
-                files.map((file, index) => file && <FileShowcase key={`${file.name}-${index}`} file={file} />)}
+                files.map((file, index) => (
+                    <FileShowcase key={`${file.name}-${index}`} file={file} onFileRemove={removeFile} />
+                ))}{' '}
         </div>
     );
 };

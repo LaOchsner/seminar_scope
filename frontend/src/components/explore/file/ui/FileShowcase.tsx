@@ -1,35 +1,70 @@
-import { Eye, FileJson, FileSpreadsheet } from 'lucide-react';
+import { FileX, Plus } from 'lucide-react';
+import { Button } from '~/components/ui/button';
+import { ASSET_TYPE_VISUALS } from '~/lib/iconMap';
 import type { ExtendedFile } from '~/types/fileObject.types';
 
 interface FileShowcaseProps {
     file: ExtendedFile;
-    onFileSelect: (file: ExtendedFile) => void;
+    onFileSelect?: (file: ExtendedFile) => void;
+    onFileRemove?: (file: ExtendedFile) => void;
 }
 
-const FileShowcase: React.FC<FileShowcaseProps> = ({ file, onFileSelect }) => {
+const FileShowcase: React.FC<FileShowcaseProps> = ({ file, onFileSelect, onFileRemove }) => {
     const useFile = () => {
-        onFileSelect(file);
+        if (onFileSelect) {
+            onFileSelect(file);
+        }
     };
 
-    const getFileTypeIcon = (name: string) => {
-        const extension = name.split('.').pop();
-        if (extension === 'csv') {
-            return <FileSpreadsheet className="h-6 w-6 mr-1" />;
-        } else if (extension === 'json') return <FileJson className="h-6 w-6 mr-1" />;
-        return 'unknown';
+    const formatBytes = (bytes: number, decimals = 2) => {
+        if (!+bytes) return '0 Bytes';
+
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
     };
+
+    const formatDate = (timestamp: number) => {
+        return new Date(timestamp).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+        });
+    };
+
+    const visual = ASSET_TYPE_VISUALS[file.fileType];
+    const Icon = visual.icon;
 
     return (
-        <div className="flex items-center h-16 w-full border-gray-200 border-y-[1px]">
-            <div className="flex justify-center items-center ml-4">
-                {getFileTypeIcon(file.name)}
-                <p className="font-semibold">{file.name}</p>
+        <div className="flex items-center w-full px-4 py-3 border-gray-200 border-y-[1px]">
+            <div className="mr-3 h-6 w-6 flex-shrink-0">
+                <Icon className={`h-6 w-6 ${visual.color}`} />
             </div>
-            <div className="flex justify-between ml-auto mr-4">
-                <div className="flex items-center justify-center cursor-pointer" onClick={useFile}>
-                    <Eye className="h-6 w-6 text-blue-500" />
-                    <p className="text-sm ml-1">Visualize</p>
-                </div>
+            <div className="flex-grow overflow-hidden">
+                <p className="truncate font-semibold" title={file.name}>
+                    {file.name}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                    {formatBytes(file.size)} - Modified {formatDate(file.lastModified)}
+                </p>
+            </div>
+            <div className="ml-4 flex-shrink-0 flex space-x-2">
+                {onFileSelect && (
+                    <Button onClick={useFile} variant="outline" size="sm">
+                        <Plus className="h-4 w-4" />
+                        Select
+                    </Button>
+                )}
+                {onFileRemove && (
+                    <Button onClick={() => onFileRemove(file)} variant="destructive" size="sm">
+                        <FileX className="h-4 w-4" />
+                        Remove
+                    </Button>
+                )}
             </div>
         </div>
     );
