@@ -366,7 +366,7 @@ pub fn build_o2e_map(
 ///
 /// # Returns
 /// A new [`OCEL`] instance containing only the selected subset.
-fn build_case(
+pub(crate) fn build_case(
     log: &OCEL,
     events: &FxHashSet<&String>,
     objects: &FxHashSet<&String>,
