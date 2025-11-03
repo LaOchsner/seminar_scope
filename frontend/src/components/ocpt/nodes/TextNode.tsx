@@ -1,9 +1,8 @@
+import { useEffect, useRef, useState } from 'react';
 import { Group } from '@visx/group';
 import { ScaleOrdinal } from 'd3';
+import LegendRect from '~/components/ocpt/ui/LegendRect';
 import { type Activity, type NodeProps } from '~/types/ocpt/ocpt.types';
-import LegendRect from '~/components/LegendRect';
-
-import { useEffect, useRef, useState } from 'react';
 
 interface TextNodeProps extends NodeProps {
     colorScale: ScaleOrdinal<string, string, never>;

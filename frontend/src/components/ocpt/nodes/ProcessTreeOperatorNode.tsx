@@ -1,9 +1,9 @@
-import { Group } from '@visx/group';
-import ProcessTreeOperatorSVG from './ProcessTreeOperatorSVG';
-import { NodeProps, type ExtendedProcessTreeOperatorType, type ObjectType } from '~/types/ocpt/ocpt.types';
-import { Circle } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Group } from '@visx/group';
 import type { ScaleOrdinal } from 'd3-scale';
+import { Circle } from 'lucide-react';
+import ProcessTreeOperatorSVG from '~/components/ocpt/nodes/ProcessTreeOperatorSVG';
+import { type ExtendedProcessTreeOperatorType, NodeProps, type ObjectType } from '~/types/ocpt/ocpt.types';
 
 interface ProcessTreeNodeProps extends NodeProps {
     operator: ExtendedProcessTreeOperatorType;

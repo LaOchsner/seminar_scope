@@ -1,7 +1,7 @@
 import { FileX, Plus } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import { ASSET_TYPE_VISUALS } from '~/lib/iconMap';
-import type { ExtendedFile } from '~/types/fileObject.types';
+import { ExtendedFile } from '~/types/files.types';
 
 interface FileShowcaseProps {
     file: ExtendedFile;

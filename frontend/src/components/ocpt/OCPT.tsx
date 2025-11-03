@@ -4,11 +4,10 @@ import { hierarchy } from '@visx/hierarchy';
 import { HierarchyNode, HierarchyPointNode } from '@visx/hierarchy/lib/types';
 import { Zoom } from '@visx/zoom';
 import { ScaleOrdinal } from 'd3';
-import HoverPointTooltip from '~/components/ocpt/HoverPointTooltip';
 import { RenderTree } from '~/components/ocpt/OcptRendering';
+import NodeTooltip from '~/components/ocpt/ui/NodeTooltip';
 import ZoomButtons from '~/components/ZoomButtons';
-import { useExploreFlowStore } from '~/stores/exploreStore';
-import { NodeId, TVisualizationNode } from '~/types/explore';
+import { TVisualizationNode } from '~/types/explore';
 import { type TreeNode } from '~/types/ocpt/ocpt.types';
 
 export type OCPTProps = {
@@ -107,7 +106,7 @@ const OCPT: React.FC<OCPTProps> = ({
                                 </g>
                             </svg>
                             <ZoomButtons zoom={zoom} />
-                            <HoverPointTooltip
+                            <NodeTooltip
                                 hoverPoint={
                                     hoveredNode && {
                                         x: hoveredNode.x,
