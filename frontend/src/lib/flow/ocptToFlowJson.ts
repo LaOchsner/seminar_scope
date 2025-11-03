@@ -1,13 +1,13 @@
 import type { HierarchyPointNode } from '@visx/hierarchy/lib/types';
-import type { AltFlowJson, AltFlowNode, BranchInfo, ExecOptionObj, InterOperator } from '~/types/flow/altFlow.types';
-import type { TreeNode } from '~/types/ocpt/ocpt.types';
 import { Logger } from '~/lib/logger';
 import {
     isActivity,
     isExtendedProcessTreeOperatorNode,
     isSilentActivity,
     isTrueSilentActivity,
-} from '~/lib/ocptGuards';
+} from '~/lib/ocpt/ocptGuards';
+import type { AltFlowJson, AltFlowNode, BranchInfo, ExecOptionObj, InterOperator } from '~/types/flow/altFlow.types';
+import type { TreeNode } from '~/types/ocpt/ocpt.types';
 
 const getChildrenIds = (children: AltFlowNode[]) => {
     const ids = children.map((child) => child.id);

@@ -1,5 +1,4 @@
 import type { HierarchyPointNode } from '@visx/hierarchy/lib/types';
-import { ExtendedProcessTreeOperator, SilentActivity, type ObjectType, type TreeNode } from '~/types/ocpt/ocpt.types';
 import {
     categorizeNode,
     isActivity,
@@ -7,7 +6,8 @@ import {
     isProcessTreeOperator,
     isSilentActivity,
     isTrueSilentActivity,
-} from '~/lib/ocptGuards';
+} from '~/lib/ocpt/ocptGuards';
+import { ExtendedProcessTreeOperator, type ObjectType, SilentActivity, type TreeNode } from '~/types/ocpt/ocpt.types';
 
 export const projectTreeOntoOT = (root: HierarchyPointNode<TreeNode>, targetObjectTypes: string[]): void => {
     if (!root.children || targetObjectTypes.length === 0) return;

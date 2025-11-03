@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { VisualizationExploreNodeData } from '~/types/explore';
+import { VisualizationExploreNodeData } from '~/types/explore/nodeData/visualizationNodeData';
 
 export const useVisualization = () => {
     const navigate = useNavigate();

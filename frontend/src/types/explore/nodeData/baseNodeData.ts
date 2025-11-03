@@ -1,6 +1,6 @@
 import type { Position } from '@xyflow/react';
 import type { ExploreNodeCategory, ExploreNodeType } from '~/types/explore/nodeTypesCategories';
-import type { AssetType, FileType } from '~/types/files.types';
+import type { AssetType } from '~/types/files.types';
 
 export type BaseExploreNodeDropdownActionType = 'openFileDialog' | 'changeSourceFile' | 'exportJson';
 

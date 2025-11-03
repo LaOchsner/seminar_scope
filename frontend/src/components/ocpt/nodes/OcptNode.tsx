@@ -8,7 +8,7 @@ import {
     isProcessTreeOperator,
     isSilentActivity,
     isTrueSilentActivity,
-} from '~/lib/ocptGuards';
+} from '~/lib/ocpt/ocptGuards';
 import { TreeNode } from '~/types/ocpt/ocpt.types';
 
 const parentIsArbitraryOrSkip = (parent: HierarchyPointNode<TreeNode> | null) => {

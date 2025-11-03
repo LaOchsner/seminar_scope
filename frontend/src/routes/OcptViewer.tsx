@@ -8,8 +8,8 @@ import BreadcrumbNav from '~/components/BreadcrumbNav';
 import OCPT from '~/components/ocpt/OCPT';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useIsOcptMode } from '~/stores/store';
-import { addIdsToTree } from '~/lib/ocpt/addIdsToOcpt';
-import type { TVisualizationNode } from '~/types/explore';
+import { addIdsToTree } from '~/lib/ocpt/ocptAddIds';
+import { VisualizationNode } from '~/types/explore/nodes';
 import { type TreeNode } from '~/types/ocpt/ocpt.types';
 
 const OcptViewer: React.FC = () => {
@@ -20,7 +20,7 @@ const OcptViewer: React.FC = () => {
     const { getNode, updateNodeData } = useExploreFlowStore();
     const { isOcptMode } = useIsOcptMode();
 
-    const node = nodeId ? (getNode(nodeId) as TVisualizationNode) : undefined;
+    const node = nodeId ? (getNode(nodeId) as VisualizationNode) : undefined;
     const nodeData = node?.data;
     const viewState = nodeData?.viewState;
 
