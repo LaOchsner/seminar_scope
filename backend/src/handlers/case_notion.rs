@@ -20,7 +20,7 @@ use axum::{
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use tokio::fs;
 use uuid::Uuid;
 
@@ -118,6 +118,33 @@ async fn persist_case_notion(
     }
 
     Ok(case_notion_file_id)
+}
+
+async fn persist_case_ocel_payload(
+    payload: &CaseOcelResponse,
+) -> Result<String, (StatusCode, String)> {
+    let file_id = Uuid::new_v4().to_string();
+    let serialized = match serde_json::to_vec(payload) {
+        Ok(bytes) => bytes,
+        Err(err) => {
+            eprintln!("serialize case OCEL payload failed: {err}");
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to serialize case OCEL payload".to_string(),
+            ));
+        }
+    };
+
+    let path = format!("./temp/case_ocels_{}.json", file_id);
+    if let Err(err) = fs::write(&path, serialized).await {
+        eprintln!("write case OCEL payload failed: {err}");
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Failed to store case OCEL payload".to_string(),
+        ));
+    }
+
+    Ok(file_id)
 }
 
 async fn load_persisted_case_notion(
@@ -683,5 +710,10 @@ pub async fn get_case_ocel(Path(case_notion_file_id): Path<String>) -> impl Into
         case_ocels,
     };
 
-    (StatusCode::OK, Json(payload)).into_response()
+    let case_ocels_file_id = match persist_case_ocel_payload(&payload).await {
+        Ok(file_id) => file_id,
+        Err(response) => return response.into_response(),
+    };
+
+    (StatusCode::OK, Json(json!({ "case_ocels_file_id": case_ocels_file_id }))).into_response()
 }
