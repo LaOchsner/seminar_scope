@@ -14,6 +14,13 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub trait OCELUtils {
     fn detect_diverging_object_types(&self) -> FxHashMap<String, FxHashSet<String>>;
+    fn get_related_object_types_for_activity(&self, activity: &String) -> FxHashSet<String>;
+    fn get_interaction_patterns(&self) -> (
+        FxHashMap<String, FxHashSet<String>>, //divergence
+        FxHashMap<String, FxHashSet<String>>, //convergence
+        FxHashMap<String, FxHashSet<String>>, //related
+        FxHashMap<String, FxHashSet<String>>, //deficiency
+    );
 }
 
 impl OCELUtils for OCEL {
@@ -51,6 +58,41 @@ impl OCELUtils for OCEL {
             &unique_activities,
         );
         divergence_map
+    }
+
+    fn get_related_object_types_for_activity(&self, activity: &String) -> FxHashSet<String> {
+        let related_ot = self.events
+            .iter()
+            .filter(|e| &e.event_type == activity)
+            .flat_map(|e| {
+                e.relationships.iter().filter_map(|rel| {
+                    self.objects
+                        .iter()
+                        .find(|obj| obj.id == rel.object_id)
+                        .map(|obj| obj.object_type.clone())
+                })
+            })
+            .collect();
+
+        related_ot
+    }
+
+    fn get_interaction_patterns(&self) -> (
+        FxHashMap<String, FxHashSet<String>>, //divergence
+        FxHashMap<String, FxHashSet<String>>, //convergence
+        FxHashMap<String, FxHashSet<String>>, //related
+        FxHashMap<String, FxHashSet<String>>, //deficiency
+    ) {
+
+        let divergence = self.detect_diverging_object_types();
+
+        let convergence = FxHashMap::default(); // Placeholder for convergence logic
+
+        let related = FxHashMap::default(); // Placeholder for related logic
+
+        let deficiency = FxHashMap::default(); // Placeholder for deficiency logic
+
+        (divergence, convergence, related, deficiency)
     }
 }
 
