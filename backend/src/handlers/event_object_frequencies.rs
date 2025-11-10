@@ -3,6 +3,7 @@ use crate::core::event_object_frequencies::{
 };
 
 use crate::models::ocel::OCEL;
+use crate::traits::import_export::ImportableFromPath;
 use axum::{
     extract::Path as AxumPath,
     http::StatusCode,
@@ -16,35 +17,13 @@ use uuid::Uuid;
 /// GET /v1/event_object_frequencies/histogram/:file_id
 /// Returns: JSON object containing event-object frequency histograms
 pub async fn get_event_object_frequencies(
-    AxumPath(ocel_file_id): AxumPath<String>,
-) -> impl IntoResponse {
-    let ocel_path = format!("./temp/ocel_v2_{}.json", ocel_file_id);
-
-    let ocel_data: String = match tokio_fs::read_to_string(&ocel_path).await {
-        Ok(s) => s,
-        Err(e) => {
-            return (
-                StatusCode::NOT_FOUND,
-                format!("OCEL not found at {}: {}", ocel_path, e),
-            )
-                .into_response();
-        }
-    };
-
-    let ocel: OCEL = match serde_json::from_str(&ocel_data) {
-        Ok(o) => o,
-        Err(e) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                format!("Failed to parse OCEL JSON ({}): {}", ocel_path, e),
-            )
-                .into_response();
-        }
-    };
+    AxumPath(file_id): AxumPath<String>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let ocel = OCEL::import_from_path(&file_id).await?;
 
     let histogram = build_event_object_histograms(&ocel);
 
-    (StatusCode::OK, AxumJson(histogram)).into_response()
+    Ok(axum::Json(histogram))
 }
 
 /// POST /v1/event_object_frequencies/histogram_filter/:file_id
@@ -52,30 +31,9 @@ pub async fn get_event_object_frequencies(
 /// Returns: array of ids, each corresonding to one stored OCEL per provided filter mask
 pub async fn post_ocel_filter(
     AxumPath(ocel_file_id): AxumPath<String>,
-    AxumJson(selection_json): AxumJson<Value>,
-) -> Result<AxumJson<Vec<String>>, (StatusCode, String)> {
-    let ocel_path = format!("./temp/ocel_v2_{}.json", ocel_file_id);
-
-    // 1. Load the OCEL
-    let ocel_data: String = match tokio_fs::read_to_string(&ocel_path).await {
-        Ok(s) => s,
-        Err(e) => {
-            return Err((
-                StatusCode::NOT_FOUND,
-                format!("OCEL not found at {}: {}", ocel_path, e),
-            ));
-        }
-    };
-
-    let ocel: OCEL = match serde_json::from_str(&ocel_data) {
-        Ok(o) => o,
-        Err(e) => {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                format!("Failed to parse OCEL JSON {}: {}", ocel_path, e),
-            ));
-        }
-    };
+    AxumJson(selection_json): AxumJson<serde_json::Value>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let ocel = OCEL::import_from_path(&ocel_file_id).await?;
 
     // 2. Call filtering function
     let filtered_ocels = match serde_json::to_string(&selection_json) {
