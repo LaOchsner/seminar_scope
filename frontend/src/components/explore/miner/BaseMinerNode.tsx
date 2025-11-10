@@ -19,10 +19,11 @@ interface MinerNodeProps {
     dropdownOptions: BaseExploreNodeDropdownOption[];
     isLoading: boolean;
     onDropdownAction?: (action: BaseExploreNodeDropdownActionType) => void;
+    customContent?: React.ReactNode;
 }
 
 const BaseMinerNode = memo<MinerNodeProps>((props) => {
-    const { id, selected, data, title, iconName, handleOptions, dropdownOptions, isLoading, onDropdownAction } = props;
+    const { id, selected, data, title, iconName, handleOptions, dropdownOptions, isLoading, onDropdownAction, customContent } = props;
     const { assets } = data;
 
     const renderFileContent = () => {
@@ -86,7 +87,7 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
             handleOptions={handleOptions}
             dropdownOptions={dropdownOptions}
             onDropdownAction={onDropdownAction}
-            customContent={renderFileContent()}
+            customContent={customContent || renderFileContent()}
         />
     );
 });

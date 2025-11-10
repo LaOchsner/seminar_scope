@@ -9,10 +9,14 @@
 export const fileNodeTypes = ['ocptFileNode', 'ocelFileNode'] as const;
 export type ExploreFileNodeType = (typeof fileNodeTypes)[number];
 
-export const visualizationNodeTypes = ['ocptVisualizationNode', 'lbofVisualizationNode', 'eventGraphVisualizationNode'] as const;
+export const visualizationNodeTypes = [
+    'ocptVisualizationNode',
+    'lbofVisualizationNode',
+    'eventGraphVisualizationNode',
+] as const;
 export type ExploreVisualizationNodeType = (typeof visualizationNodeTypes)[number];
 
-export const minerNodeTypes = ['ocptMinerNode'] as const;
+export const minerNodeTypes = ['ocptMinerNode', 'caseNotionMinerNode'] as const;
 export type ExploreMinerNodeType = (typeof minerNodeTypes)[number];
 
 export type ExploreNodeType = ExploreFileNodeType | ExploreVisualizationNodeType | ExploreMinerNodeType;

@@ -61,6 +61,9 @@ const ExploreSidebar: React.FC<ExploreSidebarProps> = ({}) => {
                             <SidebarMenuItem className="ml-1">
                                 <DndCard title="OCPT Miner" Icon={TreePine} nodeType="ocptMinerNode" />
                             </SidebarMenuItem>
+                            <SidebarMenuItem className="ml-1">
+                                <DndCard title="CN Miner" Icon={TreePine} nodeType="caseNotionMinerNode" />
+                            </SidebarMenuItem>
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
