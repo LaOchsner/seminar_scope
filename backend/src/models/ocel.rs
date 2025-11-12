@@ -1,3 +1,4 @@
+use process_mining::object_centric::object_centric_dfg_struct::OCDirectlyFollowsGraph;
 use crate::traits::import_export::ImportableFromPath;
 use async_trait::async_trait;
 use axum::http::StatusCode;
@@ -15,15 +16,16 @@ use std::collections::{BTreeMap, BTreeSet};
 
 
 
+
 pub trait OCELUtils {
     fn detect_diverging_object_types(&self) -> FxHashMap<String, FxHashSet<String>>;
     fn get_related_object_types_for_activity(&self, activity: &String) -> FxHashSet<String>;
     // if more than one pattern is to be detected, return as tuple for better efficiency
     fn get_interaction_patterns(&self) -> (
-        FxHashMap<String, FxHashSet<String>>, //divergence
-        FxHashMap<String, FxHashSet<String>>, //convergence
-        FxHashMap<String, FxHashSet<String>>, //related
-        FxHashMap<String, FxHashSet<String>>, //deficiency
+        FxHashMap<String,  FxHashSet<String>>, //divergence
+        FxHashMap<String,  FxHashSet<String>>, //convergence
+        FxHashMap<String,  FxHashSet<String>>, //related
+        FxHashMap<String,  FxHashSet<String>>, //deficiency
     );
 }
 
@@ -64,131 +66,288 @@ impl OCELUtils for OCEL {
     }
 
     fn get_interaction_patterns(&self) -> (
-        FxHashMap<String, FxHashSet<String>>, // divergence
-        FxHashMap<String, FxHashSet<String>>, // convergence
-        FxHashMap<String, FxHashSet<String>>, // related
-        FxHashMap<String, FxHashSet<String>>, // deficiency
+        FxHashMap<String,  FxHashSet<String>>, // divergence
+        FxHashMap<String,  FxHashSet<String>>, // convergence
+        FxHashMap<String,  FxHashSet<String>>, // related
+        FxHashMap<String,  FxHashSet<String>>, // deficiency
     ) {
-        let mut divergence: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
-        let mut convergence: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
-        let mut related: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
-        let mut deficiency: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
 
-        let obj_id_to_type = map_object_id_to_type(&self.objects);
-        let unique_object_types: FxHashSet<String> =
-            self.object_types.iter().map(|o| o.name.clone()).collect();
+        let locel = IndexLinkedOCEL::from_ocel(self.clone());
 
-        let unique_activities: FxHashSet<String> =
-            self.event_types.iter().map(|e| e.name.clone()).collect();
+        let directly_follows_graph: OCDirectlyFollowsGraph<'_> =
+            OCDirectlyFollowsGraph::create_from_locel(&locel);
 
-        let event_identifiers = build_event_identifiers(
-            &self.events,
-            &obj_id_to_type,
-            &unique_object_types,
-        );
+        // Sets up the result FxHashMaps
+        let mut start_ev_type_per_ob_type: FxHashMap<String,  FxHashSet<String>> = FxHashMap::default();
+        let mut end_ev_type_per_ob_type: FxHashMap<String,  FxHashSet<String>> = FxHashMap::default();
+        let mut directly_follows_ev_types_per_ob_type: FxHashMap<
+            String,
+             FxHashSet<(String, String)>,
+        > = FxHashMap::default();
+        let mut related_ev_type_per_ob_type: FxHashMap<String,  FxHashSet<String>> =
+            FxHashMap::default();
+        let mut divergent_ev_type_per_ob_type: FxHashMap<String,  FxHashSet<String>> =
+            FxHashMap::default();
+        let mut convergent_ev_type_per_ob_type: FxHashMap<String,  FxHashSet<String>> =
+            FxHashMap::default();
+        let mut deficient_ev_type_per_ob_type: FxHashMap<String,  FxHashSet<String>> =
+            FxHashMap::default();
+        let mut optional_ev_type_per_ob_type: FxHashMap<String,  FxHashSet<String>> =
+            FxHashMap::default();
 
-        use rayon::prelude::*;
+        // Extracts the DFG information
+        locel.get_ob_types().for_each(|ob_type| {
+            let ev_type_dfg = directly_follows_graph
+                .object_type_to_dfg
+                .get(ob_type)
+                .unwrap();
 
-        // prepare base maps for all activity types
-        for activity in &unique_activities {
-            divergence.insert(activity.clone(), FxHashSet::default());
-            convergence.insert(activity.clone(), FxHashSet::default());
-            related.insert(activity.clone(), FxHashSet::default());
-            deficiency.insert(activity.clone(), FxHashSet::default());
-        }
+            start_ev_type_per_ob_type
+                .insert(ob_type.to_string(), ev_type_dfg.start_activities.iter().cloned().collect());
+            end_ev_type_per_ob_type.insert(ob_type.to_string(), ev_type_dfg.end_activities.iter().cloned().collect());
 
-        // compute all pattern detections in one pass
-        let pattern_results: Vec<(String, String, bool, bool, bool, bool)> = unique_activities
-            .par_iter()
-            .flat_map(|activity_ref| {
-                unique_object_types
-                    .par_iter()
-                    .map(|object_type_ref| {
-                        // --- shared grouping logic ---
-                        let mut groups: BTreeMap<
-                            BTreeSet<String>,
-                            FxHashSet<BTreeSet<String>>,
-                        > = BTreeMap::new();
+            let ev_type_directly_follows:  FxHashSet<(String, String)> = ev_type_dfg
+                .directly_follows_relations
+                .keys()
+                .map(|(from, to)| (from.to_string(), to.to_string()))
+                .collect();
+            directly_follows_ev_types_per_ob_type
+                .insert(ob_type.to_string(), ev_type_directly_follows);
 
-                        for (
-                            _event_id,
-                            (event_activity, event_all_objects, event_type_specific_map),
-                        ) in &event_identifiers
-                        {
-                            if event_activity == activity_ref {
-                                if let Some(specific_objects) =
-                                    event_type_specific_map.get(object_type_ref)
-                                {
-                                    if !specific_objects.is_empty() {
-                                        groups
-                                            .entry(specific_objects.clone())
-                                            .or_insert_with(FxHashSet::default)
-                                            .insert(event_all_objects.clone());
-                                    }
-                                }
-                            }
-                        }
+            let ev_types:  FxHashSet<String> = locel
+                .get_ev_types()
+                .map(|event_type| event_type.to_string())
+                .collect();
 
-                        // --- pattern detection ---
-                        // placeholder flags (can extend these later)
-                        let mut diverges = false;
-                        let mut converges = false;
-                        let mut relates = false;
-                        let mut deficient = false;
+            related_ev_type_per_ob_type.insert(ob_type.to_string(), ev_types.clone());
+            divergent_ev_type_per_ob_type.insert(ob_type.to_string(),  FxHashSet::default());
+            convergent_ev_type_per_ob_type.insert(ob_type.to_string(),  FxHashSet::default());
+            deficient_ev_type_per_ob_type.insert(ob_type.to_string(),  FxHashSet::default());
+            optional_ev_type_per_ob_type.insert(ob_type.to_string(),  FxHashSet::default());
+        });
 
-                        // divergence: same as before
-                        for (_specific_set, overall_sets) in &groups {
-                            if overall_sets.len() > 1 {
-                                diverges = true;
-                                break;
-                            }
-                        }
+        locel.get_ev_types().for_each(|ev_type| {
+            let ev_type_e2o_relations:  FxHashSet<(&EventIndex, &ObjectIndex)> = locel
+                .get_evs_of_type(ev_type)
+                .flat_map(|ev_index| {
+                    locel
+                        .get_e2o(ev_index)
+                        .map(move |(_, ob_index)| (ev_index, ob_index))
+                })
+                .collect();
 
-                        // TODO: add convergence / related / deficiency logic here later
-
-                        (
-                            activity_ref.clone(),
-                            object_type_ref.clone(),
-                            diverges,
-                            converges,
-                            relates,
-                            deficient,
-                        )
+            locel.get_ob_types().for_each(|ob_type| {
+                let ob_type_e2o_relations:  FxHashSet<(&EventIndex, &ObjectIndex)> = locel
+                    .get_obs_of_type(ob_type)
+                    .flat_map(|ob_index| {
+                        locel
+                            .get_e2o_rev(ob_index)
+                            .map(move |(_, ev_index)| (ev_index, ob_index))
                     })
-                    .collect::<Vec<_>>()
-            })
-            .collect();
+                    .collect::<FxHashSet<(&EventIndex, &ObjectIndex)>>();
 
-        // merge into maps
-        for (activity, object_type, diverges, converges, relates, deficient) in pattern_results {
-            if diverges {
-                divergence
-                    .entry(activity.clone())
-                    .or_insert_with(FxHashSet::default)
-                    .insert(object_type.clone());
-            }
-            if converges {
-                convergence
-                    .entry(activity.clone())
-                    .or_insert_with(FxHashSet::default)
-                    .insert(object_type.clone());
-            }
-            if relates {
-                related
-                    .entry(activity.clone())
-                    .or_insert_with(FxHashSet::default)
-                    .insert(object_type.clone());
-            }
-            if deficient {
-                deficiency
-                    .entry(activity.clone())
-                    .or_insert_with(FxHashSet::default)
-                    .insert(object_type.clone());
-            }
-        }
+                let ev_ob_type_e2o_relations:  FxHashSet<&(&EventIndex, &ObjectIndex)> =
+                    ob_type_e2o_relations
+                        .intersection(&ev_type_e2o_relations)
+                        .collect::<FxHashSet<_>>();
 
-        (divergence, convergence, related, deficiency)
+                let unique_ev_count_e2o = ev_type_e2o_relations
+                    .iter()
+                    .map(|&(ev_index, _)| ev_index)
+                    .collect::<FxHashSet<_>>()
+                    .len();
+
+                let unique_ev_count_e2o_rev = ev_ob_type_e2o_relations
+                    .iter()
+                    .map(|&(ev_index, _)| ev_index)
+                    .collect::<FxHashSet<_>>()
+                    .len();
+
+                if unique_ev_count_e2o != unique_ev_count_e2o_rev {
+                    if unique_ev_count_e2o_rev == 0 {
+                        related_ev_type_per_ob_type
+                            .get_mut(ob_type)
+                            .unwrap()
+                            .remove(&ev_type.to_string());
+                    } else if unique_ev_count_e2o_rev < unique_ev_count_e2o {
+                        deficient_ev_type_per_ob_type
+                            .get_mut(ob_type)
+                            .unwrap()
+                            .insert(ev_type.to_string());
+                    }
+                }
+
+                let num_of_obj_with_ob_type = locel.get_obs_of_type(ob_type).count();
+                let num_of_obj_with_ob_and_ev_type = ev_ob_type_e2o_relations
+                    .iter()
+                    .map(|&&(_, ob_index)| ob_index)
+                    .collect::<FxHashSet<_>>()
+                    .len();
+
+                if num_of_obj_with_ob_type > num_of_obj_with_ob_and_ev_type
+                    && related_ev_type_per_ob_type
+                        .get(ob_type)
+                        .unwrap()
+                        .contains(&ev_type.to_string())
+                {
+                    optional_ev_type_per_ob_type
+                        .get_mut(ob_type)
+                        .unwrap()
+                        .insert(ev_type.to_string());
+                }
+
+                if is_convergent_locel(&locel, &ev_ob_type_e2o_relations, ob_type) {
+                    convergent_ev_type_per_ob_type
+                        .get_mut(ob_type)
+                        .unwrap()
+                        .insert(ev_type.to_string());
+                }
+
+                if is_divergent_locel(&locel, &ev_ob_type_e2o_relations, ob_type) {
+                    divergent_ev_type_per_ob_type
+                        .get_mut(ob_type)
+                        .unwrap()
+                        .insert(ev_type.to_string());
+                }
+            });
+        });
+
+        return (
+            divergent_ev_type_per_ob_type,
+            convergent_ev_type_per_ob_type,
+            related_ev_type_per_ob_type,
+            deficient_ev_type_per_ob_type,
+        );
     }
+
+    // incomplete implementation for all patterns
+    // if current version too slow, revisit!
+    // fn get_interaction_patterns(&self) -> (
+    //     FxHashMap<String, FxHashSet<String>>, // divergence
+    //     FxHashMap<String, FxHashSet<String>>, // convergence
+    //     FxHashMap<String, FxHashSet<String>>, // related
+    //     FxHashMap<String, FxHashSet<String>>, // deficiency
+    // ) {
+    //     let mut divergence: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
+    //     let mut convergence: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
+    //     let mut related: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
+    //     let mut deficiency: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
+
+    //     let obj_id_to_type = map_object_id_to_type(&self.objects);
+    //     let unique_object_types: FxHashSet<String> =
+    //         self.object_types.iter().map(|o| o.name.clone()).collect();
+
+    //     let unique_activities: FxHashSet<String> =
+    //         self.event_types.iter().map(|e| e.name.clone()).collect();
+
+    //     let event_identifiers = build_event_identifiers(
+    //         &self.events,
+    //         &obj_id_to_type,
+    //         &unique_object_types,
+    //     );
+
+    //     use rayon::prelude::*;
+
+    //     // prepare base maps for all activity types
+    //     for activity in &unique_activities {
+    //         divergence.insert(activity.clone(), FxHashSet::default());
+    //         convergence.insert(activity.clone(), FxHashSet::default());
+    //         related.insert(activity.clone(), FxHashSet::default());
+    //         deficiency.insert(activity.clone(), FxHashSet::default());
+    //     }
+
+    //     // compute all pattern detections in one pass
+    //     let pattern_results: Vec<(String, String, bool, bool, bool, bool)> = unique_activities
+    //         .par_iter()
+    //         .flat_map(|activity_ref| {
+    //             unique_object_types
+    //                 .par_iter()
+    //                 .map(|object_type_ref| {
+    //                     // --- shared grouping logic ---
+    //                     let mut groups: BTreeMap<
+    //                         BTreeSet<String>,
+    //                         FxHashSet<BTreeSet<String>>,
+    //                     > = BTreeMap::new();
+
+    //                     for (
+    //                         _event_id,
+    //                         (event_activity, event_all_objects, event_type_specific_map),
+    //                     ) in &event_identifiers
+    //                     {
+    //                         if event_activity == activity_ref {
+    //                             if let Some(specific_objects) =
+    //                                 event_type_specific_map.get(object_type_ref)
+    //                             {
+    //                                 if !specific_objects.is_empty() {
+    //                                     groups
+    //                                         .entry(specific_objects.clone())
+    //                                         .or_insert_with(FxHashSet::default)
+    //                                         .insert(event_all_objects.clone());
+    //                                 }
+    //                             }
+    //                         }
+    //                     }
+
+    //                     // --- pattern detection ---
+    //                     // placeholder flags (can extend these later)
+    //                     let mut diverges = false;
+    //                     let mut converges = false;
+    //                     let mut relates = false;
+    //                     let mut deficient = false;
+
+    //                     // divergence: same as before
+    //                     for (_specific_set, overall_sets) in &groups {
+    //                         if overall_sets.len() > 1 {
+    //                             diverges = true;
+    //                             break;
+    //                         }
+    //                     }
+
+    //                     // TODO: add convergence / related / deficiency logic here later
+
+    //                     (
+    //                         activity_ref.clone(),
+    //                         object_type_ref.clone(),
+    //                         diverges,
+    //                         converges,
+    //                         relates,
+    //                         deficient,
+    //                     )
+    //                 })
+    //                 .collect::<Vec<_>>()
+    //         })
+    //         .collect();
+
+    //     // merge into maps
+    //     for (activity, object_type, diverges, converges, relates, deficient) in pattern_results {
+    //         if diverges {
+    //             divergence
+    //                 .entry(activity.clone())
+    //                 .or_insert_with(FxHashSet::default)
+    //                 .insert(object_type.clone());
+    //         }
+    //         if converges {
+    //             convergence
+    //                 .entry(activity.clone())
+    //                 .or_insert_with(FxHashSet::default)
+    //                 .insert(object_type.clone());
+    //         }
+    //         if relates {
+    //             related
+    //                 .entry(activity.clone())
+    //                 .or_insert_with(FxHashSet::default)
+    //                 .insert(object_type.clone());
+    //         }
+    //         if deficient {
+    //             deficiency
+    //                 .entry(activity.clone())
+    //                 .or_insert_with(FxHashSet::default)
+    //                 .insert(object_type.clone());
+    //         }
+    //     }
+
+    //     (divergence, convergence, related, deficiency)
+    // }
 
 }
 
@@ -414,6 +573,78 @@ pub fn objects_to_id_list(objects: &[OCELObject]) -> Vec<String> {
     objects.iter().map(|object| object.id.clone()).collect()
 }
 
+
+///
+/// Finds an object type to be convergent if there is an event that has an e2o relation to two
+/// objects with the same object type
+///
+pub fn is_convergent_locel(
+    locel: &IndexLinkedOCEL,
+    ev_ob_type_e2o_relations: &FxHashSet<&(&EventIndex, &ObjectIndex)>,
+    ob_type: &str,
+) -> bool {
+    let mut object_index_to_event_indices = FxHashSet::default();
+
+    for &&(ev_index, ob_index) in ev_ob_type_e2o_relations {
+        if locel.get_ob(ob_index).object_type.eq(ob_type) {
+            if object_index_to_event_indices.contains(&ev_index) {
+                return true;
+            }
+
+            object_index_to_event_indices.insert(ev_index);
+        }
+    }
+    false
+}
+
+///
+/// An object type is checked to be divergent if an object of the given type is related to
+/// multiple events
+///
+pub fn is_divergent_locel(
+    locel: &IndexLinkedOCEL,
+    ev_ob_type_e2o_relations: &FxHashSet<&(&EventIndex, &ObjectIndex)>,
+    ob_type: &str,
+) -> bool {
+    let mut object_index_to_event_indices = FxHashMap::default();
+
+    ev_ob_type_e2o_relations
+        .iter()
+        .for_each(|&&(ev_index, ob_index)| {
+            object_index_to_event_indices
+                .entry(ob_index)
+                .or_insert_with(|| FxHashSet::default())
+                .insert(ev_index);
+        });
+
+    for (_, ev_indices) in object_index_to_event_indices {
+        if ev_indices.len() > 1 {
+            let ob_indices_of_ev_indices = ev_indices
+                .iter()
+                .map(|&ev_index| {
+                    locel
+                        .get_e2o_set(ev_index)
+                        .iter()
+                        .filter(|&ob_index| !locel.get_ob(ob_index).object_type.eq(ob_type))
+                        .collect::<FxHashSet<&ObjectIndex>>()
+                })
+                .collect::<Vec<_>>();
+
+            let mut ob_indices_of_ev_indices_iter = ob_indices_of_ev_indices.into_iter();
+            let reference_set = ob_indices_of_ev_indices_iter.next().unwrap();
+
+            for curr_set in ob_indices_of_ev_indices_iter {
+                if !reference_set.eq(&curr_set) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    false
+}
+
+
 /// Implementation of [`ImportableFromPath`] for [`OCEL`].
 ///
 /// This implementation constructs the file path using a standard naming pattern:
@@ -431,4 +662,33 @@ impl ImportableFromPath for OCEL {
         let path = format!("./temp/ocel_v2_{}.json", file_id);
         Self::from_json_file(&path).await
     }
+}
+
+
+
+
+
+#[tokio::test]
+async fn test_interaction_patterns_and_divergence() {
+    // Import OCEL from path
+    let ocel = match OCEL::import_from_path("7c614a32-892f-45d5-a908-0f25d565f8a4").await {
+        Ok(log) => log,
+        Err((status, msg)) => {
+            eprintln!("❌ Failed to import OCEL: {} - {}", status, msg);
+            panic!("Import failed");
+        }
+    };
+
+    // Detect diverging object types
+    let divergence = ocel.detect_diverging_object_types();
+    println!("Diverging object types:\n{:#?}", divergence);
+
+    // Detect all interaction patterns
+    let (div, conv, rel, def) = ocel.get_interaction_patterns();
+
+    println!("=== Interaction Patterns ===");
+    println!("Divergence:\n{:#?}", div);
+    println!("Convergence:\n{:#?}", conv);
+    println!("Related:\n{:#?}", rel);
+    println!("Deficiency:\n{:#?}", def);
 }
