@@ -29,6 +29,7 @@ impl OCELUtils for OCEL {
         let obj_id_to_type = map_object_id_to_type(&self.objects);
         let unique_object_types: FxHashSet<String> =
             self.object_types.iter().map(|o| o.name.clone()).collect();
+            
         let unique_activities: FxHashSet<String> =
             self.event_types.iter().map(|e| e.name.clone()).collect();
 
@@ -41,9 +42,6 @@ impl OCELUtils for OCEL {
                 arcs.insert((event_id.clone(), object_id.clone()));
             }
         }
-
-        let mut sorted_object_types: Vec<String> = unique_object_types.iter().cloned().collect();
-        sorted_object_types.sort_unstable();
 
         let divergence_map = detect_diverging_object_types(
             &event_identifiers,
