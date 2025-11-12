@@ -18,6 +18,7 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
+use rayon::prelude::*;
 use rustc_hash::{FxHashMap, FxHashSet};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -654,32 +655,32 @@ pub async fn get_case_ocel(Path(case_notion_file_id): Path<String>) -> impl Into
         .map(|object| (object.id.as_str(), &object.id))
         .collect();
 
-    let mut case_ocels = Vec::with_capacity(case_notion.len());
-
-    for (event_ids, object_ids, _) in &case_notion {
-        let mut event_refs: FxHashSet<&String> = FxHashSet::default();
-        for event_id in event_ids {
-            if let Some(id_ref) = event_id_refs.get(event_id.as_str()) {
-                event_refs.insert(*id_ref);
+    let case_ocels: Vec<OCEL> = case_notion
+        .par_iter()
+        .map(|(event_ids, object_ids, _)| {
+            let mut event_refs: FxHashSet<&String> = FxHashSet::default();
+            for event_id in event_ids {
+                if let Some(id_ref) = event_id_refs.get(event_id.as_str()) {
+                    event_refs.insert(*id_ref);
+                }
             }
-        }
 
-        let mut object_refs: FxHashSet<&String> = FxHashSet::default();
-        for object_id in object_ids {
-            if let Some(id_ref) = object_id_refs.get(object_id.as_str()) {
-                object_refs.insert(*id_ref);
+            let mut object_refs: FxHashSet<&String> = FxHashSet::default();
+            for object_id in object_ids {
+                if let Some(id_ref) = object_id_refs.get(object_id.as_str()) {
+                    object_refs.insert(*id_ref);
+                }
             }
-        }
 
-        let case_ocel = build_case(
-            &ocel,
-            &event_refs,
-            &object_refs,
-            &event_lookup,
-            &object_lookup,
-        );
-        case_ocels.push(case_ocel);
-    }
+            build_case(
+                &ocel,
+                &event_refs,
+                &object_refs,
+                &event_lookup,
+                &object_lookup,
+            )
+        })
+        .collect();
     let object_type = match case_kind {
         CaseKind::Advanced | CaseKind::Traditional => persisted_object_type,
         CaseKind::ConnectedComponents | CaseKind::Generic => None,
