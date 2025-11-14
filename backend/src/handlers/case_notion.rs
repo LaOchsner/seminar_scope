@@ -23,7 +23,6 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tokio::fs;
-use std::time::Instant;
 use uuid::Uuid;
 
 type RawCaseNotionEntry = (Vec<String>, Vec<String>, Vec<(String, String)>);
@@ -441,7 +440,6 @@ pub async fn get_traditional_case_notion(
 ) -> impl IntoResponse {
     let selection = ObjectTypeSelection::from_query_param(query.object_type.clone());
     let requested_case_notion_file_id = query.case_notion_file_id.clone();
-    let timer = Instant::now();
     let ocel = match OCEL::import_from_path(&file_id).await {
         Ok(ocel) => ocel,
         Err((status, message)) => return (status, message).into_response(),
@@ -494,13 +492,6 @@ pub async fn get_traditional_case_notion(
         graph: partitioned_graph,
         case_notion_file_id: Some(case_notion_file_id),
     };
-
-    let elapsed = timer.elapsed();
-    log::info!(
-        "traditional case notion for file {} completed in {:.2} seconds",
-        file_id,
-        elapsed.as_secs_f64()
-    );
 
     (StatusCode::OK, Json(response)).into_response()
 }
