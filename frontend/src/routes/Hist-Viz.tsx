@@ -15,7 +15,7 @@ import { HistogramChart } from '~/components/HistogramChart';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useSetFilteredHistogramMutation } from '~/services/mutation';
 import { useGetHistogram } from '~/services/queries';
-import { BaseExploreNodeAsset } from '~/types/explore';
+import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import '~/styles/hist-viz.css';
 import type { HistogramEntry } from '~/types';
 

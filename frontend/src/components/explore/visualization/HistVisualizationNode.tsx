@@ -6,9 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '~/components/ui/button';
 import BaseVisualizationNode from '~/components/explore/visualization/BaseVisualizationNode';
 import { useExploreFlowStore } from '~/stores/exploreStore';
-import type { TVisualizationNode } from '~/types/explore';
+import { VisualizationNode } from '~/types/explore/nodes';
 
-const HistVisualizationNode = memo<NodeProps<TVisualizationNode>>((node) => {
+const HistVisualizationNode = memo<NodeProps<VisualizationNode>>((node) => {
     const navigate = useNavigate();
     const { updateNodeData } = useExploreFlowStore();
     const { id, data: nodeData } = node;
