@@ -21,7 +21,7 @@ use uuid::Uuid;
 
 
 pub trait OCELUtils {
-    fn detect_diverging_object_types(&self) -> FxHashMap<String, FxHashSet<String>>;
+    fn detect_diverging_object_types(&self) -> FxHashMap<String, FxHashSet<String>>; // ! WRONG ORDER (required by df2)
     fn get_related_object_types_for_activity(&self, activity: &String) -> FxHashSet<String>;
     // if more than one pattern is to be detected, return as tuple for better efficiency
     fn get_interaction_patterns(&self) -> (
