@@ -1,6 +1,7 @@
 import axios, { type AxiosResponse } from 'axios';
 import type { ExtendedFile } from '~/types/fileObject.types';
 import { JSONSchema } from '~/types/ocpt/ocpt.types';
+import { CaseNotionApiResponse } from '~/types/case_notion.types';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_BACKEND_BASE_URL,
@@ -83,7 +84,7 @@ export const getConformance = async (fileId1: string, fileId2: string) => {
     return response.data;
 };
 
-export const getOcelObjectTypes = async (fileId: string) => {
+export const getOcelObjectTypes = async (fileId: string): Promise<CaseNotionApiResponse> => {
     const response = await api.get(`v1/objects/ocel/types/${fileId}`);
     return response.data;
 };

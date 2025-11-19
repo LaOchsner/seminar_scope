@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { Pickaxe } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import {
     Dialog,
@@ -19,7 +20,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '~/components/ui/select';
-import { getAdvancedCN, getConnectedComponentsCN, getOcelObjectTypes, getTraditionalCN } from '~/services/api';
+import { getAdvancedCN, getConnectedComponentsCN, getTraditionalCN } from '~/services/api';
+import { useGetOcelObjectTypes } from '~/services/queries';
 
 interface CaseNotionDialogProps {
     fileId: string | null;
@@ -28,6 +30,8 @@ interface CaseNotionDialogProps {
 
 const CaseNotionDialog = ({ fileId, fileName }: CaseNotionDialogProps) => {
     const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('');
+
+    const { data: ocelObjectTypesData } = useGetOcelObjectTypes(fileId);
 
     const { mutate, isPending, data } = useMutation({
         mutationFn: async (algorithm: string) => {
@@ -55,8 +59,10 @@ const CaseNotionDialog = ({ fileId, fileName }: CaseNotionDialogProps) => {
         },
     });
 
-    const handleMineClick = () => {
-        if (fileId) console.log(getOcelObjectTypes(fileId));
+    const handleMineClick = async () => {
+        if (ocelObjectTypesData) {
+            console.log(ocelObjectTypesData.object_types);
+        }
 
         if (selectedAlgorithm) {
             mutate(selectedAlgorithm);
@@ -107,13 +113,22 @@ const CaseNotionDialog = ({ fileId, fileName }: CaseNotionDialogProps) => {
                                 <SelectContent>
                                     <SelectGroup>
                                         <SelectLabel>Object Types</SelectLabel>
-                                        <SelectItem value="traditional">Traditional</SelectItem>
-                                        <SelectItem value="generic">Generic</SelectItem>
-                                        <SelectItem value="advanced">Advanced</SelectItem>
-                                        <SelectItem value="connected-component">Connected Component</SelectItem>
+                                        {ocelObjectTypesData?.object_types.map((objectType) => (
+                                            <SelectItem key={objectType.name} value={objectType.name}>
+                                                {objectType.name}
+                                            </SelectItem>
+                                        ))}
                                     </SelectGroup>
                                 </SelectContent>
                             </Select>
+                            <Button
+                                variant={'outline'}
+                                onClick={handleMineClick}
+                                disabled={!selectedAlgorithm || isPending}
+                                className="h-10 w-10 ml-2"
+                            >
+                                {isPending ? 'd' : <Pickaxe />}
+                            </Button>
                         </div>
                         <p className="font-bold mt-6">Measures</p>
                         {data && data.measures && data.measures.length > 0 && (
@@ -149,11 +164,7 @@ const CaseNotionDialog = ({ fileId, fileName }: CaseNotionDialogProps) => {
                         )}
                     </div>
                 </div>
-                <DialogFooter className="">
-                    <Button variant={'outline'} onClick={handleMineClick} disabled={!selectedAlgorithm || isPending}>
-                        {isPending ? 'Mining...' : 'Mine Case Notions'}
-                    </Button>
-                </DialogFooter>
+                <DialogFooter className=""></DialogFooter>
             </DialogContent>
         </Dialog>
     );
