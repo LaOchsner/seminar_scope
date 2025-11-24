@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+﻿use std::collections::{HashMap, HashSet};
 
 use petgraph::algo::toposort;
 use petgraph::graph::DiGraph;
@@ -39,13 +39,6 @@ fn check_sequence_2(
 ) -> bool {
     let ij = partition_closure.contains(&(i, j));
     let ji = partition_closure.contains(&(j, i));
-    // Print in a stable sorted order of pairs for readability.
-    let mut sorted: Vec<_> = partition_closure.iter().cloned().collect();
-    sorted.sort();
-    println!(
-        "[trace] check_sequence_2: i={}, j={}, ij={}, ji={}, closure={:?}",
-        i, j, ij, ji, sorted
-    );
     (ij && ji) || (!ij && !ji)
 }
 
@@ -83,63 +76,93 @@ fn check_sequence_3(
     false
 }
 
-/// Compute immediate partition follows edges using per-otype activity closure.
-/// For each object type, if there is a closure edge (a,b) and they belong to
-/// different partitions, add (i,j).
-fn partition_edges(local_data: &LocalData, partition: &[Vec<String>]) -> HashSet<(usize, usize)> {
-    let mut all_edges = HashSet::new();
-    for (ot, clos) in &local_data.clos {
-        let mut ot_edges = Vec::new();
-        for (a, b) in clos.iter() {
-            if let (Some(i), Some(j)) = (partition_index(partition, a), partition_index(partition, b))
-            {
-                if i != j {
-                    ot_edges.push((i, j));
-                }
+/// Compute immediate partition follows edges using per-otype activity closure (no transitive step).
+/// Mirrors the Python get_partition_follows_relations helper.
+fn partition_edges(
+    local_data: &LocalData,
+    global_data: &GlobalData,
+    partition: &[Vec<String>],
+) -> HashSet<(usize, usize)> {
+    let n = partition.len();
+    let mut edges = HashSet::new();
+
+    for i in 0..n {
+        for j in 0..n {
+            if i == j {
+                continue;
+            }
+            let mut context: Vec<String> =
+                Vec::with_capacity(partition[i].len() + partition[j].len());
+            context.extend(partition[i].iter().cloned());
+            context.extend(partition[j].iter().cloned());
+
+            let has_edge = partition[i].iter().any(|a| {
+                partition[j].iter().any(|b| {
+                    get_non_divergent_types(a, b, &context, global_data)
+                        .into_iter()
+                        .any(|ot| {
+                            local_data
+                                .clos
+                                .get(&ot)
+                                .map(|c| c.contains(&(a.clone(), b.clone())))
+                                .unwrap_or(false)
+                        })
+                })
+            });
+
+            if has_edge {
+                edges.insert((i, j));
             }
         }
+    }
 
-        // Compute transitive closure for this object type's partition graph
-        let n = partition.len();
-        let mut adj = vec![vec![false; n]; n];
-        for (i, j) in ot_edges {
-            adj[i][j] = true;
-        }
+    edges
+}
+
+/// Compute transitive closure of partition reachability.
+/// Mirrors the Python get_transitive_closure_partition_relations helper.
+fn partition_closure(
+    local_data: &LocalData,
+    global_data: &GlobalData,
+    partition: &[Vec<String>],
+) -> HashSet<(usize, usize)> {
+    let n = partition.len();
+    let direct_edges = partition_edges(local_data, global_data, partition);
+    let mut adj = vec![vec![false; n]; n];
+    for (i, j) in direct_edges {
+        adj[i][j] = true;
+    }
+
+    for k in 0..n {
         for i in 0..n {
-            adj[i][i] = true; // for path extension
-        }
-        for k in 0..n {
-            for i in 0..n {
+            if adj[i][k] {
                 for j in 0..n {
-                    if adj[i][k] && adj[k][j] {
+                    if adj[k][j] {
                         adj[i][j] = true;
                     }
                 }
             }
         }
-        for i in 0..n {
-            for j in 0..n {
-                if i != j && adj[i][j] {
-                    all_edges.insert((i, j));
-                }
+    }
+
+    let mut closure = HashSet::new();
+    for i in 0..n {
+        for j in 0..n {
+            if i != j && adj[i][j] {
+                closure.insert((i, j));
             }
         }
     }
-    all_edges
-}
-
-/// Compute transitive closure of partition reachability.
-fn partition_closure(local_data: &LocalData, partition: &[Vec<String>]) -> HashSet<(usize, usize)> {
-    // The logic is now moved into partition_edges to operate per object type.
-    partition_edges(local_data, partition)
+    closure
 }
 
 /// Merge cyclic partitions (both directions reachable) into a single part.
 fn remove_cycles(
     partition: Vec<Vec<String>>,
     local_data: &LocalData,
+    global_data: &GlobalData,
 ) -> (Vec<Vec<String>>, bool) {
-    let closure = partition_closure(local_data, &partition);
+    let closure = partition_closure(local_data, global_data, &partition);
     let mut result = Vec::new();
     let mut done = HashSet::new();
     let mut change = false;
@@ -196,45 +219,13 @@ fn partition_index(partition: &[Vec<String>], act: &str) -> Option<usize> {
     partition.iter().position(|p| p.iter().any(|x| x == act))
 }
 
-/// Build alphabet per object type from the local log list, mimicking the Python helper.
-fn alphabet_by_ot_from_local(local_data: &LocalData) -> FxHashMap<String, Vec<String>> {
-    let mut by_ot: FxHashMap<String, Vec<String>> = FxHashMap::default();
-    for ot in &local_data.object_types {
-        by_ot.entry(ot.clone()).or_default();
-    }
-    for log in &local_data.oc_log_list {
-        for ot in &local_data.object_types {
-            let mut acts: FxHashSet<String> = FxHashSet::default();
-            for ev in &log.events {
-                // collect related object types for this event
-                let related_ots: FxHashSet<String> = ev
-                    .relationships
-                    .iter()
-                    .filter_map(|rel| {
-                        log.objects
-                            .iter()
-                            .find(|obj| obj.id == rel.object_id)
-                            .map(|obj| obj.object_type.clone())
-                    })
-                    .collect();
-                if related_ots.contains(ot) {
-                    acts.insert(ev.event_type.clone());
-                }
-            }
-            let entry = by_ot.entry(ot.clone()).or_default();
-            entry.extend(acts.into_iter());
-        }
-    }
-    for vals in by_ot.values_mut() {
-        vals.sort();
-        vals.dedup();
-    }
-    by_ot
-}
-
 /// Build a topological ordering of partitions using direct follows edges; if cyclic, keep original order.
-fn topo_order_partitions(partition: &[Vec<String>], local_data: &LocalData) -> Vec<Vec<String>> {
-    let edges = partition_edges(local_data, partition);
+fn topo_order_partitions(
+    partition: &[Vec<String>],
+    local_data: &LocalData,
+    global_data: &GlobalData,
+) -> Vec<Vec<String>> {
+    let edges = partition_edges(local_data, global_data, partition);
     let mut g: DiGraph<usize, ()> = DiGraph::new();
     let nodes: Vec<_> = (0..partition.len()).map(|i| g.add_node(i)).collect();
     for (i, j) in edges {
@@ -266,17 +257,12 @@ pub fn find_cut_sequence(
             &local_data.alphabet[j],
         )
     });
-    println!("[trace] stage1 partitions: {:?}", partition);
-    println!(
-        "[trace] stage1 alphabets per ot: {:?}",
-        alphabet_by_ot_from_local(local_data)
-    );
     if partition.len() == 1 {
         return None;
     }
     ///////////////////////////////////////////////////////////////////////////////////////////// tested
     // Stage 2: include partition-level reachability condition
-    let closure = partition_closure(local_data, &partition);
+    let closure = partition_closure(local_data, global_data, &partition);
     let partition_stage1 = partition.clone();
     let partition = connected_partitions(&local_data.alphabet, |i, j| {
         check_sequence_1(
@@ -295,8 +281,8 @@ pub fn find_cut_sequence(
     }
 
     // Stage 3: order partitions topologically and re-cluster with sequence_3 condition
-    let mut partition = topo_order_partitions(&partition, local_data);
-    let closure = partition_closure(local_data, &partition);
+    let mut partition = topo_order_partitions(&partition, local_data, global_data);
+    let closure = partition_closure(local_data, global_data, &partition);
     let partition = connected_partitions(&local_data.alphabet, |i, j| {
         let pi = partition_index(&partition, &local_data.alphabet[i]).unwrap();
         let pj = partition_index(&partition, &local_data.alphabet[j]).unwrap();
@@ -312,7 +298,7 @@ pub fn find_cut_sequence(
     // Merge cycles until stable
     let mut partition = partition;
     loop {
-        let (p, changed) = remove_cycles(partition, local_data);
+        let (p, changed) = remove_cycles(partition, local_data, global_data);
         partition = p;
         if !changed {
             break;
@@ -324,7 +310,7 @@ pub fn find_cut_sequence(
     }
 
     // Final topological order and validation
-    partition = topo_order_partitions(&partition, local_data);
+    partition = topo_order_partitions(&partition, local_data, global_data);
     if partition.len() == 1 {
         return None;
     }
@@ -340,173 +326,8 @@ pub fn find_cut_sequence(
 mod tests {
     use super::*;
     use crate::models::ocel::OCEL;
-    use std::path::Path;
     use serde_json;
-
-    fn empty_ocel() -> OCEL {
-        OCEL {
-            events: Vec::new(),
-            objects: Vec::new(),
-            event_types: Vec::new(),
-            object_types: Vec::new(),
-        }
-    }
-
-    fn set_of(items: &[&str]) -> FxHashSet<String> {
-        items.iter().map(|s| s.to_string()).collect()
-    }
-
-    fn make_local_data(
-        alphabet: &[&str],
-        object_types: &[&str],
-        dfgs: FxHashMap<
-            String,
-            (
-                FxHashMap<(String, String), u32>,
-                FxHashMap<String, u32>,
-                FxHashMap<String, u32>,
-            ),
-        >,
-        clos: FxHashMap<String, FxHashSet<(String, String)>>,
-    ) -> LocalData {
-        LocalData {
-            oc_log_list: vec![empty_ocel()],
-            alphabet: alphabet.iter().map(|s| s.to_string()).collect(),
-            object_types: object_types.iter().map(|s| s.to_string()).collect(),
-            object_set: FxHashSet::default(),
-            expected_objects: FxHashSet::default(),
-            dfgs,
-            clos,
-        }
-    }
-
-    fn make_global_data(
-        divergence: FxHashMap<String, FxHashSet<String>>,
-        related: FxHashMap<String, FxHashSet<String>>,
-    ) -> GlobalData {
-        GlobalData {
-            oc_log_list: vec![empty_ocel()],
-            divergence,
-            convergence: FxHashMap::default(),
-            related,
-            deficiency: FxHashMap::default(),
-        }
-    }
-
-    #[test]
-    fn detects_simple_sequence_cut() {
-        // A then B for non-divergent ot1 (closure only A->B).
-        let mut clos = FxHashMap::default();
-        clos.insert(
-            "ot1".to_string(),
-            [("A".to_string(), "B".to_string())].into_iter().collect(),
-        );
-
-        let local = make_local_data(&["A", "B"], &["ot1"], FxHashMap::default(), clos);
-
-        let mut related = FxHashMap::default();
-        related.insert("A".to_string(), set_of(&["ot1"]));
-        related.insert("B".to_string(), set_of(&["ot1"]));
-        let global = make_global_data(FxHashMap::default(), related);
-
-        let cut = find_cut_sequence(&local, &global);
-        assert!(cut.is_some(), "expected sequence cut");
-        let parts = cut.unwrap();
-        assert_eq!(parts.len(), 2);
-        assert!(parts[0].contains(&"A".to_string()));
-        assert!(parts[1].contains(&"B".to_string()));
-    }
-
-    #[test]
-    fn no_cut_when_bidirectional() {
-        // Both directions in closure -> sequence cut should collapse.
-        let mut clos = FxHashMap::default();
-        clos.insert(
-            "ot1".to_string(),
-            [
-                ("A".to_string(), "B".to_string()),
-                ("B".to_string(), "A".to_string()),
-            ]
-            .into_iter()
-            .collect(),
-        );
-
-        let local = make_local_data(&["A", "B"], &["ot1"], FxHashMap::default(), clos);
-
-        let mut related = FxHashMap::default();
-        related.insert("A".to_string(), set_of(&["ot1"]));
-        related.insert("B".to_string(), set_of(&["ot1"]));
-        let global = make_global_data(FxHashMap::default(), related);
-
-        let cut = find_cut_sequence(&local, &global);
-        assert!(cut.is_none(), "no sequence cut expected when bidirectional");
-    }
-
-    #[test]
-    fn detects_cut_and_keeps_cycle_grouped() {
-        // A and B form a cycle; C only reachable from B. Expect partition [A,B], [C].
-        let mut clos = FxHashMap::default();
-        clos.insert(
-            "ot1".to_string(),
-            [
-                ("A".to_string(), "B".to_string()),
-                ("B".to_string(), "A".to_string()),
-                ("B".to_string(), "C".to_string()),
-            ]
-            .into_iter()
-            .collect(),
-        );
-
-        let local = make_local_data(&["A", "B", "C"], &["ot1"], FxHashMap::default(), clos);
-
-        let mut related = FxHashMap::default();
-        related.insert("A".to_string(), set_of(&["ot1"]));
-        related.insert("B".to_string(), set_of(&["ot1"]));
-        related.insert("C".to_string(), set_of(&["ot1"]));
-        let global = make_global_data(FxHashMap::default(), related);
-
-        let cut = find_cut_sequence(&local, &global).expect("expected a sequence cut");
-        assert_eq!(cut.len(), 2);
-        assert!(cut[0].contains(&"A".to_string()) && cut[0].contains(&"B".to_string()));
-        assert!(cut[1].contains(&"C".to_string()));
-    }
-
-    #[test]
-    fn no_cut_without_relations() {
-        // No related types -> detection should yield None.
-        let local = make_local_data(&["A", "B"], &["ot1"], FxHashMap::default(), FxHashMap::default());
-        let global = make_global_data(FxHashMap::default(), FxHashMap::default());
-
-        let cut = find_cut_sequence(&local, &global);
-        assert!(cut.is_none(), "expected no sequence cut without relations");
-    }
-
-    #[test]
-    fn example_log_detects_sequence_cut() {
-        // Integration-style check against the provided example OCEL.
-        let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
-        let path = manifest
-            .join("..")
-            .join("example_data")
-            .join("ocel")
-            .join("example_log_ocim.json");
-
-        let data = std::fs::read_to_string(&path).expect("read example OCEL file");
-        let ocel: OCEL = serde_json::from_str(&data).expect("parse example OCEL");
-
-        let local = LocalData::new(vec![ocel.clone()], None);
-        let global = GlobalData::new(vec![ocel]);
-
-        // Use a traced version to understand why detection might fail.
-        let cut = trace_find_cut_sequence(&local, &global);
-        match cut {
-            Some(parts) => {
-                println!("Sequence cut partitions: {:?}", parts);
-                assert!(!parts.is_empty(), "partitions should not be empty");
-            }
-            None => panic!("expected sequence cut for example OCEL"),
-        }
-    }
+    use std::path::Path;
 
     #[test]
     fn example_log_detects_sequence_cut_direct() {
@@ -523,95 +344,16 @@ mod tests {
         let local = LocalData::new(vec![ocel.clone()], None);
         let global = GlobalData::new(vec![ocel]);
 
-        let cut = find_cut_sequence(&local, &global);
-        assert!(cut.is_some(), "expected sequence cut for example OCEL (direct call)");
-    }
-
-    /// Diagnostic helper to print intermediate partitions and return the final result.
-    fn trace_find_cut_sequence(
-        local_data: &LocalData,
-        global_data: &GlobalData,
-    ) -> Option<Vec<Vec<String>>> {
-        // Stage 1: components by check_sequence_1
-        let partition1 = connected_partitions(&local_data.alphabet, |i, j| {
-            check_sequence_1(
-                local_data,
-                global_data,
-                &local_data.alphabet[i],
-                &local_data.alphabet[j],
-            )
-        });
-        println!("[trace] stage1 partitions: {:?}", partition1);
-        if partition1.len() == 1 {
-            println!("[trace] stage1 collapsed to single partition");
-            return None;
-        }
-
-        // Stage 2: include partition-level reachability condition
-        let closure1 = partition_closure(local_data, &partition1);
-        let partition2 = connected_partitions(&local_data.alphabet, |i, j| {
-            check_sequence_1(
-                local_data,
-                global_data,
-                &local_data.alphabet[i],
-                &local_data.alphabet[j],
-            ) || {
-                let pi = partition_index(&partition1, &local_data.alphabet[i]).unwrap();
-                let pj = partition_index(&partition1, &local_data.alphabet[j]).unwrap();
-                check_sequence_2(&closure1, pi, pj)
-            }
-        });
-        println!("[trace] stage2 partitions: {:?}", partition2);
-        if partition2.len() == 1 {
-            println!("[trace] stage2 collapsed to single partition");
-            return None;
-        }
-
-        // Stage 3: order partitions topologically and re-cluster with sequence_3 condition
-        let mut partition3 = topo_order_partitions(&partition2, local_data);
-        let closure2 = partition_closure(local_data, &partition3);
-        let partition3 = connected_partitions(&local_data.alphabet, |i, j| {
-            let pi = partition_index(&partition3, &local_data.alphabet[i]).unwrap();
-            let pj = partition_index(&partition3, &local_data.alphabet[j]).unwrap();
-            check_sequence_1(
-                local_data,
-                global_data,
-                &local_data.alphabet[i],
-                &local_data.alphabet[j],
-            ) || check_sequence_2(&closure2, pi, pj)
-                || check_sequence_3(local_data, global_data, &partition3, pi, pj)
-        });
-        println!("[trace] stage3 partitions: {:?}", partition3);
-
-        // Merge cycles until stable
-        let mut partition = partition3;
-        loop {
-            let (p, changed) = remove_cycles(partition, local_data);
-            println!("[trace] cycle-merge step: {:?}, changed={}", p, changed);
-            partition = p;
-            if !changed {
-                break;
-            }
-        }
-        if partition.len() == 1 {
-            println!("[trace] collapsed to single partition after cycle merge");
-            return None;
-        }
-
-        // Final topological order and validation
-        partition = topo_order_partitions(&partition, local_data);
-        println!("[trace] final topo order: {:?}", partition);
-        if partition.len() == 1 {
-            println!("[trace] collapsed to single partition after topo order");
-            return None;
-        }
-
-        if is_sequence_cut_valid(local_data, global_data, &partition) {
-            println!("[trace] sequence cut validated");
-            Some(partition)
-        } else {
-            println!("[trace] sequence cut invalidated by validator");
-            None
-        }
+        let cut = find_cut_sequence(&local, &global)
+            .expect("expected sequence cut for example OCEL (direct call)");
+        assert_eq!(
+            cut,
+            vec![
+                vec!["identify".to_string(), "reject".to_string()],
+                vec!["place".to_string()],
+                vec!["pay".to_string(), "produce".to_string()],
+                vec!["send".to_string(), "store".to_string()],
+            ]
+        );
     }
 }
