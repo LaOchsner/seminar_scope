@@ -1,3 +1,628 @@
+
+import { useEffect, useRef, useState } from 'react';
+import * as d3 from 'd3';
+import { useGetOcel } from '~/services/queries';
+import { Checkbox } from '~/components/ui/checkbox'; // (kept import if used elsewhere)
+
+type NodeDatum = {
+    id: string;
+    label: string;
+    type: 'event' | 'object';
+    x?: number;
+    y?: number;
+    fx?: number | null;
+    fy?: number | null;
+};
+
+type EdgeDatum = {
+    id: string;
+    source: NodeDatum;
+    target: NodeDatum;
+    label: string;
+};
+
+const MAX_CHUNK = 5;
+const NODE_RADIUS = 20;
+const NODE_GAP = 40;
+
+interface OcelVisualizationD3Props {
+    fileId: string;
+}
+
+const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({ fileId }) => {
+    const { data, isLoading, error } = useGetOcel(fileId);
+
+    const svgRef = useRef<SVGSVGElement | null>(null);
+    const eventsChartRef = useRef<SVGSVGElement | null>(null);
+    const objectsChartRef = useRef<SVGSVGElement | null>(null);
+
+    const [chunk, setChunk] = useState(1);
+    const [selectedType, setSelectedType] = useState<string>('__ALL__'); // single select
+    const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: NodeDatum } | null>(null);
+    const [updateFlag, setUpdateFlag] = useState(0); // to force re-render D3
+
+    // core refs to hold graph state (mutable to avoid rerender thrash)
+    const nodesRef = useRef<NodeDatum[]>([]);
+    const edgesRef = useRef<EdgeDatum[]>([]);
+    const positionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+    const zoomTransformRef = useRef<d3.ZoomTransform | null>(null);
+
+    // track nodes that were added via expand (so they can be preserved across filtering)
+    const expandedNodeIdsRef = useRef<Set<string>>(new Set());
+
+    // helper: return edges connected to a node
+    const getNodeEdges = (nodeId: string) => edgesRef.current.filter((e) => e.source.id === nodeId || e.target.id === nodeId);
+
+    // helper: determine dangling neighbors of nodeId given current edgesRef
+    const getDanglingNeighbors = (nodeId: string, allEdges: EdgeDatum[]): NodeDatum[] => {
+        // immediate neighbors
+        const immediateNeighbors = allEdges
+            .filter((e) => e.source.id === nodeId || e.target.id === nodeId)
+            .map((e) => (e.source.id === nodeId ? e.target : e.source));
+
+        return immediateNeighbors.filter((neighbor) => {
+            // Count how many edges connect to neighbor (after excluding edges to nodeId)
+            const connections = allEdges.filter(
+                (e) => e.source.id === neighbor.id || e.target.id === neighbor.id
+            );
+            // If neighbor only connects to the clicked node (degree 1), it's dangling
+            return connections.length <= 1;
+        });
+    };
+
+    // Expand: add connected nodes & edges, mark added nodes as expanded
+    const handleExpand = (nodeId: string) => {
+        const node = nodesRef.current.find((n) => n.id === nodeId);
+        if (!node || !data) return;
+
+        const newCollapsed = new Set(collapsedNodes);
+        newCollapsed.delete(nodeId); // ensure clicked node itself is not considered collapsed
+
+        // Expand object => show connected events
+        if (node.type === 'object') {
+            const connectedEvents = (data.events || []).filter((evt: any) =>
+                (evt.relationships || []).some((rel: any) => rel.objectId?.toString() === nodeId)
+            );
+
+            const RADIUS = 70;
+            const totalEvents = Math.max(1, connectedEvents.length);
+
+            connectedEvents.forEach((evt: any, index: number) => {
+                const evtId = evt.id.toString();
+                let evtNode = nodesRef.current.find((n) => n.id === evtId);
+
+                const angle = (index / totalEvents) * 2 * Math.PI;
+                if (!evtNode) {
+                    evtNode = {
+                        id: evtId,
+                        label: evt.type || evt.activity || 'Event',
+                        type: 'event',
+                        x: node.x! + RADIUS * Math.cos(angle),
+                        y: node.y! + RADIUS * Math.sin(angle),
+                    };
+                    nodesRef.current.push(evtNode);
+                    positionsRef.current.set(evtId, { x: evtNode.x!, y: evtNode.y! });
+                }
+
+                // add edge if missing
+                const edgeId = `${evtId}-${nodeId}`;
+                if (!edgesRef.current.find((e) => e.id === edgeId)) {
+                    edgesRef.current.push({
+                        id: edgeId,
+                        source: evtNode,
+                        target: node,
+                        label: '',
+                    });
+                }
+
+                // mark as expanded so it persists across filtering
+                expandedNodeIdsRef.current.add(evtId);
+                newCollapsed.delete(evtId);
+            });
+        }
+        // Expand event => show connected objects
+        else if (node.type === 'event') {
+            const rawEvent = (data.events || []).find((evt: any) => evt.id.toString() === nodeId);
+            if (!rawEvent) return;
+
+            const connectedRelationships = rawEvent.relationships || [];
+            const totalRelationships = Math.max(1, connectedRelationships.length);
+            const RADIUS = 70;
+
+            connectedRelationships.forEach((rel: any, index: number) => {
+                const objId = rel.objectId?.toString();
+                if (!objId) return;
+
+                let objNode = nodesRef.current.find((n) => n.id === objId);
+                const angle = (index / totalRelationships) * 2 * Math.PI;
+
+                if (!objNode) {
+                    const objectDetails = data.objects ? data.objects[objId] : null;
+                    objNode = {
+                        id: objId,
+                        label: objectDetails?.type || objId,
+                        type: 'object',
+                        x: node.x! + RADIUS * Math.cos(angle),
+                        y: node.y! + RADIUS * Math.sin(angle),
+                    };
+                    nodesRef.current.push(objNode);
+                    positionsRef.current.set(objId, { x: objNode.x!, y: objNode.y! });
+                }
+
+                const edgeId = `${nodeId}-${objId}`;
+                if (!edgesRef.current.find((e) => e.id === edgeId)) {
+                    edgesRef.current.push({
+                        id: edgeId,
+                        source: node,
+                        target: objNode,
+                        label: rel.qualifier || '',
+                    });
+                }
+
+                expandedNodeIdsRef.current.add(objId);
+                newCollapsed.delete(objId);
+            });
+        }
+
+        setCollapsedNodes(newCollapsed);
+        setContextMenu(null);
+        setUpdateFlag((p) => p + 1);
+    };
+
+    // Collapse: remove dangling nodes that only connect to the clicked node
+    const handleCollapse = (nodeId: string) => {
+        const node = nodesRef.current.find((n) => n.id === nodeId);
+        if (!node) return;
+
+        // Find dangling neighbors relative to current edges
+        const danglingNeighbors = getDanglingNeighbors(nodeId, edgesRef.current);
+
+        // Remove dangling neighbors (their edges and nodes)
+        const danglingIds = new Set(danglingNeighbors.map((n) => n.id));
+
+        // Remove edges that are incident to any dangling node
+        edgesRef.current = edgesRef.current.filter((e) => !danglingIds.has(e.source.id) && !danglingIds.has(e.target.id));
+
+        // Remove dangling nodes from nodesRef
+        nodesRef.current = nodesRef.current.filter((n) => !danglingIds.has(n.id));
+
+        // Remove from positions
+        danglingIds.forEach((id) => positionsRef.current.delete(id));
+
+        // Also remove them from expandedNodeIdsRef (since they were collapsed)
+        danglingIds.forEach((id) => expandedNodeIdsRef.current.delete(id));
+
+        // Update collapsedNodes set to include removed nodes (so color/logic consistent)
+        const newCollapsed = new Set(collapsedNodes);
+        danglingIds.forEach((id) => newCollapsed.add(id));
+
+        setCollapsedNodes(newCollapsed);
+        setContextMenu(null);
+        setUpdateFlag((p) => p + 1);
+    };
+
+    // When selectedType changes, reset chunk and rebuild base graph
+    const handleTypeChange = (value: string) => {
+        setSelectedType(value);
+        setChunk(1);
+        // Remove collapsed/expanded? We keep expanded nodes but D3 rebuild will merge them
+        setUpdateFlag((p) => p + 1);
+    };
+
+    // Main D3 rendering / graph building effect
+    useEffect(() => {
+        if (!data || !svgRef.current) return;
+
+        const svg = d3.select(svgRef.current);
+        const width = svgRef.current.clientWidth;
+        const height = svgRef.current.clientHeight;
+
+        svg.selectAll('*').remove();
+        const g = svg.append('g');
+
+        const zoom = d3.zoom<SVGSVGElement, unknown>().on('zoom', (event) => {
+            g.attr('transform', event.transform.toString());
+            zoomTransformRef.current = event.transform;
+        });
+        svg.call(zoom as any);
+        if (zoomTransformRef.current) svg.call(zoom.transform as any, zoomTransformRef.current);
+
+        // Filtering events by selectedType
+        const events = data.events || [];
+        const filteredEvents = events.filter((evt: any) => selectedType === '__ALL__' || (evt.type || evt.activity) === selectedType);
+
+        const chunkedEvents = filteredEvents.slice(0, chunk * MAX_CHUNK);
+
+        // Build base nodes from chunkedEvents (fresh base graph)
+        const baseEventNodes: NodeDatum[] = chunkedEvents.map((evt: any) => ({
+            id: evt.id.toString(),
+            label: evt.type || evt.activity || 'Event',
+            type: 'event',
+        }));
+
+        const objectIds = new Set<string>();
+        chunkedEvents.forEach((evt: any) => (evt.relationships || []).forEach((rel: any) => rel.objectId && objectIds.add(rel.objectId.toString())));
+        const baseObjectNodes: NodeDatum[] = Array.from(objectIds).map((objId) => ({
+            id: objId,
+            label: data.objects?.[objId]?.type || objId,
+            type: 'object',
+        }));
+
+        // Build newEdges from base graph
+        const newBaseEdges: EdgeDatum[] = [];
+        chunkedEvents.forEach((evt: any) => {
+            (evt.relationships || []).forEach((rel: any, idx: number) => {
+                const evtId = evt.id.toString();
+                const objId = rel.objectId?.toString();
+                if (!objId) return;
+
+                const source = { id: evtId, label: evt.type || evt.activity || 'Event', type: 'event' } as NodeDatum;
+                const target = { id: objId, label: data.objects?.[objId]?.type || objId, type: 'object' } as NodeDatum;
+                const edgeId = `${evtId}-${objId}-${idx}`;
+                newBaseEdges.push({ id: edgeId, source, target, label: rel.qualifier || '' });
+            });
+        });
+
+        // Merge nodes:
+        // Keep nodes that are either in base nodes or in expandedNodeIdsRef (persist expanded ones).
+        // For expanded nodes, fetch label/type from data if possible.
+        const mergedNodeMap = new Map<string, NodeDatum>();
+        // add base nodes first
+        [...baseEventNodes, ...baseObjectNodes].forEach((n) => mergedNodeMap.set(n.id, { ...n }));
+
+        // add expanded nodes
+        expandedNodeIdsRef.current.forEach((id) => {
+            if (!mergedNodeMap.has(id)) {
+                // try to determine type and label from data
+                const eventMatch = (data.events || []).find((evt: any) => evt.id.toString() === id);
+                if (eventMatch) {
+                    mergedNodeMap.set(id, { id, label: eventMatch.type || eventMatch.activity || 'Event', type: 'event' });
+                } else {
+                    const objDetails = data.objects?.[id];
+                    mergedNodeMap.set(id, { id, label: objDetails?.type || id, type: 'object' });
+                }
+            }
+        });
+
+        // nodes that were previously present (like user-dragged ones) but not in merged -> drop them
+        nodesRef.current = Array.from(mergedNodeMap.values());
+
+        // Merge edges: keep edges created by expands (edgesRef.current) and add base edges
+        const edgeMap = new Map<string, EdgeDatum>();
+        // keep existing (likely expand-created) edges if their endpoints still exist in merged nodes
+        edgesRef.current.forEach((e) => {
+            if (mergedNodeMap.has(e.source.id) && mergedNodeMap.has(e.target.id)) {
+                edgeMap.set(e.id, {
+                    id: e.id,
+                    source: mergedNodeMap.get(e.source.id)!,
+                    target: mergedNodeMap.get(e.target.id)!,
+                    label: e.label,
+                });
+            }
+        });
+
+        // add base edges
+        newBaseEdges.forEach((e) => {
+            if (!edgeMap.has(e.id)) {
+                const source = mergedNodeMap.get(e.source.id);
+                const target = mergedNodeMap.get(e.target.id);
+                if (source && target) {
+                    edgeMap.set(e.id, { id: e.id, source, target, label: e.label });
+                }
+            }
+        });
+
+        edgesRef.current = Array.from(edgeMap.values());
+
+        // Ensure nodes have positions
+        nodesRef.current.forEach((n) => {
+            if (!positionsRef.current.has(n.id)) {
+                let newX: number, newY: number, overlapping: boolean;
+                let attempts = 0;
+                do {
+                    newX = width / 2 + Math.random() * 400 - 200;
+                    newY = height / 2 + Math.random() * 400 - 200;
+                    overlapping = Array.from(positionsRef.current.values()).some(
+                        (p) => Math.hypot(p.x - newX, p.y - newY) < NODE_GAP
+                    );
+                    attempts++;
+                    if (attempts > 100) break;
+                } while (overlapping);
+                n.x = newX;
+                n.y = newY;
+                positionsRef.current.set(n.id, { x: n.x!, y: n.y! });
+            } else {
+                const pos = positionsRef.current.get(n.id)!;
+                n.x = pos.x;
+                n.y = pos.y;
+            }
+        });
+
+        // Remove any positions for nodes that no longer exist
+        Array.from(positionsRef.current.keys()).forEach((id) => {
+            if (!nodesRef.current.find((n) => n.id === id)) positionsRef.current.delete(id);
+        });
+
+        // Draw edges (only edges whose both endpoints are not in collapsed set)
+        g.selectAll('line')
+            .data(
+                edgesRef.current.filter(
+                    (d) =>
+                        !collapsedNodes.has(d.source.id) &&
+                        !collapsedNodes.has(d.target.id)
+                ),
+                (d: any) => d.id
+            )
+            .join('line')
+            .attr('stroke', 'black')
+            .attr('stroke-width', 1.8)
+            .attr('x1', (d) => d.source.x!)
+            .attr('y1', (d) => d.source.y!)
+            .attr('x2', (d) => d.target.x!)
+            .attr('y2', (d) => d.target.y!);
+
+        // Node data (exclude collapsed nodes)
+        const nodeData = nodesRef.current.filter((d) => !collapsedNodes.has(d.id));
+
+        // Node groups
+        const nodeGroup = g
+            .selectAll<SVGGElement, NodeDatum>('g.node')
+            .data(nodeData, (d) => d.id)
+            .join(
+                (enter) => enter.append('g').attr('class', 'node'),
+                (update) => update,
+                (exit) => exit.remove()
+            )
+            .attr('transform', (d) => `translate(${d.x},${d.y})`)
+            .call(
+                d3
+                    .drag<SVGGElement, NodeDatum>()
+                    .on('start', function (event, d) {
+                        d.fx = d.x;
+                        d.fy = d.y;
+                    })
+                    .on('drag', function (event, d) {
+                        d.x = event.x;
+                        d.y = event.y;
+                        positionsRef.current.set(d.id, { x: d.x, y: d.y });
+                        d3.select(this).attr('transform', `translate(${d.x},${d.y})`);
+                        g.selectAll('line')
+                            .attr('x1', (edge: any) => edge.source.x!)
+                            .attr('y1', (edge: any) => edge.source.y!)
+                            .attr('x2', (edge: any) => edge.target.x!)
+                            .attr('y2', (edge: any) => edge.target.y!);
+                    })
+                    .on('end', function (event, d) {
+                        d.fx = null;
+                        d.fy = null;
+                    })
+            );
+
+        // Clear children to redraw
+        nodeGroup.selectAll('circle').remove();
+        nodeGroup.selectAll('text').remove();
+
+        nodeGroup
+            .append('circle')
+            .attr('r', NODE_RADIUS)
+            .attr('fill', (d) => {
+                // color gray if any immediate neighbor is collapsed (so it triggered collapse)
+                const neighbors = getNodeEdges(d.id).map((e) => (e.source.id === d.id ? e.target : e.source));
+                const hasHiddenNeighbors = neighbors.some((n) => collapsedNodes.has(n.id));
+                if (hasHiddenNeighbors) return 'lightgray';
+                return d.type === 'event' ? 'orange' : 'steelblue';
+            })
+            .attr('stroke', '#fff')
+            .attr('stroke-width', 1.5)
+            .style('cursor', 'pointer')
+            .on('click', (event, d) => {
+                event.stopPropagation();
+                const [x, y] = d3.pointer(event, svgRef.current);
+                setContextMenu({ x, y, node: d });
+            });
+
+        // Labels (wrapped)
+        nodeGroup.each(function (d) {
+            const group = d3.select(this);
+            const words = (d.label || '').split(/[\s_]+|(?=[A-Z])/g);
+            const lineHeight = 8;
+            const maxLines = 3;
+            const wrapped: string[] = [];
+            let line = '';
+            words.forEach((w) => {
+                if ((line + ' ' + w).trim().length < 10) line = (line + ' ' + w).trim();
+                else {
+                    wrapped.push(line);
+                    line = w;
+                }
+            });
+            if (line) wrapped.push(line);
+            const finalLines = wrapped.length > maxLines ? [...wrapped.slice(0, maxLines - 1), '...'] : wrapped;
+
+            const text = group
+                .append('text')
+                .attr('text-anchor', 'middle')
+                .attr('alignment-baseline', 'middle')
+                .attr('font-size', 8)
+                .attr('font-weight', '600')
+                .attr('fill', 'white')
+                .attr('pointer-events', 'none');
+
+            const offset = (finalLines.length - 1) * -lineHeight * 0.5;
+            text.selectAll('tspan')
+                .data(finalLines)
+                .enter()
+                .append('tspan')
+                .attr('x', 0)
+                .attr('y', (_, i) => offset + i * lineHeight)
+                .text((t) => t);
+        });
+
+        // Done drawing
+    }, [data, chunk, selectedType, collapsedNodes, updateFlag]);
+
+    // Histograms (unchanged from your version)
+    useEffect(() => {
+        if (!data) return;
+        const tooltip = d3
+            .select('body')
+            .append('div')
+            .attr('class', 'd3-tooltip')
+            .style('position', 'absolute')
+            .style('background', 'rgba(0,0,0,0.7)')
+            .style('color', 'white')
+            .style('padding', '6px 10px')
+            .style('border-radius', '6px')
+            .style('font-size', '12px')
+            .style('pointer-events', 'none')
+            .style('opacity', 0);
+
+        const createHistogram = (ref: SVGSVGElement, dataArr: [string, number][], fillColor: string) => {
+            const svg = d3.select(ref);
+            svg.selectAll('*').remove();
+            const width = svg.node()?.clientWidth || 250;
+            const height = svg.node()?.clientHeight || 200;
+            const margin = { top: 20, right: 20, bottom: 50, left: 40 };
+            const x = d3
+                .scaleBand()
+                .domain(dataArr.map(([k]) => k))
+                .range([margin.left, width - margin.right])
+                .padding(0.2);
+            const y = d3
+                .scaleLinear()
+                .domain([0, d3.max(dataArr, ([, v]) => v)! || 1])
+                .nice()
+                .range([height - margin.bottom, margin.top]);
+
+            svg.append('g')
+                .selectAll('rect')
+                .data(dataArr)
+                .enter()
+                .append('rect')
+                .attr('x', ([k]) => x(k)!)
+                .attr('y', ([, v]) => y(v))
+                .attr('width', x.bandwidth())
+                .attr('height', ([, v]) => Math.max(0, y(0) - y(v)))
+                .attr('fill', fillColor)
+                .on('mouseover', (event, [, v]) => tooltip.style('opacity', 1).html(`<strong>Count:</strong> ${v}`))
+                .on('mousemove', (event) =>
+                    tooltip.style('left', event.pageX + 10 + 'px').style('top', event.pageY - 20 + 'px')
+                )
+                .on('mouseout', () => tooltip.style('opacity', 0));
+
+            svg.append('g')
+                .attr('transform', `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(x))
+                .selectAll('text')
+                .attr('transform', 'rotate(-35)')
+                .style('text-anchor', 'end')
+                .attr('font-size', 9);
+
+            svg.append('g').attr('transform', `translate(${margin.left},0)`).call(d3.axisLeft(y));
+        };
+
+        const activityCounts = d3.rollups(
+            data.events || [],
+            (v) => v.length,
+            (d) => d.type || d.activity || 'Unknown'
+        ) as [string, number][];
+        const typeCounts = d3.rollups(
+            Object.values(data.objects || {}),
+            (v: any) => v.length,
+            (d: any) => d.type || 'Unknown'
+        ) as [string, number][];
+
+        if (eventsChartRef.current) createHistogram(eventsChartRef.current, activityCounts, 'orange');
+        if (objectsChartRef.current) createHistogram(objectsChartRef.current, typeCounts, 'steelblue');
+
+        return () => tooltip.remove();
+    }, [data]);
+
+    if (!fileId) return <p>No File selected</p>;
+    if (isLoading) return <p>Loading...</p>;
+    if (error) return <p>Error loading OCEL data</p>;
+    if (!data) return <p>No data available</p>;
+
+    // assemble event type options (strings)
+    const eventTypes: string[] = Array.isArray(data.eventTypes)
+        ? data.eventTypes.map((t: any) => (typeof t === 'string' ? t : t.name))
+        : [];
+
+    return (
+        <div className="flex flex-col h-screen bg-gray-50 relative">
+            {contextMenu && (
+                <div
+                    className="absolute bg-white border border-gray-300 shadow-lg rounded-md text-sm z-50"
+                    style={{ left: contextMenu.x + 20, top: contextMenu.y }}
+                >
+                    <button
+                        className="block w-full text-left px-3 py-1 hover:bg-gray-100"
+                        onClick={() => handleCollapse(contextMenu.node.id)}
+                    >
+                        Collapse
+                    </button>
+                    <button
+                        className="block w-full text-left px-3 py-1 hover:bg-gray-100"
+                        onClick={() => handleExpand(contextMenu.node.id)}
+                    >
+                        Expand
+                    </button>
+                </div>
+            )}
+
+            <div className="border-b border-gray-200 p-4 bg-white shadow-sm flex flex-wrap gap-3 items-center">
+                <h2 className="font-bold text-gray-700 mr-2">Filter by Event Type:</h2>
+                <select
+                    value={selectedType}
+                    onChange={(e) => handleTypeChange(e.target.value)}
+                    className="border rounded px-2 py-1"
+                >
+                    <option value="__ALL__">All types</option>
+                    {eventTypes.map((t, idx) => (
+                        <option key={idx} value={t}>
+                            {t}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            <div className="grid grid-cols-4 gap-4 p-4 overflow-auto">
+                <div className="col-span-3 bg-white rounded-xl shadow p-3 relative">
+                    <h3 className="font-semibold mb-2 text-center text-gray-700">Event–Object Relationship Graph</h3>
+                    <svg ref={svgRef} className="w-full h-[600px] border rounded-lg bg-gray-50" />
+                    {chunk * MAX_CHUNK < (data.events?.filter((evt: any) => selectedType === '__ALL__' || (evt.type || evt.activity) === selectedType).length || 0) && (
+                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+                            <button
+                                onClick={() => setChunk((prev) => prev + 1)}
+                                className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
+                            >
+                                Load More Events ({Math.min(chunk * MAX_CHUNK, data.events.length)}/{data.events.length})
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                <div className="col-span-1 flex flex-col gap-4">
+                    <div className="bg-white rounded-xl shadow p-3">
+                        <h3 className="font-semibold mb-2 text-center text-gray-700">Events per Activity</h3>
+                        <svg ref={eventsChartRef} className="w-full h-[250px]" />
+                    </div>
+                    <div className="bg-white rounded-xl shadow p-3">
+                        <h3 className="font-semibold mb-2 text-center text-gray-700">Objects per Type</h3>
+                        <svg ref={objectsChartRef} className="w-full h-[250px]" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default OcelVisualization;
+
+
+
+
 // import { useEffect, useRef, useState } from 'react';
 // import * as d3 from 'd3';
 // import { Checkbox } from '~/components/ui/checkbox';
@@ -425,13 +1050,10 @@
 //     );
 // };
 // export default OcelVisualization;
-
-
 // import { useEffect, useRef, useState } from 'react';
 // import * as d3 from 'd3';
 // import { Checkbox } from '~/components/ui/checkbox';
 // import { useGetOcel } from '~/services/queries';
-
 // type NodeDatum = {
 //   id: string;
 //   label: string;
@@ -441,82 +1063,64 @@
 //   fx?: number | null;
 //   fy?: number | null;
 // };
-
 // type EdgeDatum = {
 //   id: string;
 //   source: NodeDatum;
 //   target: NodeDatum;
 //   label: string;
 // };
-
 // const MAX_CHUNK = 10;
-
 // interface OcelVisualizationD3Props {
 //   fileId: string;
 // }
-
 // const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({ fileId }) => {
 //   const { data, isLoading, error } = useGetOcel(fileId);
-
 //   const svgRef = useRef<SVGSVGElement | null>(null);
 //   const eventsChartRef = useRef<SVGSVGElement | null>(null);
 //   const objectsChartRef = useRef<SVGSVGElement | null>(null);
-
 //   const [chunk, setChunk] = useState(1);
 //   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
 //   const [hiddenNodeIds, setHiddenNodeIds] = useState<Set<string>>(new Set());
 //   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: NodeDatum } | null>(null);
-
 //   const nodesRef = useRef<NodeDatum[]>([]);
 //   const edgesRef = useRef<EdgeDatum[]>([]);
 //   const simulationRef = useRef<d3.Simulation<NodeDatum, undefined>>();
-
 //   // --- Main Graph & Histograms Rendering ---
 //   useEffect(() => {
 //     if (!data || !svgRef.current) return;
-
 //     const svg = d3.select(svgRef.current);
 //     const width = svgRef.current.clientWidth;
 //     const height = svgRef.current.clientHeight;
-
 //     svg.selectAll('*').remove();
 //     const g = svg.append('g');
-
 //     // Zoom behavior
 //     const zoom = d3.zoom<SVGSVGElement, unknown>().on('zoom', (event) => {
 //       g.attr('transform', event.transform.toString());
 //     });
 //     svg.call(zoom as any);
-
 //     const events = data.events || [];
 //     const objects = data.objects || [];
-
 //     // Filter & chunk events
 //     const filteredEvents = events.filter(
 //       (evt: any) => selectedTypes.length === 0 || selectedTypes.includes(evt.type)
 //     );
 //     const chunkedEvents = filteredEvents.slice(0, chunk * MAX_CHUNK);
-
 //     // --- Nodes ---
 //     const eventNodes: NodeDatum[] = chunkedEvents.map((evt: any) => ({
 //       id: evt.id.toString(),
 //       label: evt.type || evt.activity || 'Event',
 //       type: 'event',
 //     }));
-
 //     const objectIds = new Set<string>();
 //     chunkedEvents.forEach((evt: any) =>
 //       (evt.relationships || []).forEach((rel: any) => objectIds.add(rel.objectId))
 //     );
-
 //     const objectNodes: NodeDatum[] = Array.from(objectIds).map((objId) => ({
 //       id: objId.toString(),
 //       label: objects[objId]?.type || objId,
 //       type: 'object',
 //     }));
-
 //     nodesRef.current = [...eventNodes, ...objectNodes];
-
 //     edgesRef.current = chunkedEvents.flatMap((evt: any) =>
 //       (evt.relationships || []).map((rel: any, j: number) => ({
 //         id: `${evt.id}-${rel.objectId}-${j}`,
@@ -525,21 +1129,17 @@
 //         label: rel.qualifier || '',
 //       }))
 //     );
-
 //     // Object colors
 //     const objectTypes = Array.from(new Set(objectNodes.map((o) => o.label)));
 //     const objectColorScale = d3.scaleOrdinal<string>().domain(objectTypes).range(d3.schemeTableau10);
-
 //     const visibleNodes = nodesRef.current.filter((n) => !hiddenNodeIds.has(n.id));
 //     const visibleEdges = edgesRef.current.filter(
 //       (e) => !hiddenNodeIds.has(e.source.id) && !hiddenNodeIds.has(e.target.id)
 //     );
-
 //     visibleNodes.forEach((n) => {
 //       n.x = width / 2 + Math.random() * 100 - 50;
 //       n.y = height / 2 + Math.random() * 100 - 50;
 //     });
-
 //     // --- Draw Edges ---
 //     let link = g
 //       .selectAll('line')
@@ -548,7 +1148,6 @@
 //       .append('line')
 //       .attr('stroke', '#ccc')
 //       .attr('stroke-width', 1.2);
-
 //     // --- Draw Nodes ---
 //     let nodeGroup = g
 //       .selectAll<SVGGElement, NodeDatum>('g.node')
@@ -563,7 +1162,6 @@
 //           .on('drag', dragged)
 //           .on('end', dragended)
 //       );
-
 //     nodeGroup
 //       .append('circle')
 //       .attr('r', 20)
@@ -575,7 +1173,6 @@
 //         const [x, y] = d3.pointer(event, svgRef.current);
 //         setContextMenu({ x, y, node: d });
 //       });
-
 //     // --- Node Labels ---
 //     nodeGroup.each(function (d) {
 //       const group = d3.select(this);
@@ -594,7 +1191,6 @@
 //       wrapped.push(line.trim());
 //       const finalLines =
 //         wrapped.length > maxLines ? [...wrapped.slice(0, maxLines - 1), '...'] : wrapped;
-
 //       const text = group
 //         .append('text')
 //         .attr('text-anchor', 'middle')
@@ -603,7 +1199,6 @@
 //         .attr('font-weight', '600')
 //         .attr('fill', 'white')
 //         .attr('pointer-events', 'none');
-
 //       const offset = (finalLines.length - 1) * -lineHeight * 0.5;
 //       text
 //         .selectAll('tspan')
@@ -614,7 +1209,6 @@
 //         .attr('y', (_, i) => offset + i * lineHeight)
 //         .text((t) => t);
 //     });
-
 //     // --- Force Simulation ---
 //     const simulation = d3
 //       .forceSimulation<NodeDatum>(visibleNodes)
@@ -623,10 +1217,8 @@
 //       .force('center', d3.forceCenter(width / 2, height / 2))
 //       .force('collision', d3.forceCollide().radius(25))
 //       .on('tick', ticked);
-
 //     simulationRef.current = simulation;
 //     setTimeout(() => simulation.stop(), 4000);
-
 //     function ticked() {
 //       link
 //         .attr('x1', (d) => d.source.x!)
@@ -635,7 +1227,6 @@
 //         .attr('y2', (d) => d.target.y!);
 //       nodeGroup.attr('transform', (d) => `translate(${d.x},${d.y})`);
 //     }
-
 //     function dragstarted(event: any, d: any) {
 //       if (!event.active) simulation.alphaTarget(0.3).restart();
 //       d.fx = d.x;
@@ -650,17 +1241,13 @@
 //       d.fx = null;
 //       d.fy = null;
 //     }
-
 //     // --- Events Histogram ---
 //     if (eventsChartRef.current) {
 //       const chart = d3.select(eventsChartRef.current);
 //       chart.selectAll('*').remove();
-
 //       const activityCounts = d3.rollups(filteredEvents, (v) => v.length, (d) => d.type || 'Unknown');
-
 //       const x = d3.scaleBand().domain(activityCounts.map(([k]) => k)).range([40, 240]).padding(0.1);
 //       const y = d3.scaleLinear().domain([0, d3.max(activityCounts, ([, v]) => v)!]).range([120, 10]);
-
 //       chart
 //         .append('g')
 //         .selectAll('rect')
@@ -672,7 +1259,6 @@
 //         .attr('width', x.bandwidth())
 //         .attr('height', ([, v]) => 120 - y(v))
 //         .attr('fill', 'orange');
-
 //         chart
 //   .selectAll('text.label')
 //   .data(activityCounts)
@@ -685,7 +1271,6 @@
 //   .attr('font-size', 10)
 //   .attr('fill', 'black')
 //   .text(([, v]) => v);
-
 //       chart
 //         .append('g')
 //         .attr('transform', 'translate(0,120)')
@@ -695,19 +1280,16 @@
 //         .attr('text-anchor', 'end')
 //         .attr('transform', 'rotate(-35)');
 //     }
-
 //     // --- Histogram: Objects per Type ---
 // if (objectsChartRef.current) {
 //   const chart = d3.select(objectsChartRef.current);
 //   chart.selectAll('*').remove();
-
 //   // Count total number of objects per type
 //   const typeCounts = d3.rollups(
 //     Object.values(objects), // use the full objects data, not just nodes
 //     (v) => v.length,
 //     (d: any) => d.type || 'Unknown'
 //   );
-
 //   const x = d3
 //     .scaleBand()
 //     .domain(typeCounts.map(([k]) => k))
@@ -717,7 +1299,6 @@
 //     .scaleLinear()
 //     .domain([0, d3.max(typeCounts, ([, v]) => v)!])
 //     .range([150, 10]);
-
 //   chart
 //     .append('g')
 //     .selectAll('rect')
@@ -729,7 +1310,6 @@
 //     .attr('width', x.bandwidth())
 //     .attr('height', ([, v]) => 150 - y(v))
 //     .attr('fill', 'steelblue'); // fixed blue color
-
 //     chart
 //   .selectAll('text.label')
 //   .data(typeCounts)
@@ -742,7 +1322,6 @@
 //   .attr('font-size', 10)
 //   .attr('fill', 'black')
 //   .text(([, v]) => v);
-
 //   chart
 //     .append('g')
 //     .attr('transform', 'translate(0,150)')
@@ -753,13 +1332,11 @@
 //     .attr('transform', 'rotate(-40)');
 //     }
 //   }, [data, chunk, selectedTypes, hiddenNodeIds]);
-
 //   // --- Context Menu ---
 //   const handleCollapse = (nodeId: string) => {
 //     const connectedNodes = edgesRef.current
 //       .filter((e) => e.source.id === nodeId || e.target.id === nodeId)
 //       .map((e) => (e.source.id === nodeId ? e.target.id : e.source.id));
-
 //     setHiddenNodeIds((prev) => {
 //       const newSet = new Set(prev);
 //       newSet.add(nodeId);
@@ -768,12 +1345,10 @@
 //     });
 //     setContextMenu(null);
 //   };
-
 //   const handleExpand = (nodeId: string) => {
 //     const connectedNodes = edgesRef.current
 //       .filter((e) => e.source.id === nodeId || e.target.id === nodeId)
 //       .map((e) => (e.source.id === nodeId ? e.target.id : e.source.id));
-
 //     setHiddenNodeIds((prev) => {
 //       const newSet = new Set(prev);
 //       newSet.delete(nodeId);
@@ -782,19 +1357,16 @@
 //     });
 //     setContextMenu(null);
 //   };
-
 //   const toggleType = (type: string) => {
 //     setChunk(1);
 //     setSelectedTypes((prev) =>
 //       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
 //     );
 //   };
-
 //   if (!fileId) return <p>No File selected</p>;
 //   if (isLoading) return <p>Loading...</p>;
 //   if (error) return <p>Error loading OCEL data</p>;
 //   if (!data) return <p>No data available</p>;
-
 //   return (
 //     <div className="flex flex-col h-screen bg-gray-50 relative">
 //       {/* Context Menu */}
@@ -817,7 +1389,6 @@
 //           </button>
 //         </div>
 //       )}
-
 //       {/* Filter */}
 //       <div className="border-b border-gray-200 p-4 bg-white shadow-sm flex flex-wrap gap-3">
 //         <h2 className="font-bold text-gray-700">Filter by Event Type:</h2>
@@ -837,7 +1408,6 @@
 //           );
 //         })}
 //       </div>
-
 //       {/* Graph + Histograms */}
 //       <div className="grid grid-cols-4 gap-4 p-4 overflow-auto">
 //         <div className="col-span-3 bg-white rounded-xl shadow p-3 relative">
@@ -856,7 +1426,6 @@
 //             </div>
 //           )}
 //         </div>
-
 //         {/* Histograms */}
 //         <div className="col-span-1 flex flex-col gap-4">
 //           <div className="bg-white rounded-xl shadow p-3">
@@ -876,12 +1445,7 @@
 //     </div>
 //   );
 // };
-
 // export default OcelVisualization;
-
-
-
-
 // import { useEffect, useRef, useState } from 'react';
 // import * as d3 from 'd3';
 // import { Checkbox } from '~/components/ui/checkbox';
@@ -1692,847 +2256,668 @@
 
 
 
-import { useEffect, useRef, useState } from 'react';
-import * as d3 from 'd3';
-import { Checkbox } from '~/components/ui/checkbox';
-import { useGetOcel } from '~/services/queries';
-
-// import { getImmediateNeighbors } from '../ocel-visualization/utils/graphUtils';
-
-type NodeDatum = {
-    id: string;
-    label: string;
-    type: 'event' | 'object';
-    x?: number;
-    y?: number;
-    fx?: number | null;
-    fy?: number | null;
-};
-
-type EdgeDatum = {
-    id: string;
-    source: NodeDatum;
-    target: NodeDatum;
-    label: string;
-};
-
-const MAX_CHUNK = 5;
-const NODE_RADIUS = 20;
-const NODE_GAP = 40;
-
-interface OcelVisualizationD3Props {
-    fileId: string;
-}
-
-const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({ fileId }) => {
-    const { data, isLoading, error } = useGetOcel(fileId);
-
-    const svgRef = useRef<SVGSVGElement | null>(null);
-    const eventsChartRef = useRef<SVGSVGElement | null>(null);
-    const objectsChartRef = useRef<SVGSVGElement | null>(null);
-
-    const [chunk, setChunk] = useState(1);
-    const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-    const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
-    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: NodeDatum } | null>(null);
-
-    const nodesRef = useRef<NodeDatum[]>([]);
-    const edgesRef = useRef<EdgeDatum[]>([]);
-    const positionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
-    const zoomTransformRef = useRef<d3.ZoomTransform | null>(null);
-
-    const getNodeEdges = (nodeId: string) => {
-        return edgesRef.current.filter((e) => e.source.id === nodeId || e.target.id === nodeId);
-    };
-
-    // Get immediate neighbors
-    // const getImmediateNeighbors = (nodeId: string): NodeDatum[] => {
-    //     return edgesRef.current
-    //         .filter((e) => e.source.id === nodeId || e.target.id === nodeId)
-    //         .map((e) => (e.source.id === nodeId ? e.target : e.source));
-    // };
-
-    // const getDanglingNeighbors = (nodeId: string): NodeDatum[] => {
-    //     // 1. Get all immediate neighbors using the existing function
-    //     const immediateNeighbors = edgesRef.current
-    //         .filter((e) => e.source.id === nodeId || e.target.id === nodeId)
-    //         .map((e) => (e.source.id === nodeId ? e.target : e.source));
-
-    //     // 2. Filter the neighbors: only keep those that have NO other connections
-    //     return immediateNeighbors.filter((neighbor) => {
-    //         // This condition checks every single edge (e) in the graph again.
-    //         // If the neighbor's ID is the source OR the target of any edge other than the one connecting to nodeId, it is NOT a dangling node.
-    //         const hasOtherConnections = edgesRef.current.some(
-    //             (e) =>
-    //                 (e.source.id === neighbor.id || e.target.id === neighbor.id) &&
-    //                 e.source.id !== nodeId &&
-    //                 e.target.id !== nodeId
-    //         );
-
-    //         // A node is "dangling" if it does NOT have other connections.
-    //         return !hasOtherConnections;
-    //     });
-    // };
-
-    // Define this helper function outside the main useEffect
-    const getDanglingNeighbors = (nodeId: string, allEdges: EdgeDatum[]): NodeDatum[] => {
-        // 1. Get all immediate neighbors
-        const immediateNeighbors = allEdges
-            .filter((e) => e.source.id === nodeId || e.target.id === nodeId)
-            .map((e) => (e.source.id === nodeId ? e.target : e.source));
-
-        // 2. Filter neighbors to find those that are ONLY connected to nodeId
-        return immediateNeighbors.filter((neighbor) => {
-            // Check if the neighbor is connected to any other node besides the original nodeId
-            const hasOtherConnections = allEdges.some(
-                (e) =>
-                    // Check if this edge connects to the neighbor
-                    (e.source.id === neighbor.id || e.target.id === neighbor.id) &&
-                    // AND check that this edge does NOT connect back to the starting node (nodeId)
-                    e.source.id !== nodeId &&
-                    e.target.id !== nodeId
-            );
-
-            // A node is "dangling" (and should be hidden) if it does NOT have other connections.
-            return !hasOtherConnections;
-        });
-    };
-
-    // // Expand object node and show all connected events
-    // const handleExpand = (nodeId: string) => {
-    //     const node = nodesRef.current.find((n) => n.id === nodeId);
-    //     if (!node) return;
-
-    //     const newCollapsed = new Set(collapsedNodes);
-    //     newCollapsed.delete(nodeId);
-
-    //     if (node.type === 'object') {
-    //         // Find all events connected to this object from the OCEL data
-    //         const connectedEvents = (data.events || []).filter((evt: any) =>
-    //             (evt.relationships || []).some((rel: any) => rel.objectId === nodeId)
-    //         );
-
-    //         connectedEvents.forEach((evt: any) => {
-    //             const evtId = evt.id.toString();
-    //             // If event node is not yet in nodesRef, add it
-    //             if (!nodesRef.current.find((n) => n.id === evtId)) {
-    //                 nodesRef.current.push({
-    //                     id: evtId,
-    //                     label: evt.type || evt.activity || 'Event',
-    //                     type: 'event',
-    //                     x: node.x! + Math.random() * 80 - 40, // random nearby position
-    //                     y: node.y! + Math.random() * 80 - 40,
-    //                 });
-    //                 positionsRef.current.set(evtId, { x: node.x! + Math.random() * 80 - 40, y: node.y! + Math.random() * 80 - 40 });
-    //             }
-    //             // Remove event node from collapsed set
-    //             newCollapsed.delete(evtId);
-
-    //             // Add edges if not already present
-    //             if (!edgesRef.current.find((e) => e.source.id === evtId && e.target.id === nodeId)) {
-    //                 edgesRef.current.push({
-    //                     id: `${evtId}-${nodeId}`,
-    //                     source: nodesRef.current.find((n) => n.id === evtId)!,
-    //                     target: node,
-    //                     label: '',
-    //                 });
-    //             }
-    //         });
-    //     }
-
-    //     setCollapsedNodes(newCollapsed);
-    //     setContextMenu(null);
-    // };
-
-    // const [updateFlag, setUpdateFlag] = useState(0);
-
-    // const handleExpand = (nodeId: string) => {
-    //     const node = nodesRef.current.find((n) => n.id === nodeId);
-    //     if (!node) return;
-
-    //     const newCollapsed = new Set(collapsedNodes);
-    //     newCollapsed.delete(nodeId);
-
-    //     if (node.type === 'object') {
-    //         const connectedEvents = (data.events || []).filter((evt: any) =>
-    //             (evt.relationships || []).some((rel: any) => rel.objectId === nodeId)
-    //         );
-
-    //         connectedEvents.forEach((evt: any, index: number) => {
-    //             const evtId = evt.id.toString();
-    //             let evtNode = nodesRef.current.find((n) => n.id === evtId);
-    //             if (!evtNode) {
-    //                 const RADIUS = 70;
-    //                 const totalEvents = connectedEvents.length;
-
-    //                 const angle = (index / totalEvents) * 2 * Math.PI;
-    //                 evtNode = {
-    //                     id: evtId,
-    //                     label: evt.type || evt.activity || 'Event',
-    //                     type: 'event',
-    //                     x: node.x! + RADIUS * Math.cos(angle),
-    //                     y: node.y! + RADIUS * Math.sin(angle),
-    //                 };
-    //                 nodesRef.current.push(evtNode);
-    //                 positionsRef.current.set(evtId, { x: evtNode.x, y: evtNode.y });
-    //             }
-
-    //             // Add edge between object and event
-    //             if (
-    //                 !edgesRef.current.find(
-    //                     (e) =>
-    //                         (e.source.id === evtId && e.target.id === nodeId) ||
-    //                         (e.source.id === nodeId && e.target.id === evtId)
-    //                 )
-    //             ) {
-    //                 edgesRef.current.push({
-    //                     id: `${evtId}-${nodeId}`,
-    //                     source: evtNode,
-    //                     target: node,
-    //                     label: '',
-    //                 });
-    //             }
-
-    //             newCollapsed.delete(evtId);
-    //         });
-    //     }
-
-    //     setCollapsedNodes(newCollapsed);
-    //     setContextMenu(null);
-
-    //     // Force re-render
-    //     setUpdateFlag((prev) => prev + 1);
-    // };
-
-    const [updateFlag, setUpdateFlag] = useState(0);
-
-    const handleExpand = (nodeId: string) => {
-        const node = nodesRef.current.find((n) => n.id === nodeId);
-        if (!node) return;
-
-        const newCollapsed = new Set(collapsedNodes);
-        // Ensure the clicked node itself is marked as expanded
-        newCollapsed.delete(nodeId);
-
-        // =========================================================
-        // 1. EXPAND OBJECT NODE: Show all connected Events
-        // =========================================================
-        if (node.type === 'object') {
-            const connectedEvents = (data.events || []).filter((evt: any) =>
-                (evt.relationships || []).some((rel: any) => rel.objectId === nodeId)
-            );
-
-            connectedEvents.forEach((evt: any, index: number) => {
-                const evtId = evt.id.toString();
-                let evtNode = nodesRef.current.find((n) => n.id === evtId);
-
-                // Positioning parameters for radial layout
-                const RADIUS = 70;
-                const totalEvents = connectedEvents.length;
-                const angle = (index / totalEvents) * 2 * Math.PI;
-
-                // Add Event Node if it doesn't exist
-                if (!evtNode) {
-                    evtNode = {
-                        id: evtId,
-                        label: evt.type || evt.activity || 'Event',
-                        type: 'event',
-                        x: node.x! + RADIUS * Math.cos(angle),
-                        y: node.y! + RADIUS * Math.sin(angle),
-                    };
-                    nodesRef.current.push(evtNode);
-                    positionsRef.current.set(evtId, { x: evtNode.x, y: evtNode.y });
-                }
-
-                // Add edge between object and event
-                if (
-                    !edgesRef.current.find(
-                        (e) =>
-                            (e.source.id === evtId && e.target.id === nodeId) ||
-                            (e.source.id === nodeId && e.target.id === evtId)
-                    )
-                ) {
-                    edgesRef.current.push({
-                        id: `${evtId}-${nodeId}`,
-                        source: evtNode,
-                        target: node,
-                        label: '',
-                    });
-                }
-
-                newCollapsed.delete(evtId);
-            });
-        }
-        // =========================================================
-        // 2. EXPAND EVENT NODE: Show all connected Objects
-        // =========================================================
-        else if (node.type === 'event') {
-            const rawEvent = (data.events || []).find((evt: any) => evt.id.toString() === nodeId);
-            if (!rawEvent || !rawEvent.relationships) return;
-
-            const connectedRelationships = rawEvent.relationships;
-            const totalRelationships = connectedRelationships.length;
-
-            connectedRelationships.forEach((rel: any, index: number) => {
-                const objId = rel.objectId.toString();
-                let objNode = nodesRef.current.find((n) => n.id === objId);
-
-                // Positioning parameters for radial layout (separate radius for clarity)
-                const RADIUS = 70;
-                const angle = (index / totalRelationships) * 2 * Math.PI;
-
-                // Add Object Node if it doesn't exist
-                if (!objNode) {
-                    // Get object details from the object map in data
-                    const objectDetails = data.objects ? data.objects[objId] : null;
-
-                    objNode = {
-                        id: objId,
-                        label: objectDetails?.type || objId,
-                        type: 'object',
-                        x: node.x! + RADIUS * Math.cos(angle),
-                        y: node.y! + RADIUS * Math.sin(angle),
-                    };
-                    nodesRef.current.push(objNode);
-                    positionsRef.current.set(objId, { x: objNode.x, y: objNode.y });
-                }
-
-                // Add edge between event and object (if not already present)
-                if (
-                    !edgesRef.current.find(
-                        (e) =>
-                            (e.source.id === nodeId && e.target.id === objId) ||
-                            (e.source.id === objId && e.target.id === nodeId)
-                    )
-                ) {
-                    edgesRef.current.push({
-                        id: `${nodeId}-${objId}`,
-                        source: node,
-                        target: objNode,
-                        label: rel.qualifier || '',
-                    });
-                }
-
-                newCollapsed.delete(objId);
-            });
-        }
-
-        setCollapsedNodes(newCollapsed);
-        setContextMenu(null);
-        setUpdateFlag((prev) => prev + 1);
-    };
-
-    // const handleCollapse = (nodeId: string) => {
-    //     const node = nodesRef.current.find((n) => n.id === nodeId);
-    //     if (!node) return;
-
-    //     const newCollapsed = new Set(collapsedNodes);
-    //     newCollapsed.add(nodeId);
-
-    //     // Optionally collapse immediate neighbors too
-    //     getDanglingNeighbors(nodeId).forEach((n) => newCollapsed.add(n.id));
-
-    //     setCollapsedNodes(newCollapsed);
-    //     setContextMenu(null);
-    // };
-
-    const handleCollapse = (nodeId: string) => {
-        const node = nodesRef.current.find((n) => n.id === nodeId);
-        if (!node) return;
-
-        const newCollapsed = new Set(collapsedNodes);
-
-        // Find neighbors that only connect to this node (dangling nodes)
-        const danglingNeighbors = getDanglingNeighbors(nodeId, edgesRef.current);
-
-        // Add ONLY the dangling neighbors to the collapsed set (these will be hidden)
-        danglingNeighbors.forEach((n) => newCollapsed.add(n.id));
-
-        // Keep the clicked node's ID OUT of the collapsedNodes set!
-        // We will use the presence of its *neighbors* in the set to color it grey in D3.
-
-        setCollapsedNodes(newCollapsed);
-        setContextMenu(null);
-
-        // Force re-render to apply filtering and coloring changes
-        setUpdateFlag((prev) => prev + 1);
-    };
-
-    // const toggleType = (type: string) => {
-    //     setChunk(1);
-    //     setSelectedTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]));
-    // };
-
-    const toggleType = (type: string) => {
-    setChunk(1);
-    setSelectedTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    );
-  };
-
-    useEffect(() => {
-        if (!data || !svgRef.current) return;
-
-        const svg = d3.select(svgRef.current);
-        const width = svgRef.current.clientWidth;
-        const height = svgRef.current.clientHeight;
-
-        svg.selectAll('*').remove();
-        const g = svg.append('g');
-
-        const zoom = d3.zoom<SVGSVGElement, unknown>().on('zoom', (event) => {
-            g.attr('transform', event.transform.toString());
-            zoomTransformRef.current = event.transform;
-        });
-        svg.call(zoom as any);
-        if (zoomTransformRef.current) svg.call(zoom.transform as any, zoomTransformRef.current);
-
-        const events = data.events || [];
-        const objects = data.objects || [];
-
-        const filteredEvents = events.filter(
-            (evt: any) => selectedTypes.length === 0 || selectedTypes.includes(evt.type)
-        );
-        const chunkedEvents = filteredEvents.slice(0, chunk * MAX_CHUNK);
-
-        // Event nodes
-        const eventNodes: NodeDatum[] = chunkedEvents.map((evt: any) => ({
-            id: evt.id.toString(),
-            label: evt.type || evt.activity || 'Event',
-            type: 'event',
-        }));
-
-        // Object nodes
-        const objectIds = new Set<string>();
-        chunkedEvents.forEach((evt: any) =>
-            (evt.relationships || []).forEach((rel: any) => objectIds.add(rel.objectId))
-        );
-        const objectNodes: NodeDatum[] = Array.from(objectIds).map((objId) => ({
-            id: objId.toString(),
-            label: objects[objId]?.type || objId,
-            type: 'object',
-        }));
-
-        // Merge nodes (avoid duplicates)
-        const existingNodeIds = new Set(nodesRef.current.map((n) => n.id));
-        nodesRef.current = [
-            ...nodesRef.current,
-            ...objectNodes.filter((n) => !existingNodeIds.has(n.id)),
-            ...eventNodes.filter((n) => !existingNodeIds.has(n.id)),
-        ];
-
-        // // Edges
-        // edgesRef.current = chunkedEvents.flatMap((evt: any) =>
-        //     (evt.relationships || []).map((rel: any, j: number) => ({
-        //         id: `${evt.id}-${rel.objectId}-${j}`,
-        //         source: nodesRef.current.find((n) => n.id === evt.id.toString())!,
-        //         target: nodesRef.current.find((n) => n.id === rel.objectId.toString())!,
-        //         label: rel.qualifier || '',
-        //     }))
-        // );
-
-        // --- FIXED EDGE MERGING LOGIC --- //
-
-        // Build fresh edges from chunked events
-        const newEdges: EdgeDatum[] = [];
-
-        chunkedEvents.forEach((evt: any) => {
-            (evt.relationships || []).forEach((rel: any, idx: number) => {
-                const evtId = evt.id.toString();
-                const objId = rel.objectId.toString();
-
-                const source = nodesRef.current.find((n) => n.id === evtId);
-                const target = nodesRef.current.find((n) => n.id === objId);
-
-                if (!source || !target) return;
-
-                const edgeId = `${evtId}-${objId}-${idx}`;
-
-                newEdges.push({
-                    id: edgeId,
-                    source,
-                    target,
-                    label: rel.qualifier || '',
-                });
-            });
-        });
-
-        // --- MERGE new edges with old edges (important for expand!) --- //
-        const edgeMap = new Map<string, EdgeDatum>();
-
-        // Keep existing edges created during EXPAND
-        edgesRef.current.forEach((e) => edgeMap.set(e.id, e));
-
-        // Add the newly calculated edges
-        newEdges.forEach((e) => {
-            if (!edgeMap.has(e.id)) {
-                edgeMap.set(e.id, e);
-            }
-        });
-
-        // Save merged edge list back
-        edgesRef.current = Array.from(edgeMap.values());
-
-        // Position nodes if not already positioned
-        nodesRef.current.forEach((n) => {
-            if (!positionsRef.current.has(n.id)) {
-                let newX, newY, overlapping;
-                do {
-                    newX = width / 2 + Math.random() * 400 - 200;
-                    newY = height / 2 + Math.random() * 400 - 200;
-                    overlapping = Array.from(positionsRef.current.values()).some(
-                        (p) => Math.hypot(p.x - newX, p.y - newY) < NODE_GAP
-                    );
-                } while (overlapping);
-                n.x = newX;
-                n.y = newY;
-                positionsRef.current.set(n.id, { x: n.x, y: n.y });
-            } else {
-                const pos = positionsRef.current.get(n.id)!;
-                n.x = pos.x;
-                n.y = pos.y;
-            }
-        });
-
-        // g.selectAll('line')
-        //     .data(edgesRef.current)
-        //     .enter()
-        //     .append('line')
-        //     .attr('stroke', (d) =>
-        //         collapsedNodes.has(d.source.id) || collapsedNodes.has(d.target.id) ? '#b0b0b0' : 'black'
-        //     )
-        //     .attr('stroke-width', 1.8)
-        //     .attr('x1', (d) => d.source.x!)
-        //     .attr('y1', (d) => d.source.y!)
-        //     .attr('x2', (d) => d.target.x!)
-        //     .attr('y2', (d) => d.target.y!);
-
-        // --- MODIFIED EDGE DRAWING CODE ---
-        g.selectAll('line')
-            .data(
-                edgesRef.current.filter(
-                    (d) =>
-                        // Hide edge ONLY IF either end is a node in the collapsed set (hidden neighbor)
-                        !collapsedNodes.has(d.source.id) && !collapsedNodes.has(d.target.id)
-                )
-            )
-            .join('line') // Use join for efficient update/enter/exit handling
-            .attr('stroke', 'black') // No need for conditional color; it's either visible or hidden
-            .attr('stroke-width', 1.8)
-            .attr('x1', (d) => d.source.x!)
-            .attr('y1', (d) => d.source.y!)
-            .attr('x2', (d) => d.target.x!)
-            .attr('y2', (d) => d.target.y!);
-        // ---
-
-        // const nodeGroup = g
-        //     .selectAll<SVGGElement, NodeDatum>('g.node')
-        //     .data(nodesRef.current)
-        //     .enter()
-        //     .append('g')
-        //     .attr('class', 'node')
-        //     .attr('transform', (d) => `translate(${d.x},${d.y})`)
-        //     .call(d3.drag<SVGGElement, NodeDatum>().on('start', dragstarted).on('drag', dragged).on('end', dragended));
-
-        // nodeGroup
-        //     .append('circle')
-        //     .attr('r', NODE_RADIUS)
-        //     .attr('fill', (d) => (collapsedNodes.has(d.id) ? 'lightgray' : d.type === 'event' ? 'orange' : 'steelblue'))
-
-        // --- MODIFIED NODE DRAWING CODE ---
-        // const nodeData = nodesRef.current.filter(d => !collapsedNodes.has(d.id));
-        // const nodeGroup = g
-        //     .selectAll<SVGGElement, NodeDatum>('g.node')
-        //     .data(
-        //         nodesRef.current.filter(
-        //             (d) =>
-        //                 // Keep the node ONLY IF it is NOT collapsed
-        //                 !collapsedNodes.has(d.id)
-        //         ),
-        //         (d) => d.id
-        //     ) // Use a key function (d => d.id) for stable selection
-        //     .join('g') // Use join for efficient update/enter/exit handling
-        //     .attr('class', 'node')
-        //     .attr('transform', (d) => `translate(${d.x},${d.y})`)
-        //     .call(d3.drag<SVGGElement, NodeDatum>().on('start', dragstarted).on('drag', dragged).on('end', dragended));
-
-        // // The rest of the node styling (circle, label) goes here:
-
-        // nodeGroup
-        //     .append('circle')
-        //     .attr('r', NODE_RADIUS)
-        //     .attr('fill', (d) => (d.type === 'event' ? 'orange' : 'steelblue')) // Conditional color removed as collapsed state is filtered
-        //     // ... rest of the styling and event handlers ...
-        //     .attr('stroke', '#fff')
-        //     .attr('stroke-width', 1.5)
-        //     .style('cursor', 'pointer')
-        //     .on('click', (event, d) => {
-        //         event.stopPropagation();
-        //         const [x, y] = d3.pointer(event, svgRef.current);
-        //         setContextMenu({ x, y, node: d });
-        //     });
-
-        // --- MODIFIED NODE DRAWING ---
-
-        // 💡 IMPORTANT: Filter out the nodes that should be completely hidden (the dangling neighbors)
-        const nodeData = nodesRef.current.filter((d) => !collapsedNodes.has(d.id));
-
-        const nodeGroup = g
-            .selectAll<SVGGElement, NodeDatum>('g.node')
-            .data(nodeData, (d) => d.id) // Key function ensures stable updates
-            .join(
-                (enter) => enter.append('g').attr('class', 'node'),
-                (update) => update,
-                (exit) => exit.remove()
-            )
-            .attr('transform', (d) => `translate(${d.x},${d.y})`)
-            .call(d3.drag<SVGGElement, NodeDatum>().on('start', dragstarted).on('drag', dragged).on('end', dragended));
-
-        // 1. Remove old circles and text to redraw with new colors/content
-        nodeGroup.selectAll('circle').remove();
-        nodeGroup.selectAll('text').remove();
-
-        // 2. Redraw Circle with Conditional Coloring
-        nodeGroup
-            .append('circle')
-            .attr('r', NODE_RADIUS)
-            .attr('fill', (d) => {
-                // Check if THIS node (d) has any immediate neighbors that are currently collapsed (hidden)
-                const hasHiddenNeighbors = getDanglingNeighbors(d.id, edgesRef.current).some((n) =>
-                    collapsedNodes.has(n.id)
-                );
-
-                if (hasHiddenNeighbors) {
-                    // 💡 If it triggered the collapse, color it gray
-                    return 'lightgray';
-                }
-
-                // Otherwise, use the standard color (orange for event, steelblue for object)
-                return d.type === 'event' ? 'orange' : 'steelblue';
-            })
-            .attr('stroke', '#fff')
-            .attr('stroke-width', 1.5)
-            .style('cursor', 'pointer')
-            .on('click', (event, d) => {
-                event.stopPropagation();
-                const [x, y] = d3.pointer(event, svgRef.current);
-                setContextMenu({ x, y, node: d });
-            });
-
-        // 3. Redraw Labels (Your original label logic is complex, assuming you put it back here)
-        // ... label drawing logic should be inserted here using nodeGroup.each(...)
-
-        // Labels
-        nodeGroup.each(function (d) {
-            const group = d3.select(this);
-            const words = d.label.split(/[\s_]+|(?=[A-Z])/g);
-            const lineHeight = 8;
-            const maxLines = 3;
-            const wrapped: string[] = [];
-            let line = '';
-            words.forEach((w) => {
-                if ((line + ' ' + w).length < 10) line += ' ' + w;
-                else {
-                    wrapped.push(line.trim());
-                    line = w;
-                }
-            });
-            wrapped.push(line.trim());
-            const finalLines = wrapped.length > maxLines ? [...wrapped.slice(0, maxLines - 1), '...'] : wrapped;
-
-            const text = group
-                .append('text')
-                .attr('text-anchor', 'middle')
-                .attr('alignment-baseline', 'middle')
-                .attr('font-size', 8)
-                .attr('font-weight', '600')
-                .attr('fill', 'white')
-                .attr('pointer-events', 'none');
-
-            const offset = (finalLines.length - 1) * -lineHeight * 0.5;
-            text.selectAll('tspan')
-                .data(finalLines)
-                .enter()
-                .append('tspan')
-                .attr('x', 0)
-                .attr('y', (_, i) => offset + i * lineHeight)
-                .text((t) => t);
-        });
-
-        // Drag behavior
-        function dragstarted(event: any, d: any) {
-            d.fx = d.x;
-            d.fy = d.y;
-        }
-        function dragged(event: any, d: any) {
-            d.x = event.x;
-            d.y = event.y;
-            positionsRef.current.set(d.id, { x: d.x, y: d.y });
-            d3.select(this).attr('transform', `translate(${d.x},${d.y})`);
-            g.selectAll('line')
-                .attr('x1', (d: any) => d.source.x!)
-                .attr('y1', (d: any) => d.source.y!)
-                .attr('x2', (d: any) => d.target.x!)
-                .attr('y2', (d: any) => d.target.y!);
-        }
-        function dragended(event: any, d: any) {
-            d.fx = null;
-            d.fy = null;
-        }
-    }, [data, chunk, selectedTypes, collapsedNodes, updateFlag]);
-
-    useEffect(() => {
-        if (!data) return;
-        const tooltip = d3
-            .select('body')
-            .append('div')
-            .attr('class', 'd3-tooltip')
-            .style('position', 'absolute')
-            .style('background', 'rgba(0,0,0,0.7)')
-            .style('color', 'white')
-            .style('padding', '6px 10px')
-            .style('border-radius', '6px')
-            .style('font-size', '12px')
-            .style('pointer-events', 'none')
-            .style('opacity', 0);
-
-        const createHistogram = (ref: SVGSVGElement, dataArr: [string, number][], fillColor: string) => {
-            const svg = d3.select(ref);
-            svg.selectAll('*').remove();
-            const width = svg.node()?.clientWidth || 250;
-            const height = svg.node()?.clientHeight || 200;
-            const margin = { top: 20, right: 20, bottom: 50, left: 40 };
-            const x = d3
-                .scaleBand()
-                .domain(dataArr.map(([k]) => k))
-                .range([margin.left, width - margin.right])
-                .padding(0.2);
-            const y = d3
-                .scaleLinear()
-                .domain([0, d3.max(dataArr, ([, v]) => v)!])
-                .nice()
-                .range([height - margin.bottom, margin.top]);
-
-            svg.append('g')
-                .selectAll('rect')
-                .data(dataArr)
-                .enter()
-                .append('rect')
-                .attr('x', ([k]) => x(k)!)
-                .attr('y', ([, v]) => y(v))
-                .attr('width', x.bandwidth())
-                .attr('height', ([, v]) => y(0) - y(v))
-                .attr('fill', fillColor)
-                .on('mouseover', (event, [, v]) => tooltip.style('opacity', 1).html(`<strong>Count:</strong> ${v}`))
-                .on('mousemove', (event) =>
-                    tooltip.style('left', event.pageX + 10 + 'px').style('top', event.pageY - 20 + 'px')
-                )
-                .on('mouseout', () => tooltip.style('opacity', 0));
-
-            svg.append('g')
-                .attr('transform', `translate(0,${height - margin.bottom})`)
-                .call(d3.axisBottom(x))
-                .selectAll('text')
-                .attr('transform', 'rotate(-35)')
-                .style('text-anchor', 'end')
-                .attr('font-size', 9);
-
-            svg.append('g').attr('transform', `translate(${margin.left},0)`).call(d3.axisLeft(y));
-        };
-
-        const activityCounts = d3.rollups(
-            data.events || [],
-            (v) => v.length,
-            (d) => d.type || d.activity || 'Unknown'
-        );
-        const typeCounts = d3.rollups(
-            Object.values(data.objects || {}),
-            (v: any) => v.length,
-            (d: any) => d.type || 'Unknown'
-        );
-
-        if (eventsChartRef.current) createHistogram(eventsChartRef.current, activityCounts, 'orange');
-        if (objectsChartRef.current) createHistogram(objectsChartRef.current, typeCounts, 'steelblue');
-
-        return () => tooltip.remove();
-    }, [data]);
-
-    if (!fileId) return <p>No File selected</p>;
-    if (isLoading) return <p>Loading...</p>;
-    if (error) return <p>Error loading OCEL data</p>;
-    if (!data) return <p>No data available</p>;
-
-    return (
-        <div className="flex flex-col h-screen bg-gray-50 relative">
-            {contextMenu && (
-                <div
-                    className="absolute bg-white border border-gray-300 shadow-lg rounded-md text-sm z-50"
-                    style={{ left: contextMenu.x + 20, top: contextMenu.y }}
-                >
-                    <button
-                        className="block w-full text-left px-3 py-1 hover:bg-gray-100"
-                        onClick={() => handleCollapse(contextMenu.node.id)}
-                    >
-                        Collapse Connected
-                    </button>
-                    <button
-                        className="block w-full text-left px-3 py-1 hover:bg-gray-100"
-                        onClick={() => handleExpand(contextMenu.node.id)}
-                    >
-                        Expand Connected
-                    </button>
-                </div>
-            )}
-
-            <div className="border-b border-gray-200 p-4 bg-white shadow-sm flex flex-wrap gap-3">
-                <h2 className="font-bold text-gray-700">Filter by Event Type:</h2>
-                {data.eventTypes?.map((type: any, idx: number) => {
-                    const typeName = typeof type === 'string' ? type : type.name;
-                    return (
-                        <div key={idx} className="flex items-center space-x-2">
-                            <Checkbox
-                                id={`type-${idx}`}
-                                checked={selectedTypes.includes(typeName)}
-                                onCheckedChange={() => toggleType(typeName)}
-                            />
-                            <label htmlFor={`type-${idx}`} className="text-sm font-medium leading-none">
-                                {typeName}
-                            </label>
-                        </div>
-                    );
-                })}
-            </div>
-
-
-            <div className="grid grid-cols-4 gap-4 p-4 overflow-auto">
-                <div className="col-span-3 bg-white rounded-xl shadow p-3 relative">
-                    <h3 className="font-semibold mb-2 text-center text-gray-700">Event–Object Relationship Graph</h3>
-                    <svg ref={svgRef} className="w-full h-[600px] border rounded-lg bg-gray-50" />
-                    {chunk * MAX_CHUNK < (data.events?.length || 0) && (
-                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-                            <button
-                                onClick={() => setChunk((prev) => prev + 1)}
-                                className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
-                            >
-                                Load More Events ({chunk * MAX_CHUNK}/{data.events.length})
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                <div className="col-span-1 flex flex-col gap-4">
-                    <div className="bg-white rounded-xl shadow p-3">
-                        <h3 className="font-semibold mb-2 text-center text-gray-700">Events per Activity</h3>
-                        <svg ref={eventsChartRef} className="w-full h-[250px]" />
-                    </div>
-                    <div className="bg-white rounded-xl shadow p-3">
-                        <h3 className="font-semibold mb-2 text-center text-gray-700">Objects per Type</h3>
-                        <svg ref={objectsChartRef} className="w-full h-[250px]" />
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-export default OcelVisualization;
+// import { useEffect, useRef, useState } from 'react';
+// import * as d3 from 'd3';
+// import { Checkbox } from '~/components/ui/checkbox';
+// import { useGetOcel } from '~/services/queries';
+
+// // import { getImmediateNeighbors } from '../ocel-visualization/utils/graphUtils';
+
+// type NodeDatum = {
+//     id: string;
+//     label: string;
+//     type: 'event' | 'object';
+//     x?: number;
+//     y?: number;
+//     fx?: number | null;
+//     fy?: number | null;
+// };
+
+// type EdgeDatum = {
+//     id: string;
+//     source: NodeDatum;
+//     target: NodeDatum;
+//     label: string;
+// };
+
+// const MAX_CHUNK = 5;
+// const NODE_RADIUS = 20;
+// const NODE_GAP = 40;
+
+// interface OcelVisualizationD3Props {
+//     fileId: string;
+// }
+
+// const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({ fileId }) => {
+//     const { data, isLoading, error } = useGetOcel(fileId);
+
+//     const svgRef = useRef<SVGSVGElement | null>(null);
+//     const eventsChartRef = useRef<SVGSVGElement | null>(null);
+//     const objectsChartRef = useRef<SVGSVGElement | null>(null);
+
+//     const [chunk, setChunk] = useState(1);
+//     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+//     const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
+//     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: NodeDatum } | null>(null);
+
+//     const nodesRef = useRef<NodeDatum[]>([]);
+//     const edgesRef = useRef<EdgeDatum[]>([]);
+//     const positionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+//     const zoomTransformRef = useRef<d3.ZoomTransform | null>(null);
+
+//     const getNodeEdges = (nodeId: string) => {
+//         return edgesRef.current.filter((e) => e.source.id === nodeId || e.target.id === nodeId);
+//     };
+
+//     const getDanglingNeighbors = (nodeId: string, allEdges: EdgeDatum[]): NodeDatum[] => {
+//         // 1. Get all immediate neighbors
+//         const immediateNeighbors = allEdges
+//             .filter((e) => e.source.id === nodeId || e.target.id === nodeId)
+//             .map((e) => (e.source.id === nodeId ? e.target : e.source));
+
+//         // 2. Filter neighbors to find those that are ONLY connected to nodeId
+//         return immediateNeighbors.filter((neighbor) => {
+//             // Check if the neighbor is connected to any other node besides the original nodeId
+//             const hasOtherConnections = allEdges.some(
+//                 (e) =>
+//                     // Check if this edge connects to the neighbor
+//                     (e.source.id === neighbor.id || e.target.id === neighbor.id) &&
+//                     // AND check that this edge does NOT connect back to the starting node (nodeId)
+//                     e.source.id !== nodeId &&
+//                     e.target.id !== nodeId
+//             );
+
+//             // A node is "dangling" (and should be hidden) if it does NOT have other connections.
+//             return !hasOtherConnections;
+//         });
+//     };
+
+//     const [updateFlag, setUpdateFlag] = useState(0);
+
+//     const handleExpand = (nodeId: string) => {
+//         const node = nodesRef.current.find((n) => n.id === nodeId);
+//         if (!node) return;
+
+//         const newCollapsed = new Set(collapsedNodes);
+//         // Ensure the clicked node itself is marked as expanded
+//         newCollapsed.delete(nodeId);
+
+//         // =========================================================
+//         // 1. EXPAND OBJECT NODE: Show all connected Events
+//         // =========================================================
+//         if (node.type === 'object') {
+//             const connectedEvents = (data.events || []).filter((evt: any) =>
+//                 (evt.relationships || []).some((rel: any) => rel.objectId === nodeId)
+//             );
+
+//             connectedEvents.forEach((evt: any, index: number) => {
+//                 const evtId = evt.id.toString();
+//                 let evtNode = nodesRef.current.find((n) => n.id === evtId);
+
+//                 // Positioning parameters for radial layout
+//                 const RADIUS = 70;
+//                 const totalEvents = connectedEvents.length;
+//                 const angle = (index / totalEvents) * 2 * Math.PI;
+
+//                 // Add Event Node if it doesn't exist
+//                 if (!evtNode) {
+//                     evtNode = {
+//                         id: evtId,
+//                         label: evt.type || evt.activity || 'Event',
+//                         type: 'event',
+//                         x: node.x! + RADIUS * Math.cos(angle),
+//                         y: node.y! + RADIUS * Math.sin(angle),
+//                     };
+//                     nodesRef.current.push(evtNode);
+//                     positionsRef.current.set(evtId, { x: evtNode.x, y: evtNode.y });
+//                 }
+//                 console.log('handle expand node ref');
+//                 console.log(nodesRef.current);
+
+//                 // Add edge between object and event
+//                 if (
+//                     !edgesRef.current.find(
+//                         (e) =>
+//                             (e.source.id === evtId && e.target.id === nodeId) ||
+//                             (e.source.id === nodeId && e.target.id === evtId)
+//                     )
+//                 ) {
+//                     edgesRef.current.push({
+//                         id: `${evtId}-${nodeId}`,
+//                         source: evtNode,
+//                         target: node,
+//                         label: '',
+//                     });
+//                 }
+
+//                 newCollapsed.delete(evtId);
+//             });
+//         }
+//         // =========================================================
+//         // 2. EXPAND EVENT NODE: Show all connected Objects
+//         // =========================================================
+//         else if (node.type === 'event') {
+//             const rawEvent = (data.events || []).find((evt: any) => evt.id.toString() === nodeId);
+//             if (!rawEvent || !rawEvent.relationships) return;
+
+//             const connectedRelationships = rawEvent.relationships;
+//             const totalRelationships = connectedRelationships.length;
+
+//             connectedRelationships.forEach((rel: any, index: number) => {
+//                 const objId = rel.objectId.toString();
+//                 let objNode = nodesRef.current.find((n) => n.id === objId);
+
+//                 // Positioning parameters for radial layout (separate radius for clarity)
+//                 const RADIUS = 70;
+//                 const angle = (index / totalRelationships) * 2 * Math.PI;
+
+//                 // Add Object Node if it doesn't exist
+//                 if (!objNode) {
+//                     // Get object details from the object map in data
+//                     const objectDetails = data.objects ? data.objects[objId] : null;
+
+//                     objNode = {
+//                         id: objId,
+//                         label: objectDetails?.type || objId,
+//                         type: 'object',
+//                         x: node.x! + RADIUS * Math.cos(angle),
+//                         y: node.y! + RADIUS * Math.sin(angle),
+//                     };
+//                     nodesRef.current.push(objNode);
+//                     positionsRef.current.set(objId, { x: objNode.x, y: objNode.y });
+//                 }
+
+//                 // Add edge between event and object (if not already present)
+//                 if (
+//                     !edgesRef.current.find(
+//                         (e) =>
+//                             (e.source.id === nodeId && e.target.id === objId) ||
+//                             (e.source.id === objId && e.target.id === nodeId)
+//                     )
+//                 ) {
+//                     edgesRef.current.push({
+//                         id: `${nodeId}-${objId}`,
+//                         source: node,
+//                         target: objNode,
+//                         label: rel.qualifier || '',
+//                     });
+//                 }
+
+//                 newCollapsed.delete(objId);
+//             });
+//         }
+
+//         setCollapsedNodes(newCollapsed);
+//         setContextMenu(null);
+//         setUpdateFlag((prev) => prev + 1);
+//     };
+
+  
+//     const handleCollapse = (nodeId: string) => {
+//         const node = nodesRef.current.find((n) => n.id === nodeId);
+//         if (!node) return;
+
+//         const newCollapsed = new Set(collapsedNodes);
+
+//         // Find neighbors that only connect to this node (dangling nodes)
+//         const danglingNeighbors = getDanglingNeighbors(nodeId, edgesRef.current);
+
+//         // Add ONLY the dangling neighbors to the collapsed set (these will be hidden)
+//         danglingNeighbors.forEach((n) => newCollapsed.add(n.id));
+
+//         // Keep the clicked node's ID OUT of the collapsedNodes set!
+//         // We will use the presence of its *neighbors* in the set to color it grey in D3.
+
+//         setCollapsedNodes(newCollapsed);
+//         setContextMenu(null);
+
+//         // Force re-render to apply filtering and coloring changes
+//         setUpdateFlag((prev) => prev + 1);
+//     };
+
+//     // const toggleType = (type: string) => {
+//     //     setChunk(1);
+//     //     setSelectedTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]));
+//     // };
+
+//     const toggleType = (type: string) => {
+//         setChunk(1);
+//         setSelectedTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]));
+//     };
+
+//     useEffect(() => {
+//         if (!data || !svgRef.current) return;
+
+//         const svg = d3.select(svgRef.current);
+//         const width = svgRef.current.clientWidth;
+//         const height = svgRef.current.clientHeight;
+
+//         svg.selectAll('*').remove();
+//         const g = svg.append('g');
+
+//         const zoom = d3.zoom<SVGSVGElement, unknown>().on('zoom', (event) => {
+//             g.attr('transform', event.transform.toString());
+//             zoomTransformRef.current = event.transform;
+//         });
+//         svg.call(zoom as any);
+//         if (zoomTransformRef.current) svg.call(zoom.transform as any, zoomTransformRef.current);
+
+//         const events = data.events || [];
+//         const objects = data.objects || [];
+//         console.log('567jhg');
+//         console.log(selectedTypes);
+//         const filteredEvents = events.filter(
+//             (evt: any) => selectedTypes.length === 0 || selectedTypes.includes(evt.type)
+//         );
+//         console.log('filtered');
+//         console.log(filteredEvents);
+//         const chunkedEvents = filteredEvents.slice(0, chunk * MAX_CHUNK);
+//         console.log(chunkedEvents);
+
+//         // Event nodes
+//         const eventNodes: NodeDatum[] = chunkedEvents.map((evt: any) => ({
+//             id: evt.id.toString(),
+//             label: evt.type || evt.activity || 'Event',
+//             type: 'event',
+//         }));
+//         console.log(eventNodes);
+//         console.log(nodesRef.current);
+
+//         // Object nodes
+//         const objectIds = new Set<string>();
+//         chunkedEvents.forEach((evt: any) =>
+//             (evt.relationships || []).forEach((rel: any) => objectIds.add(rel.objectId))
+//         );
+//         const objectNodes: NodeDatum[] = Array.from(objectIds).map((objId) => ({
+//             id: objId.toString(),
+//             label: objects[objId]?.type || objId,
+//             type: 'object',
+//         }));
+
+//         // // Merge nodes (avoid duplicates)
+//         const existingNodeIds = new Set(nodesRef.current.map((n) => n.id));
+//         nodesRef.current = [
+//             ...nodesRef.current,
+//             ...objectNodes.filter((n) => !existingNodeIds.has(n.id)),
+//             ...eventNodes.filter((n) => !existingNodeIds.has(n.id)),
+
+//         ];
+
+//         // --- FIX: rebuild nodes completely when filtering --- //
+
+       
+//         // const expandedNodes: NodeDatum[] = [];
+
+//         // // Fresh nodes only from filtered result
+//         // const freshNodes = [...eventNodes, ...objectNodes];
+
+//         // // Merge but remove duplicates
+//         // const uniqueMap = new Map<string, NodeDatum>();
+//         // [...expandedNodes, ...freshNodes].forEach((n) => uniqueMap.set(n.id, n));
+
+//         // nodesRef.current = Array.from(uniqueMap.values());
+
+//         console.log('nodes ref');
+//         console.log(nodesRef.current);
+//         console.log(eventNodes);
+//         // When filtering, rebuild base graph from scratch (but keep expanded nodes)
+
+//         const newEdges: EdgeDatum[] = [];
+
+
+//     //         edgesRef.current = chunkedEvents.flatMap((evt: any) =>
+//     //   (evt.relationships || []).map((rel: any, j: number) => ({
+//     //     id: `${evt.id}-${rel.objectId}-${j}`,
+//     //     source: nodesRef.current.find((n) => n.id === evt.id.toString())!,
+//     //     target: nodesRef.current.find((n) => n.id === rel.objectId.toString())!,
+//     //     label: rel.qualifier || '',
+//     //   }))
+//     // );
+//     // console.log(edgesRef.current);
+
+//         chunkedEvents.forEach((evt: any) => {
+//             (evt.relationships || []).forEach((rel: any, idx: number) => {
+//                 const evtId = evt.id.toString();
+//                 const objId = rel.objectId.toString();
+
+//                 const source = nodesRef.current.find((n) => n.id === evtId);
+//                 const target = nodesRef.current.find((n) => n.id === objId);
+
+//                 if (!source || !target) return;
+
+//                 const edgeId = `${evtId}-${objId}-${idx}`;
+
+//                 newEdges.push({
+//                     id: edgeId,
+//                     source,
+//                     target,
+//                     label: rel.qualifier || '',
+//                 });
+//             });
+//         });
+
+//         // --- MERGE new edges with old edges (important for expand!) --- //
+//         const edgeMap = new Map<string, EdgeDatum>();
+// console.log('edges ref');
+// console.log(edgesRef.current);
+//         // Keep existing edges created during EXPAND
+//         edgesRef.current.forEach((e) => edgeMap.set(e.id, e));
+
+//         // Add the newly calculated edges
+//         newEdges.forEach((e) => {
+//             if (!edgeMap.has(e.id)) {
+//                 edgeMap.set(e.id, e);
+//             }
+//         });
+
+//         // Save merged edge list back
+//         edgesRef.current = Array.from(edgeMap.values());
+
+//         // Position nodes if not already positioned
+//         nodesRef.current.forEach((n) => {
+//             if (!positionsRef.current.has(n.id)) {
+//                 let newX, newY, overlapping;
+//                 do {
+//                     newX = width / 2 + Math.random() * 400 - 200;
+//                     newY = height / 2 + Math.random() * 400 - 200;
+//                     overlapping = Array.from(positionsRef.current.values()).some(
+//                         (p) => Math.hypot(p.x - newX, p.y - newY) < NODE_GAP
+//                     );
+//                 } while (overlapping);
+//                 n.x = newX;
+//                 n.y = newY;
+//                 positionsRef.current.set(n.id, { x: n.x, y: n.y });
+//             } else {
+//                 const pos = positionsRef.current.get(n.id)!;
+//                 n.x = pos.x;
+//                 n.y = pos.y;
+//             }
+//         });
+
+//         g.selectAll('line')
+//             .data(
+//                 edgesRef.current.filter(
+//                     (d) =>
+//                         // Hide edge ONLY IF either end is a node in the collapsed set (hidden neighbor)
+//                         !collapsedNodes.has(d.source.id) && !collapsedNodes.has(d.target.id)
+//                 )
+//             )
+//             .join('line') // Use join for efficient update/enter/exit handling
+//             .attr('stroke', 'black') // No need for conditional color; it's either visible or hidden
+//             .attr('stroke-width', 1.8)
+//             .attr('x1', (d) => d.source.x!)
+//             .attr('y1', (d) => d.source.y!)
+//             .attr('x2', (d) => d.target.x!)
+//             .attr('y2', (d) => d.target.y!);
+//         // ---
+
+//         const nodeData = nodesRef.current.filter((d) => !collapsedNodes.has(d.id));
+
+//         const nodeGroup = g
+//             .selectAll<SVGGElement, NodeDatum>('g.node')
+//             .data(nodeData, (d) => d.id) // Key function ensures stable updates
+//             .join(
+//                 (enter) => enter.append('g').attr('class', 'node'),
+//                 (update) => update,
+//                 (exit) => exit.remove()
+//             )
+//             .attr('transform', (d) => `translate(${d.x},${d.y})`)
+//             .call(d3.drag<SVGGElement, NodeDatum>().on('start', dragstarted).on('drag', dragged).on('end', dragended));
+
+//         // 1. Remove old circles and text to redraw with new colors/content
+//         nodeGroup.selectAll('circle').remove();
+//         nodeGroup.selectAll('text').remove();
+
+//         // 2. Redraw Circle with Conditional Coloring
+//         nodeGroup
+//             .append('circle')
+//             .attr('r', NODE_RADIUS)
+//             .attr('fill', (d) => {
+//                 // Check if THIS node (d) has any immediate neighbors that are currently collapsed (hidden)
+//                 const hasHiddenNeighbors = getDanglingNeighbors(d.id, edgesRef.current).some((n) =>
+//                     collapsedNodes.has(n.id)
+//                 );
+
+//                 if (hasHiddenNeighbors) {
+//                     // 💡 If it triggered the collapse, color it gray
+//                     return 'lightgray';
+//                 }
+
+//                 // Otherwise, use the standard color (orange for event, steelblue for object)
+//                 return d.type === 'event' ? 'orange' : 'steelblue';
+//             })
+//             .attr('stroke', '#fff')
+//             .attr('stroke-width', 1.5)
+//             .style('cursor', 'pointer')
+//             .on('click', (event, d) => {
+//                 event.stopPropagation();
+//                 const [x, y] = d3.pointer(event, svgRef.current);
+//                 setContextMenu({ x, y, node: d });
+//             });
+
+//         // 3. Redraw Labels (Your original label logic is complex, assuming you put it back here)
+//         // ... label drawing logic should be inserted here using nodeGroup.each(...)
+
+//         // Labels
+//         nodeGroup.each(function (d) {
+//             const group = d3.select(this);
+//             const words = d.label.split(/[\s_]+|(?=[A-Z])/g);
+//             const lineHeight = 8;
+//             const maxLines = 3;
+//             const wrapped: string[] = [];
+//             let line = '';
+//             words.forEach((w) => {
+//                 if ((line + ' ' + w).length < 10) line += ' ' + w;
+//                 else {
+//                     wrapped.push(line.trim());
+//                     line = w;
+//                 }
+//             });
+//             wrapped.push(line.trim());
+//             const finalLines = wrapped.length > maxLines ? [...wrapped.slice(0, maxLines - 1), '...'] : wrapped;
+
+//             const text = group
+//                 .append('text')
+//                 .attr('text-anchor', 'middle')
+//                 .attr('alignment-baseline', 'middle')
+//                 .attr('font-size', 8)
+//                 .attr('font-weight', '600')
+//                 .attr('fill', 'white')
+//                 .attr('pointer-events', 'none');
+
+//             const offset = (finalLines.length - 1) * -lineHeight * 0.5;
+//             text.selectAll('tspan')
+//                 .data(finalLines)
+//                 .enter()
+//                 .append('tspan')
+//                 .attr('x', 0)
+//                 .attr('y', (_, i) => offset + i * lineHeight)
+//                 .text((t) => t);
+//         });
+
+//         // Drag behavior
+//         function dragstarted(event: any, d: any) {
+//             d.fx = d.x;
+//             d.fy = d.y;
+//         }
+//         function dragged(event: any, d: any) {
+//             d.x = event.x;
+//             d.y = event.y;
+//             positionsRef.current.set(d.id, { x: d.x, y: d.y });
+//             d3.select(this).attr('transform', `translate(${d.x},${d.y})`);
+//             g.selectAll('line')
+//                 .attr('x1', (d: any) => d.source.x!)
+//                 .attr('y1', (d: any) => d.source.y!)
+//                 .attr('x2', (d: any) => d.target.x!)
+//                 .attr('y2', (d: any) => d.target.y!);
+//         }
+//         function dragended(event: any, d: any) {
+//             d.fx = null;
+//             d.fy = null;
+//         }
+//     }, [data, chunk, selectedTypes, collapsedNodes, updateFlag]);
+
+//     useEffect(() => {
+//         if (!data) return;
+//         const tooltip = d3
+//             .select('body')
+//             .append('div')
+//             .attr('class', 'd3-tooltip')
+//             .style('position', 'absolute')
+//             .style('background', 'rgba(0,0,0,0.7)')
+//             .style('color', 'white')
+//             .style('padding', '6px 10px')
+//             .style('border-radius', '6px')
+//             .style('font-size', '12px')
+//             .style('pointer-events', 'none')
+//             .style('opacity', 0);
+
+//         const createHistogram = (ref: SVGSVGElement, dataArr: [string, number][], fillColor: string) => {
+//             const svg = d3.select(ref);
+//             svg.selectAll('*').remove();
+//             const width = svg.node()?.clientWidth || 250;
+//             const height = svg.node()?.clientHeight || 200;
+//             const margin = { top: 20, right: 20, bottom: 50, left: 40 };
+//             const x = d3
+//                 .scaleBand()
+//                 .domain(dataArr.map(([k]) => k))
+//                 .range([margin.left, width - margin.right])
+//                 .padding(0.2);
+//             const y = d3
+//                 .scaleLinear()
+//                 .domain([0, d3.max(dataArr, ([, v]) => v)!])
+//                 .nice()
+//                 .range([height - margin.bottom, margin.top]);
+
+//             svg.append('g')
+//                 .selectAll('rect')
+//                 .data(dataArr)
+//                 .enter()
+//                 .append('rect')
+//                 .attr('x', ([k]) => x(k)!)
+//                 .attr('y', ([, v]) => y(v))
+//                 .attr('width', x.bandwidth())
+//                 .attr('height', ([, v]) => y(0) - y(v))
+//                 .attr('fill', fillColor)
+//                 .on('mouseover', (event, [, v]) => tooltip.style('opacity', 1).html(`<strong>Count:</strong> ${v}`))
+//                 .on('mousemove', (event) =>
+//                     tooltip.style('left', event.pageX + 10 + 'px').style('top', event.pageY - 20 + 'px')
+//                 )
+//                 .on('mouseout', () => tooltip.style('opacity', 0));
+
+//             svg.append('g')
+//                 .attr('transform', `translate(0,${height - margin.bottom})`)
+//                 .call(d3.axisBottom(x))
+//                 .selectAll('text')
+//                 .attr('transform', 'rotate(-35)')
+//                 .style('text-anchor', 'end')
+//                 .attr('font-size', 9);
+
+//             svg.append('g').attr('transform', `translate(${margin.left},0)`).call(d3.axisLeft(y));
+//         };
+
+//         const activityCounts = d3.rollups(
+//             data.events || [],
+//             (v) => v.length,
+//             (d) => d.type || d.activity || 'Unknown'
+//         );
+//         const typeCounts = d3.rollups(
+//             Object.values(data.objects || {}),
+//             (v: any) => v.length,
+//             (d: any) => d.type || 'Unknown'
+//         );
+
+//         if (eventsChartRef.current) createHistogram(eventsChartRef.current, activityCounts, 'orange');
+//         if (objectsChartRef.current) createHistogram(objectsChartRef.current, typeCounts, 'steelblue');
+
+//         return () => tooltip.remove();
+//     }, [data]);
+
+//     if (!fileId) return <p>No File selected</p>;
+//     if (isLoading) return <p>Loading...</p>;
+//     if (error) return <p>Error loading OCEL data</p>;
+//     if (!data) return <p>No data available</p>;
+
+//     return (
+//         <div className="flex flex-col h-screen bg-gray-50 relative">
+//             {contextMenu && (
+//                 <div
+//                     className="absolute bg-white border border-gray-300 shadow-lg rounded-md text-sm z-50"
+//                     style={{ left: contextMenu.x + 20, top: contextMenu.y }}
+//                 >
+//                     <button
+//                         className="block w-full text-left px-3 py-1 hover:bg-gray-100"
+//                         onClick={() => handleCollapse(contextMenu.node.id)}
+//                     >
+//                         Collapse Connected
+//                     </button>
+//                     <button
+//                         className="block w-full text-left px-3 py-1 hover:bg-gray-100"
+//                         onClick={() => handleExpand(contextMenu.node.id)}
+//                     >
+//                         Expand Connected
+//                     </button>
+//                 </div>
+//             )}
+
+//             <div className="border-b border-gray-200 p-4 bg-white shadow-sm flex flex-wrap gap-3">
+//                 <h2 className="font-bold text-gray-700">Filter by Event Type:</h2>
+//                 {data.eventTypes?.map((type: any, idx: number) => {
+//                     const typeName = typeof type === 'string' ? type : type.name;
+//                     return (
+//                         <div key={idx} className="flex items-center space-x-2">
+//                             <Checkbox
+//                                 id={`type-${idx}`}
+//                                 checked={selectedTypes.includes(typeName)}
+//                                 onCheckedChange={() => toggleType(typeName)}
+//                             />
+//                             <label htmlFor={`type-${idx}`} className="text-sm font-medium leading-none">
+//                                 {typeName}
+//                             </label>
+//                         </div>
+//                     );
+//                 })}
+//             </div>
+
+//             <div className="grid grid-cols-4 gap-4 p-4 overflow-auto">
+//                 <div className="col-span-3 bg-white rounded-xl shadow p-3 relative">
+//                     <h3 className="font-semibold mb-2 text-center text-gray-700">Event–Object Relationship Graph</h3>
+//                     <svg ref={svgRef} className="w-full h-[600px] border rounded-lg bg-gray-50" />
+//                     {chunk * MAX_CHUNK < (data.events?.length || 0) && (
+//                         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+//                             <button
+//                                 onClick={() => setChunk((prev) => prev + 1)}
+//                                 className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
+//                             >
+//                                 Load More Events ({chunk * MAX_CHUNK}/{data.events.length})
+//                             </button>
+//                         </div>
+//                     )}
+//                 </div>
+
+//                 <div className="col-span-1 flex flex-col gap-4">
+//                     <div className="bg-white rounded-xl shadow p-3">
+//                         <h3 className="font-semibold mb-2 text-center text-gray-700">Events per Activity</h3>
+//                         <svg ref={eventsChartRef} className="w-full h-[250px]" />
+//                     </div>
+//                     <div className="bg-white rounded-xl shadow p-3">
+//                         <h3 className="font-semibold mb-2 text-center text-gray-700">Objects per Type</h3>
+//                         <svg ref={objectsChartRef} className="w-full h-[250px]" />
+//                     </div>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// };
+
+// export default OcelVisualization;
+
+
+
+
+
+
+
+
+
+

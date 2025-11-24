@@ -1,7 +1,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import { Checkbox } from '~/components/ui/checkbox';
 import { useGetOcel } from '~/services/queries';
 import { OcelVisualizationD3Props } from './types';
 
@@ -21,12 +20,8 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({ fileId }) => {
     const objectsChartRef = useRef<SVGSVGElement | null>(null);
 
     const [chunk, setChunk] = useState(1);
-    const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-
-    const toggleType = (type: string) => {
-        setChunk(1);
-        setSelectedTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]));
-    };
+   
+    const [selectedType, setSelectedType] = useState<string>('__ALL__');
 
     
     const {
@@ -35,8 +30,11 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({ fileId }) => {
         setContextMenu,
         handleCollapse,
         handleExpand,
-        updateFlag, 
-    } = useGraphInteractions(data, selectedTypes, chunk, setChunk, svgRef);
+        handleTypeChange,
+        updateFlag,
+
+    } = useGraphInteractions(data, selectedType, setSelectedType, chunk, setChunk, svgRef);
+
 
    
     useEffect(() => {
@@ -117,15 +115,23 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({ fileId }) => {
         return () => tooltip.remove();
     }, [data]);
 
+    const eventTypes: string[] = Array.isArray(data?.eventTypes)
+  ? data!.eventTypes.map((t: any) => (typeof t === 'string' ? t : t.name))
+  : [];
+
+
+        
+
   
     if (!fileId) return <p>No File selected</p>;
     if (isLoading) return <p>Loading...</p>;
     if (error) return <p>Error loading OCEL data</p>;
     if (!data) return <p>No data available</p>;
 
+
     return (
         <div className="flex flex-col h-screen bg-gray-50 relative">
-            {/* Context Menu JSX remains the same, using the destructured handlers */}
+           
             {contextMenu && (
                 <div
                     className="absolute bg-white border border-gray-300 shadow-lg rounded-md text-sm z-50"
@@ -147,23 +153,20 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({ fileId }) => {
             )}
 
           
-            <div className="border-b border-gray-200 p-4 bg-white shadow-sm flex flex-wrap gap-3">
-                <h2 className="font-bold text-gray-700">Filter by Event Type:</h2>
-                {data.eventTypes?.map((type: any, idx: number) => {
-                    const typeName = typeof type === 'string' ? type : type.name;
-                    return (
-                        <div key={idx} className="flex items-center space-x-2">
-                            <Checkbox
-                                id={`type-${idx}`}
-                                checked={selectedTypes.includes(typeName)}
-                                onCheckedChange={() => toggleType(typeName)}
-                            />
-                            <label htmlFor={`type-${idx}`} className="text-sm font-medium leading-none">
-                                {typeName}
-                            </label>
-                        </div>
-                    );
-                })}
+            <div className="border-b border-gray-200 p-4 bg-white shadow-sm flex flex-wrap gap-3 items-center">
+                <h2 className="font-bold text-gray-700 mr-2">Filter by Event Type:</h2>
+                <select
+                    value={selectedType}
+                    onChange={(e) => handleTypeChange(e.target.value)}
+                    className="border rounded px-2 py-1"
+                >
+                    <option value="__ALL__">All types</option>
+                    {eventTypes.map((t, idx) => (
+                        <option key={idx} value={t}>
+                            {t}
+                        </option>
+                    ))}
+                </select>
             </div>
 
            
@@ -200,3 +203,15 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({ fileId }) => {
 };
 
 export default OcelVisualization;
+
+
+
+
+
+
+
+
+
+
+
+
