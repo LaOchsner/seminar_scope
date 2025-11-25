@@ -38,16 +38,6 @@ const ExploreSidebar: React.FC<ExploreSidebarProps> = ({}) => {
                             <SidebarMenuItem className="ml-1">
                                 <DndCard title="OCEL File" Icon={FileSpreadsheet} nodeType="ocelFileNode" />
                             </SidebarMenuItem>
-                            <SidebarMenuItem className="ml-1">
-                                <DndCard title="Object Event-Graph" Icon={Network} nodeType="objectEventGraphNode" />
-                            </SidebarMenuItem>
-                            <SidebarMenuItem className="ml-1">
-                                <DndCard
-                                    title="Histogram Visualization"
-                                    Icon={AlignEndHorizontal}
-                                    nodeType="histVisualizationNode"
-                                />
-                            </SidebarMenuItem>
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>

@@ -5,6 +5,7 @@ import {
     FileJson,
     FileSpreadsheet,
     FileText,
+    Grip,
     type LucideProps,
     Network,
     TreePine,
@@ -21,6 +22,7 @@ export const iconMap: Record<string, ComponentType<LucideProps>> = {
     fileJson: FileJson,
     treePine: TreePine,
     network: Network,
+    grip: Grip,
 };
 
 export const getIconComponent = (iconName: string): ComponentType<LucideProps> => {

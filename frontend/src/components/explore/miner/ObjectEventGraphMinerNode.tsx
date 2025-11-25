@@ -18,7 +18,6 @@ const ObjectEventGraphMinerNode = memo<NodeProps<MinerNode>>((node) => {
         return node.data.assets.some((asset) => asset.io === 'output' && asset.origin === 'mined');
     }, [node.data.assets]);
 
-    // Placeholder for a hook that would process an OCEL into a graph
     const { isLoading, data } = useGetOcel(fileId);
 
     useMemo(() => {
@@ -33,12 +32,11 @@ const ObjectEventGraphMinerNode = memo<NodeProps<MinerNode>>((node) => {
         const inputAsset = node.data.assets.find((asset) => asset.io === 'input');
         const outputAssets = node.data.assets.filter((asset) => asset.io === 'output');
 
-        // Only run if we have an input, don't have an output, and the data is "loaded"
         if (!inputAsset || outputAssets.length > 0 || !data) return;
 
         const newOutputAsset: BaseExploreNodeAsset = {
             ...inputAsset,
-            id: inputAsset.id, // Use same ID
+            id: inputAsset.id,
             io: 'output',
             origin: 'mined',
             type: 'objectEventGraph',
@@ -49,9 +47,7 @@ const ObjectEventGraphMinerNode = memo<NodeProps<MinerNode>>((node) => {
         node.data.onDataChange(node.id, { assets: updatedAssets });
     }, [data, node.data.assets, node.id, node.data.onDataChange]);
 
-    const handleDropdownAction = (action: BaseExploreNodeDropdownActionType) => {
-        // No specific actions for now
-    };
+    const handleDropdownAction = (action: BaseExploreNodeDropdownActionType) => {};
 
     const dropdownOptions: BaseExploreNodeDropdownOption[] = [
         { label: 'Change Source', action: 'changeSourceFile' as const },
@@ -61,7 +57,7 @@ const ObjectEventGraphMinerNode = memo<NodeProps<MinerNode>>((node) => {
         <BaseMinerNode
             {...node}
             title="Object Event-Graph Miner"
-            iconName="workflow" // Using a different icon
+            iconName="grip"
             handleOptions={[
                 { position: Position.Left, type: 'target' as const },
                 { position: Position.Right, type: 'source' as const },

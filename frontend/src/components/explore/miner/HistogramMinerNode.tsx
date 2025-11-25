@@ -13,13 +13,11 @@ const HistogramMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const { assets } = nodeData;
     const [inputFileId, setInputFileId] = useState<string | null>(null);
 
-    // Find the input asset
     useEffect(() => {
         const inputAsset = assets.find((a) => a.io === 'input' && a.type === 'ocelFile');
         setInputFileId(inputAsset?.id ?? null);
     }, [assets]);
 
-    // Check if the output asset already exists
     const hasMinedAsset = useMemo(() => {
         return assets.some((asset) => asset.io === 'output' && asset.origin === 'mined');
     }, [assets]);
@@ -27,8 +25,6 @@ const HistogramMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const openMinerInterface = () => {
         if (inputFileId) {
             navigate(`/data/pipeline/explore/hist-viz/${id}`);
-        } else {
-            console.warn('No input file available for histogram miner.');
         }
     };
 
