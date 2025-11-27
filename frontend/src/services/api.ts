@@ -111,3 +111,8 @@ export const getCaseNotions = async (cnFileId: string) => {
     const response = await api.get(`v1/case_notion/case_ocel/${cnFileId}`);
     return response.data;
 };
+
+export const getLogGraphs = async (ocelFileId: string) => {
+    const response = await api.get(`v1/log_graphs/ocel/${ocelFileId}`);
+    return response.data;
+};

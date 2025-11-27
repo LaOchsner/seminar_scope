@@ -4,6 +4,7 @@ import {
     getCaseNotions,
     getConnectedComponentsCN,
     getHistogram,
+    getLogGraphs,
     getOcelObjectTypes,
     getOcpt,
     getTraditionalCN,
@@ -89,6 +90,15 @@ export const useGetCaseNotions = (cnFileId: string) => {
         queryKey: ['getCaseNotions', cnFileId],
         queryFn: () => getCaseNotions(cnFileId),
         enabled: cnFileId.length > 0,
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetLogGraphs = (ocelFileId: string) => {
+    return useQuery({
+        queryKey: ['getLogGraphs', ocelFileId],
+        queryFn: () => getLogGraphs(ocelFileId),
+        enabled: ocelFileId.length > 0,
         refetchOnWindowFocus: false,
     });
 };
