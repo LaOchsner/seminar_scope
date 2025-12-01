@@ -19,6 +19,6 @@ pub fn router() -> Router {
         )
         .nest("/case_notion", case_notion::router())
         .nest("/log_graphs", log_graphs::router())
-        .merge(df2::router())
-        .nest("/ocim", ocim::router())
+        .nest("/ocpt", df2::router())
+        .nest("/ocpt", ocim::router())
 }
