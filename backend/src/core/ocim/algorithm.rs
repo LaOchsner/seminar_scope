@@ -100,3 +100,32 @@ pub fn find_strict_cut(local_data: &LocalData, global_data: &GlobalData) -> Opti
     }
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::ocim::common_data::{GlobalData, LocalData};
+    use crate::models::ocpt::{OCPTNode, OCPTOperatorType};
+    use process_mining::ocel::ocel_struct::OCEL;
+    use std::path::Path;
+
+    #[test]
+    fn ocim_recursive_builds_sequence_root_for_example_log() {
+        let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let path = manifest
+            .join("..")
+            .join("example_data")
+            .join("ocel")
+            .join("example_log_ocim.json");
+
+        let data = std::fs::read_to_string(&path).expect("read example OCEL file");
+        let ocel: OCEL = serde_json::from_str(&data).expect("parse example OCEL");
+
+        let local = LocalData::new(vec![ocel.clone()], None);
+        let global = GlobalData::new(vec![ocel]);
+
+        let root = ocim_recursive(local, &global);
+
+        println!("{}", root.pretty());
+    }
+}
