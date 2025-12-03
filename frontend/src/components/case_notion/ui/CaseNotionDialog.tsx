@@ -21,8 +21,10 @@ import {
     SelectValue,
 } from '~/components/ui/select';
 import { getAdvancedCN, getConnectedComponentsCN, getTraditionalCN } from '~/services/api';
-import { useGetCaseNotions, useGetOcelObjectTypes } from '~/services/queries';
+import { useGetCaseNotions, useGetOcelObjectTypes, useGetLogGraphs } from '~/services/queries';
 import { BaseExploreNodeAsset, BaseExploreNodeData } from '~/types/explore/nodeData/baseNodeData';
+import OcelVisualization from '~/components/graph_visualization/OcelVisualization';
+import GraphPage from '~/components/graph_visualization/GraphPage';
 
 interface CaseNotionDialogProps {
     nodeId: string;
@@ -47,6 +49,10 @@ const CaseNotionDialog = ({
 
     const { data: ocelObjectTypesData } = useGetOcelObjectTypes(fileId);
     const cnGet = useGetCaseNotions(currentCnFileId);
+    const logGraph = useGetLogGraphs(fileId ?? '');
+    console.log('log graph');
+    console.log(logGraph);
+
 
     const { mutate, isPending, data } = useMutation({
         mutationFn: async (algorithm: string) => {
@@ -94,13 +100,27 @@ const CaseNotionDialog = ({
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[800px] md:max-w-[1000px] lg:max-w-[1200px] h-[80vh] w-full flex flex-col">
-                <div className="flex flex-row flex-grow">
-                    <div className="flex w-2/3">
+                <div className="flex flex-row flex-grow min-h-0">
+                    
+                    <div className="flex flex-col w-2/3 min-h-0">
                         <DialogHeader>
                             <DialogTitle>Case Notions</DialogTitle>
                             <DialogDescription>Choose a case notion mining algorithm</DialogDescription>
                         </DialogHeader>
-                    </div>
+                   
+                    <div className="flex flex-1 w-full h-full overflow-hidden">
+    <div className="flex flex-col w-full h-full overflow-hidden">
+        {fileId ? (
+            <GraphPage fileId={fileId} />
+        ) : (
+            <div className="flex flex-1 items-center justify-center">
+                <p className="text-gray-500">No OCEL file connected.</p>
+            </div>
+        )}
+    </div>
+</div>
+
+                </div>
                     <div className="w-px bg-border h-full mx-4"></div>
                     <div className="flex flex-col w-1/3">
                         <p className="font-bold">Settings</p>

@@ -114,5 +114,7 @@ export const getCaseNotions = async (cnFileId: string) => {
 
 export const getLogGraphs = async (ocelFileId: string) => {
     const response = await api.get(`v1/log_graphs/ocel/${ocelFileId}`);
+    console.log('get log graphs');
+    console.log(response.data);
     return response.data;
 };
