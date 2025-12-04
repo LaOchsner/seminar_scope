@@ -1,4 +1,4 @@
-export const fileNodeTypes = ['ocptFileNode', 'ocelFileNode', 'objectEventGraphNode'] as const;
+export const fileNodeTypes = ['ocptFileNode', 'ocelFileNode'] as const;
 export type ExploreFileNodeType = (typeof fileNodeTypes)[number];
 
 export const visualizationNodeTypes = [
