@@ -111,7 +111,7 @@ const CaseNotionDialog = ({
                     <div className="flex flex-1 w-full h-full overflow-hidden">
     <div className="flex flex-col w-full h-full overflow-hidden">
         {fileId ? (
-            <GraphPage fileId={fileId} caseNotionGraph={data?.graph} />
+            <GraphPage fileId={fileId} caseNotionGraph={data?.type_level_graph} />
         ) : (
             <div className="flex flex-1 items-center justify-center">
                 <p className="text-gray-500">No OCEL file connected.</p>
