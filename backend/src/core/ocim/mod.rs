@@ -15,3 +15,6 @@ pub mod sequence_cut;
 pub mod loop_cut;
 pub mod loop_cut_detection;
 pub mod exclusive_cut;
+pub mod fallthrough_definition;
+pub mod fallthrough_detection;
+pub mod fallthrough_evaluation;
