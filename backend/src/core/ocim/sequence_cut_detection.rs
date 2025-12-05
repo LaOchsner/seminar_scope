@@ -429,7 +429,7 @@ mod tests {
         });
 
         // 2. Act: Run the OCIM algorithm
-        let ocpt = ocim_init(&ocel);
+        let ocpt = ocim_init(&vec![ocel.clone()]);
         dbg!(&ocpt);
 
         // 3. Assert: Check if the root node is a Sequence Operator

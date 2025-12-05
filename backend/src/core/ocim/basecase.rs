@@ -158,7 +158,7 @@ mod tests {
         ocel.object_types.push(OCELType { name: "ot1".to_string(), attributes: Vec::new() });
 
         // 2. Act: Run the OCIM algorithm
-        let ocpt = ocim_init(&ocel);
+        let ocpt = ocim_init(&vec![ocel.clone()]);
         dbg!(&ocpt);
 
         // 3. Assert: Check if the result is a single LeafNode
@@ -214,7 +214,7 @@ mod tests {
         ocel.object_types.push(OCELType { name: "ot1".to_string(), attributes: Vec::new() });
 
         // 2. Act: Run the OCIM algorithm
-        let ocpt = ocim_init(&ocel);
+        let ocpt = ocim_init(&vec![ocel.clone()]);
         dbg!(&ocpt);
 
         // 3. Assert: Check if the result is a Loop OperatorNode
@@ -250,7 +250,7 @@ mod tests {
         ocel.event_types.push(OCELType { name: "b".to_string(), attributes: Vec::new() });
 
         // 2. Act: Run the OCIM algorithm
-        let ocpt = ocim_init(&ocel);
+        let ocpt = ocim_init(&vec![ocel.clone()]);
         dbg!(&ocpt);
 
         // 3. Assert: Check that `basecase` was not called and we have a placeholder from the stubbed cut logic.
