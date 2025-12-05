@@ -8,6 +8,7 @@ use crate::core::ocim::{
     log_splitting::split_log,
     exclusive_cut_detection::find_cut_exclusive,
     concurrent_cut_detection::find_cut_concurrent,
+    fallthrough::detect_fallthrough_fitness_polynomial,
 };
 
 pub fn ocim_init(logs: &Vec<OCEL>) -> OCPT {
@@ -77,19 +78,27 @@ fn ocim_recursive(local_data: LocalData, global_data: &GlobalData) -> OCPTNode {
         return operator_node;
 
     } else {
-        // If no cut found: try fallthrough (another strategy)
-        let fallthrough_found: bool = false;
-        let _fallthrough_partitions: Vec<Vec<String>> = Vec::new();
+        // If no strict cut found, try fallthrough detection.
+        let (fallthrough_partition, fallthrough_operator, _score) =
+            detect_fallthrough_fitness_polynomial(&local_data, global_data);
 
-        if fallthrough_found {
-            // Replace with real SPLITLOG on fallthrough partitions and recursion
-            // For now return a placeholder leaf indicating fallthrough branch
-            return OCPTNode::new_leaf(Some("FALLTHROUGH_PLACEHOLDER".to_string()));
-        } else {
-            // No cut and no fallthrough => algorithm would usually abort or return a leaf
-            // Return a leaf indicating that no further decomposition was possible.
-            return OCPTNode::new_leaf(Some("NO_CUT_FOUND".to_string()));
+        if let (Some(partition), Some(operator)) = (fallthrough_partition, fallthrough_operator) {
+            let sublogs = split_log(&local_data, partition.clone(), &operator, global_data);
+            let subtrees: Vec<OCPTNode> = sublogs
+                .into_iter()
+                .map(|sublog| ocim_recursive(sublog, global_data))
+                .collect();
+
+            let mut operator_node = OCPTNode::new_operator(operator);
+            for subtree in subtrees {
+                operator_node.add_child(subtree);
+            }
+            return operator_node;
         }
+
+        // No cut and no fallthrough => algorithm would usually abort or return a leaf.
+        // Return a leaf indicating that no further decomposition was possible.
+        return OCPTNode::new_leaf(Some("NO_CUT_FOUND".to_string()));
     }
 }
 
