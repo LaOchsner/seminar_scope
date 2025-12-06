@@ -5,6 +5,7 @@ import {
     getConnectedComponentsCN,
     getHistogram,
     getLogGraphs,
+    getOcelCollection,
     getOcelObjectTypes,
     getOcpt,
     getTraditionalCN,

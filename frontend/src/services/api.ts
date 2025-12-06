@@ -47,12 +47,6 @@ export const getOcel = async (fileId: string) => {
     return response.data;
 };
 
-export const getOcelCollection = async (fileId: string) => {
-    const response = await api.get(`/v1/objects/ocel_collection/${fileId}`);
-    console.log(response.data);
-    return response.data;
-};
-
 export const getHistogram = async (fileId: string) => {
     const response = await api.get(`/v1/event_object_frequencies/histogram/${fileId}`);
     return response.data;
@@ -122,6 +116,12 @@ export const getCaseNotions = async (cnFileId: string) => {
 export const getLogGraphs = async (ocelFileId: string) => {
     const response = await api.get(`v1/log_graphs/ocel/${ocelFileId}`);
     console.log('get log graphs');
+    console.log(response.data);
+    return response.data;
+};
+
+export const getOcelCollection = async (ocelCollectionFileId: string) => {
+    const response = await api.get(`v1/objects/ocel_collection/${ocelCollectionFileId}`);
     console.log(response.data);
     return response.data;
 };
