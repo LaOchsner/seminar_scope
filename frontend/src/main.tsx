@@ -4,6 +4,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import '~/index.css';
+import RedirectErrorBoundary from '~/components/RedirectErrorBoundary';
 import Explore from '~/routes/Explore';
 import HistViz from '~/routes/Hist-Viz';
 import Home from '~/routes/Home';
@@ -39,15 +40,27 @@ const router = createBrowserRouter([
     // },
     {
         path: '/data/pipeline/explore/ocpt/:nodeId',
-        element: <OcptViewer />,
+        element: (
+            <RedirectErrorBoundary>
+                <OcptViewer />
+            </RedirectErrorBoundary>
+        ),
     },
     {
         path: '/data/pipeline/explore/ocel/:nodeId',
-        element: <OcelViewer />,
+        element: (
+            <RedirectErrorBoundary>
+                <OcelViewer />
+            </RedirectErrorBoundary>
+        ),
     },
     {
         path: '/data/pipeline/explore/hist-viz/:nodeId',
-        element: <HistViz />,
+        element: (
+            <RedirectErrorBoundary>
+                <HistViz />
+            </RedirectErrorBoundary>
+        ),
     },
 ]);
 

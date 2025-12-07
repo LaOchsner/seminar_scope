@@ -3,6 +3,7 @@ import { GetCaseNotionsResponse } from '~/services/response.types';
 import { CaseNotionApiResponse } from '~/types/case_notion.types';
 import { ExtendedFile } from '~/types/files.types';
 import { JSONSchema } from '~/types/ocpt/ocpt.types';
+import { CaseOcelResponse } from '~/types/api/ocel_collection.api'; // Import the new type
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_BACKEND_BASE_URL,
@@ -120,7 +121,7 @@ export const getLogGraphs = async (ocelFileId: string) => {
     return response.data;
 };
 
-export const getOcelCollection = async (ocelCollectionFileId: string) => {
+export const getOcelCollection = async (ocelCollectionFileId: string): Promise<CaseOcelResponse> => {
     const response = await api.get(`v1/objects/ocel_collection/${ocelCollectionFileId}`);
     console.log(response.data);
     return response.data;
