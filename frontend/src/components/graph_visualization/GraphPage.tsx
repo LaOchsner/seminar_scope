@@ -204,7 +204,7 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
 
                     d3.select(this)
                         .attr('fill', nodeColor(d))
-                        .attr('stroke', startingObjects.includes(d.id) ? 'green' : '#222')
+                        .attr('stroke', startingObjects.includes(d.id) ? 'black' : '#222')
                         .attr('stroke-opacity', d.deselected ? 0.35 : 1);
 
                     return;
