@@ -246,7 +246,6 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             label.attr('x', (d: any) => d.x).attr('y', (d: any) => d.y);
         });
     }, [localGraph, editable, startingObjects, fileId, getColorForObject]);
-    
 
     if (isLoading) return <div className="flex w-full h-full justify-center items-center">Loading graph...</div>;
 
