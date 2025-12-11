@@ -178,12 +178,12 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
 
                         {chunk * MAX_CHUNK < (data.events?.length || 0) && (
                             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-                                <button
+                                {/* <button
                                     onClick={() => setChunk((prev) => prev + 1)}
                                     className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
                                 >
                                     Load More Events ({chunk * MAX_CHUNK}/{data.events.length})
-                                </button>
+                                </button> */}
                             </div>
                         )}
                     </div>

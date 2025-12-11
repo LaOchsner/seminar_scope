@@ -41,7 +41,7 @@ const OcelCollectionSidebar: React.FC<OcelCollectionSidebarProps> = ({
         <Sidebar side="right">
             <SidebarContent>
                 <SidebarGroup>
-                    <SidebarGroupLabel>Filter by Event Type</SidebarGroupLabel>
+                    <SidebarGroupLabel>Starting Event Type</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
                             <SidebarMenuItem className="p-2">
