@@ -10,7 +10,7 @@ import { Logger } from '~/lib/logger';
 import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import { VisualizationExploreNodeData } from '~/types/explore/nodeData/visualizationNodeData';
 import { ExploreNodeData } from '~/types/explore/nodes';
-import { ExploreFileNodeType, NodeId } from '~/types/explore/nodeTypesCategories';
+import { NodeId } from '~/types/explore/nodeTypesCategories';
 import { NodeFactory } from '~/model/explore/node-factory.model';
 
 const logger = Logger.getInstance();
@@ -47,7 +47,7 @@ export const useExploreEventHandlers = () => {
                     logger.debug(`Assets have changed for node ${id}`, currentAssets, newData.assets);
 
                     // Update the original node
-                    updateNodeData(id, { assets: [...(newData.assets || [])] });
+                    updateNodeData(id, newData);
 
                     if (isMinerNode(node)) {
                         const neighbors = directedNeighborMap.current.get(id) || [];
@@ -64,7 +64,7 @@ export const useExploreEventHandlers = () => {
                                     const neighborNode = getNode(neighborId);
                                     return neighborNode?.data.assets.some(
                                         (asset: BaseExploreNodeAsset) =>
-                                            asset.id === removedAsset.id && asset.io === 'input'
+                                            asset.id === removedAsset.id && asset.io === 'output'
                                     );
                                 });
 
@@ -94,7 +94,7 @@ export const useExploreEventHandlers = () => {
 
                                 const newNode = NodeFactory.createNode(newNodePosition, nodeType);
                                 newNode.data.onDataChange = onNodeDataChange;
-                                newNode.data.assets = [{ ...asset, io: 'input' }]; // Set as input for the new node
+                                newNode.data.assets = [{ ...asset, io: 'output' }];
 
                                 addNode(newNode);
 
