@@ -167,11 +167,9 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
         const updateConnectedLinks = (node: any) => {
     localGraph.links.forEach((l: any) => {
        
-        // const srcId = typeof l.source === "object" ? l.source.id : l.source;
-        // const trgId = typeof l.target === "object" ? l.target.id : l.target;
-
-        // const connected = srcId === node.id || trgId === node.id;
-        const connected = l.source.id === node.id || l.target.id === node.id;
+        const srcId = typeof l.source === "object" ? l.source.id : l.source;
+        const trgId = typeof l.target === "object" ? l.target.id : l.target;
+        const connected = srcId === node.id || trgId === node.id;
 
         if (node.deselected && connected) {
             l.deselected = true;
@@ -247,35 +245,78 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
                         d.fy = null;
                     })
             )
+            // .on('click', function (event, d: any) {
+            //     if (!editable) return;
+
+            //     if (d.group === 'object') {
+            //         if (event.shiftKey) {
+            //             d.deselected = !d.deselected;
+            //             updateConnectedLinks(d);
+            //         } else {
+            //             setStartingObjects((prev) =>
+            //                 prev.includes(d.id) ? prev.filter((x) => x !== d.id) : [...prev, d.id]
+            //             );
+            //         }
+
+            //         d3.select(this)
+            //             .attr('fill', getFill(d))
+            //             .attr('stroke', startingObjects.includes(d.id) ? 'black' : '#222')
+            //             .attr('stroke-opacity', d.deselected ? 0.35 : 1);
+
+            //         return;
+            //     }
+
+            //     d.deselected = !d.deselected;
+
+            //     d3.select(this)
+            //         .attr('fill', getFill(d))
+            //         .attr('stroke-opacity', d.deselected ? 0.35 : 1);
+
+            //     updateConnectedLinks(d);
+            // });
+
             .on('click', function (event, d: any) {
-                if (!editable) return;
+    if (!editable) return;
 
-                if (d.group === 'object') {
-                    if (event.shiftKey) {
-                        d.deselected = !d.deselected;
-                        updateConnectedLinks(d);
-                    } else {
-                        setStartingObjects((prev) =>
-                            prev.includes(d.id) ? prev.filter((x) => x !== d.id) : [...prev, d.id]
-                        );
-                    }
+    if (d.group === 'object') {
+        // SHIFT + CLICK → toggle start types only
+        if (event.shiftKey) {
+            setStartingObjects((prev) =>
+                prev.includes(d.id) ? prev.filter((x) => x !== d.id) : [...prev, d.id]
+            );
 
-                    d3.select(this)
-                        .attr('fill', getFill(d))
-                        .attr('stroke', startingObjects.includes(d.id) ? 'black' : '#222')
-                        .attr('stroke-opacity', d.deselected ? 0.35 : 1);
+            d3.select(this)
+                .attr('stroke', startingObjects.includes(d.id) ? 'black' : '#222')
+                .attr('stroke-width', startingObjects.includes(d.id) ? 6 : 3);
 
-                    return;
-                }
+            return;
+        }
 
-                d.deselected = !d.deselected;
+        // NORMAL CLICK → toggle deselection
+        d.deselected = !d.deselected;
 
-                d3.select(this)
-                    .attr('fill', getFill(d))
-                    .attr('stroke-opacity', d.deselected ? 0.35 : 1);
+        // Update edges connected to this node
+        updateConnectedLinks(d);
 
-                updateConnectedLinks(d);
-            });
+        // Update visual state
+        d3.select(this)
+            .attr('fill', getFill(d))
+            .attr('stroke', startingObjects.includes(d.id) ? 'black' : '#222')
+            .attr('stroke-opacity', d.deselected ? 0.35 : 1);
+
+        return;
+    }
+
+    // ---------- EVENT NODE CLICK ----------
+    d.deselected = !d.deselected;
+
+    d3.select(this)
+        .attr('fill', getFill(d))
+        .attr('stroke-opacity', d.deselected ? 0.35 : 1);
+
+    updateConnectedLinks(d);
+});
+
 
         const label = g
             .append('g')
