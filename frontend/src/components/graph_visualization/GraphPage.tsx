@@ -203,7 +203,9 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             .attr('r', 12)
             .attr('fill', getFill)
             .attr('stroke', getStroke)
+            .attr('stroke', (d: any) => (startingObjects.includes(d.id) ? 'black' : '#222'))
             .attr('stroke-width', getStrokeWidth)
+            .attr('stroke-width', (d: any) => (startingObjects.includes(d.id) ? 6 : 3))
             .call(
                 d3
                     .drag<SVGCircleElement, any>()
@@ -221,7 +223,36 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
                         d.fx = null;
                         d.fy = null;
                     })
-            );
+            )
+            .on('click', function (event, d: any) {
+                if (!editable) return;
+
+                if (d.group === 'object') {
+                    if (event.shiftKey) {
+                        d.deselected = !d.deselected;
+                        updateConnectedLinks(d);
+                    } else {
+                        setStartingObjects((prev) =>
+                            prev.includes(d.id) ? prev.filter((x) => x !== d.id) : [...prev, d.id]
+                        );
+                    }
+
+                    d3.select(this)
+                        .attr('fill', getFill(d))
+                        .attr('stroke', startingObjects.includes(d.id) ? 'black' : '#222')
+                        .attr('stroke-opacity', d.deselected ? 0.35 : 1);
+
+                    return;
+                }
+
+                d.deselected = !d.deselected;
+
+                d3.select(this)
+                    .attr('fill', getFill(d))
+                    .attr('stroke-opacity', d.deselected ? 0.35 : 1);
+
+                updateConnectedLinks(d);
+            });
 
         const label = g
             .append('g')
