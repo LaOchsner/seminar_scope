@@ -203,10 +203,8 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             .append('circle')
             .attr('r', 12)
             .attr('fill', getFill)
-            .attr('stroke', getStroke)
-            .attr('stroke', (d: any) => (startingObjects.includes(d.id) ? 'black' : '#222'))
-            .attr('stroke-width', getStrokeWidth)
-            .attr('stroke-width', (d: any) => (startingObjects.includes(d.id) ? 6 : 3))
+            .attr('stroke', (d: any) => (startingObjects.includes(d.id) ? 'black' : getStroke(d)))
+            .attr('stroke-width', (d: any) => (startingObjects.includes(d.id) ? 6 : getStrokeWidth(d)))
             .call(
                 d3
                     .drag<SVGCircleElement, any>()
@@ -228,31 +226,29 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             .on('click', function (event, d: any) {
                 if (!editable) return;
 
+                const self = d3.select(this);
+
                 if (d.group === 'object') {
-                    if (event.shiftKey) {
-                        d.deselected = !d.deselected;
-                        updateConnectedLinks(d);
-                    } else {
+                    if (event.shiftKey) { // Shift + Click on Object Node: Toggle as Start Node
+                        const isCurrentlyStarting = startingObjects.includes(d.id);
                         setStartingObjects((prev) =>
-                            prev.includes(d.id) ? prev.filter((x) => x !== d.id) : [...prev, d.id]
+                            isCurrentlyStarting ? prev.filter((x) => x !== d.id) : [...prev, d.id]
                         );
+                        // Update visual feedback immediately
+                        self.attr('stroke', isCurrentlyStarting ? getStroke(d) : 'black')
+                            .attr('stroke-width', isCurrentlyStarting ? getStrokeWidth(d) : 6);
+                    } else { // Regular Click on Object Node: Toggle Deselection
+                        d.deselected = !d.deselected;
+                        self.attr('fill', getFill(d))
+                            .attr('stroke-opacity', d.deselected ? 0.35 : 1);
+                        updateConnectedLinks(d);
                     }
-
-                    d3.select(this)
-                        .attr('fill', getFill(d))
-                        .attr('stroke', startingObjects.includes(d.id) ? 'black' : '#222')
+                } else { // Event Node (d.group !== 'object'): Regular Click toggles deselection
+                    d.deselected = !d.deselected;
+                    self.attr('fill', getFill(d))
                         .attr('stroke-opacity', d.deselected ? 0.35 : 1);
-
-                    return;
+                    updateConnectedLinks(d);
                 }
-
-                d.deselected = !d.deselected;
-
-                d3.select(this)
-                    .attr('fill', getFill(d))
-                    .attr('stroke-opacity', d.deselected ? 0.35 : 1);
-
-                updateConnectedLinks(d);
             });
 
         const label = g
