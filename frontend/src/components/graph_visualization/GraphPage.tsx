@@ -30,6 +30,14 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
     const [localGraph, setLocalGraph] = useState<any | null>(null);
     const [startingObjects, setStartingObjects] = useState<string[]>([]);
 
+    function pushBidirectional(arr: any[], a: any, b: any) {
+        // forward
+        arr.push([a, b]);
+
+        // reverse
+        arr.push([b, a]);
+    }
+
     useEffect(() => {
         if (!editable || !localGraph) return;
 
@@ -44,7 +52,7 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
         console.log(localGraph);
 
         localGraph.links.forEach((l: any) => {
-            if (!l.deselected) return;
+            if (l.deselected) return;
 
             const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
             const targetId = typeof l.target === 'object' ? l.target.id : l.target;
@@ -58,15 +66,15 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             const targetType = { name: target.id, attributes: [] };
 
             if (source.group === 'event' && target.group === 'object') {
-                e2o_relations.push([sourceType, targetType]);
+                pushBidirectional(e2o_relations, sourceType, targetType);
             }
 
             if (source.group === 'object' && target.group === 'event') {
-                e2o_relations.push([targetType, sourceType]);
+                pushBidirectional(e2o_relations, sourceType, targetType);
             }
 
             if (source.group === 'object' && target.group === 'object') {
-                o2o_relations.push([sourceType, targetType]);
+                pushBidirectional(e2o_relations, sourceType, targetType);
             }
         });
 
