@@ -66,6 +66,10 @@ const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, update
                 case 'advanced':
                     return getAdvancedCN(fileId, selectedObjectType, newCaseNotionFileId);
                 case 'generic':
+                    if (genericPayload.start_types.length === 0) {
+                        return;
+                    }
+
                     return getGenericCN(fileId, genericPayload, newCaseNotionFileId);
                 default:
                     throw new Error(`Unknown or unsupported algorithm: ${algorithm}`);

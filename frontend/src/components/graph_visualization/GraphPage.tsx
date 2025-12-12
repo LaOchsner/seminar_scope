@@ -161,17 +161,17 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
         };
 
         const updateConnectedLinks = (node: any) => {
-            localGraph.links.forEach((l: any) => {
-                const connected = l.source.id === node.id || l.target.id === node.id;
+            if (!localGraph) return;
 
-                if (node.deselected && connected) {
-                    l.deselected = true;
-                } else if (!node.deselected && connected) {
-                    l.deselected = l.originalDeselected;
+            const newLinks = localGraph.links.map((l: any) => {
+                const connected = l.source.id === node.id || l.target.id === node.id;
+                if (connected) {
+                    return { ...l, deselected: node.deselected ? true : l.originalDeselected };
                 }
+                return l;
             });
 
-            updateLinkStyles();
+            setLocalGraph({ ...localGraph, links: newLinks });
         };
 
         const link = g
