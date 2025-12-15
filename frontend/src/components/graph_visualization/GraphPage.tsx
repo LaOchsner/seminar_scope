@@ -31,6 +31,7 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
     const [startingObjects, setStartingObjects] = useState<string[]>([]);
 
     function pushBidirectional(arr: any[], a: any, b: any) {
+        // We push both directions to make the graph undirected
         arr.push([a, b]);
         arr.push([b, a]);
     }
