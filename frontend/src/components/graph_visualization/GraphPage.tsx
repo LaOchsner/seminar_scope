@@ -1,10 +1,9 @@
-
-
-
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useGetLogGraphs } from '~/services/queries';
+
+type EdgeMode = 'both' | 'forward' | 'backward' | 'none';
 
 interface CaseGraphData {
     deselected_object_types?: string[];
@@ -19,25 +18,36 @@ interface GraphPageProps {
     onGenericPayloadChange?: (payload: any) => void;
 }
 
-const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable = false, onGenericPayloadChange }) => {
+const nextEdgeMode = (mode: EdgeMode): EdgeMode => {
+    switch (mode) {
+        case 'both':
+            return 'forward';
+        case 'forward':
+            return 'backward';
+        case 'backward':
+            return 'none';
+        case 'none':
+        default:
+            return 'both';
+    }
+};
+
+const GraphPage: React.FC<GraphPageProps> = ({
+    fileId,
+    caseNotionGraph,
+    editable = false,
+    onGenericPayloadChange,
+}) => {
     const containerRef = useRef<HTMLDivElement | null>(null);
     const svgRef = useRef<SVGSVGElement | null>(null);
 
     const { getColorForObject } = useExploreFlowStore();
-
     const { data, isLoading, error } = useGetLogGraphs(fileId);
 
     const [localGraph, setLocalGraph] = useState<any | null>(null);
     const [startingObjects, setStartingObjects] = useState<string[]>([]);
 
-    function pushBidirectional(arr: any[], a: any, b: any) {
-    // forward
-    arr.push([a, b]);
-
-    // reverse
-    arr.push([b, a]);
-}
-
+   
     useEffect(() => {
         if (!editable || !localGraph) return;
 
@@ -48,42 +58,35 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
 
         const e2o_relations: any[] = [];
         const o2o_relations: any[] = [];
-        console.log('local graph');
-        console.log(localGraph);
 
         localGraph.links.forEach((l: any) => {
-            if (!l.deselected) return;
+            if (l.edgeMode === 'none') return;
 
             const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
             const targetId = typeof l.target === 'object' ? l.target.id : l.target;
 
             const source = localGraph.nodes.find((n: any) => n.id === sourceId);
             const target = localGraph.nodes.find((n: any) => n.id === targetId);
-
             if (!source || !target) return;
 
-            const sourceType = { name: source.id, attributes: [] };
-            const targetType = { name: target.id, attributes: [] };
+            const s = { name: source.id, attributes: [] };
+            const t = { name: target.id, attributes: [] };
 
-            if (source.group === 'event' && target.group === 'object') {
-               pushBidirectional(e2o_relations, sourceType, targetType);
+            if (l.edgeMode === 'both') {
+                e2o_relations.push([s, t], [t, s]);
             }
-
-            if (source.group === 'object' && target.group === 'event') {
-                pushBidirectional(e2o_relations, sourceType, targetType);
+            if (l.edgeMode === 'forward') {
+                e2o_relations.push([s, t]);
             }
-
-            if (source.group === 'object' && target.group === 'object') {
-                pushBidirectional(e2o_relations, sourceType, targetType);
+            if (l.edgeMode === 'backward') {
+                e2o_relations.push([t, s]);
             }
         });
 
-        console.log('e20');
-        console.log(e2o_relations);
-        const payload = { start_types, e2o_relations, o2o_relations };
-
-        onGenericPayloadChange?.(payload);
+        onGenericPayloadChange?.({ start_types, e2o_relations, o2o_relations });
     }, [localGraph, startingObjects, editable]);
+
+    
 
     useEffect(() => {
         if (!data) return;
@@ -113,16 +116,21 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
                     (da) => da.source_type === a.source_type && da.target_type === a.target_type
                 ) ?? false;
 
+            const edgeMode: EdgeMode = isDeselected ? 'none' : 'both';
+
             links.push({
                 source: a.source_type,
                 target: a.target_type,
-                deselected: isDeselected,
-                originalDeselected: isDeselected,
+                edgeMode,
+                deselected: edgeMode === 'none',
+                originalEdgeMode: edgeMode,
             });
         });
 
         setLocalGraph({ nodes, links });
     }, [data, caseNotionGraph]);
+
+    
 
     useEffect(() => {
         if (!localGraph || !svgRef.current || !containerRef.current) return;
@@ -141,38 +149,32 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             })
         );
 
+       
+        if (editable) {
+            const defs = svg.append('defs');
+
+            defs.append('marker')
+                .attr('id', 'arrow')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 25)
+                .attr('refY', 0)
+                .attr('markerWidth', 6)
+                .attr('markerHeight', 6)
+                .attr('orient', 'auto')
+                .append('path')
+                .attr('d', 'M0,-5L10,0L0,5')
+                .attr('fill', '#000');
+        }
+
         const simulation = d3
             .forceSimulation(localGraph.nodes)
             .force(
                 'link',
-                d3
-                    .forceLink(localGraph.links)
-                    .id((d: any) => d.id)
-                    .distance(160)
+                d3.forceLink(localGraph.links).id((d: any) => d.id).distance(160)
             )
             .force('charge', d3.forceManyBody().strength(-350))
             .force('center', d3.forceCenter(width / 2, height / 2))
             .force('collision', d3.forceCollide().radius(45));
-
-        const updateLinkStyles = () => {
-            link.attr('stroke', (d: any) => (d.deselected ? '#C0C0C0' : 'black')).attr('stroke-opacity', (d: any) =>
-                d.deselected ? 0.35 : 0.85
-            );
-        };
-
-        const updateConnectedLinks = (node: any) => {
-            localGraph.links.forEach((l: any) => {
-                const connected = l.source.id === node.id || l.target.id === node.id;
-
-                if (node.deselected && connected) {
-                    l.deselected = true;
-                } else if (!node.deselected && connected) {
-                    l.deselected = l.originalDeselected;
-                }
-            });
-
-            updateLinkStyles();
-        };
 
         const link = g
             .append('g')
@@ -181,29 +183,64 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             .enter()
             .append('line')
             .attr('stroke-width', 3)
-            .attr('stroke', (d: any) => (d.deselected ? '#C0C0C0' : 'black'))
-            .attr('stroke-opacity', (d: any) => (d.deselected ? 0.35 : 0.85))
-            .on('click', function (_, d: any) {
+            .on('click', (_, d: any) => {
                 if (!editable) return;
-                d.deselected = !d.deselected;
+
+                d.edgeMode = nextEdgeMode(d.edgeMode);
+                d.deselected = d.edgeMode === 'none';
                 updateLinkStyles();
             });
-        // --- NODE STYLING ---
-        const getFill = (d: any) => {
-            if (d.deselected) return '#C0C0C0';
-            // Objects (Types) get Global Color, Events (Activities) get White
-            return d.group === 'object' ? getColorForObject(fileId, d.id) : 'white';
+
+        const updateLinkStyles = () => {
+            link
+                .attr('stroke', (d: any) =>
+                    d.edgeMode === 'none' ? '#C0C0C0' : 'black'
+                )
+                .attr('stroke-opacity', (d: any) =>
+                    d.edgeMode === 'none' ? 0.35 : 0.85
+                )
+                .attr('marker-end', (d: any) =>
+                    editable && (d.edgeMode === 'forward' || d.edgeMode === 'both')
+                        ? 'url(#arrow)'
+                        : null
+                )
+                .attr('marker-start', (d: any) =>
+                    editable && (d.edgeMode === 'backward' || d.edgeMode === 'both')
+                        ? 'url(#arrow)'
+                        : null
+                );
         };
 
-        const getStroke = (d: any) => {
-            if (d.deselected) return '#333';
-            // Events get Black border, Objects get White
-            return d.group === 'event' ? 'black' : '#fff';
-        };
+        updateLinkStyles();
 
-        const getStrokeWidth = (d: any) => {
-            // Thicker border for Events
-            return d.group === 'event' ? 2.5 : 1.5;
+        
+
+        const getFill = (d: any) =>
+            d.deselected
+                ? '#C0C0C0'
+                : d.group === 'object'
+                ? getColorForObject(fileId, d.id)
+                : 'white';
+
+        const getStroke = (d: any) =>
+            d.deselected ? '#333' : d.group === 'event' ? 'black' : '#fff';
+
+        const getStrokeWidth = (d: any) => (d.group === 'event' ? 2.5 : 1.5);
+
+        const updateConnectedLinks = (node: any) => {
+            localGraph.links.forEach((l: any) => {
+                const connected = l.source.id === node.id || l.target.id === node.id;
+                if (!connected) return;
+
+                if (node.deselected) {
+                    l.edgeMode = 'none';
+                    l.deselected = true;
+                } else {
+                    l.edgeMode = l.originalEdgeMode;
+                    l.deselected = l.edgeMode === 'none';
+                }
+            });
+            updateLinkStyles();
         };
 
         const node = g
@@ -214,8 +251,12 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             .append('circle')
             .attr('r', 12)
             .attr('fill', getFill)
-            .attr('stroke', (d: any) => (startingObjects.includes(d.id) ? 'black' : getStroke(d)))
-            .attr('stroke-width', (d: any) => (startingObjects.includes(d.id) ? 6 : getStrokeWidth(d)))
+            .attr('stroke', (d: any) =>
+                startingObjects.includes(d.id) ? 'black' : getStroke(d)
+            )
+            .attr('stroke-width', (d: any) =>
+                startingObjects.includes(d.id) ? 6 : getStrokeWidth(d)
+            )
             .call(
                 d3
                     .drag<SVGCircleElement, any>()
@@ -239,25 +280,18 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
 
                 const self = d3.select(this);
 
-                if (d.group === 'object') {
-                    if (event.shiftKey) { // Shift + Click on Object Node: Toggle as Start Node
-                        const isCurrentlyStarting = startingObjects.includes(d.id);
-                        setStartingObjects((prev) =>
-                            isCurrentlyStarting ? prev.filter((x) => x !== d.id) : [...prev, d.id]
-                        );
-                        // Update visual feedback immediately
-                        self.attr('stroke', isCurrentlyStarting ? getStroke(d) : 'black')
-                            .attr('stroke-width', isCurrentlyStarting ? getStrokeWidth(d) : 6);
-                    } else { // Regular Click on Object Node: Toggle Deselection
-                        d.deselected = !d.deselected;
-                        self.attr('fill', getFill(d))
-                            .attr('stroke-opacity', d.deselected ? 0.35 : 1);
-                        updateConnectedLinks(d);
-                    }
-                } else { // Event Node (d.group !== 'object'): Regular Click toggles deselection
+                if (d.group === 'object' && event.shiftKey) {
+                    const isStarting = startingObjects.includes(d.id);
+                    setStartingObjects((prev) =>
+                        isStarting ? prev.filter((x) => x !== d.id) : [...prev, d.id]
+                    );
+
+                    self
+                        .attr('stroke', isStarting ? getStroke(d) : 'black')
+                        .attr('stroke-width', isStarting ? getStrokeWidth(d) : 6);
+                } else {
                     d.deselected = !d.deselected;
-                    self.attr('fill', getFill(d))
-                        .attr('stroke-opacity', d.deselected ? 0.35 : 1);
+                    self.attr('fill', getFill(d)).attr('stroke-opacity', d.deselected ? 0.35 : 1);
                     updateConnectedLinks(d);
                 }
             });
@@ -276,7 +310,8 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             .attr('fill', '#333');
 
         simulation.on('tick', () => {
-            link.attr('x1', (d: any) => d.source.x)
+            link
+                .attr('x1', (d: any) => d.source.x)
                 .attr('y1', (d: any) => d.source.y)
                 .attr('x2', (d: any) => d.target.x)
                 .attr('y2', (d: any) => d.target.y);
@@ -286,9 +321,9 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
         });
     }, [localGraph, editable, startingObjects, fileId, getColorForObject]);
 
-    if (isLoading) return <div className="flex w-full h-full justify-center items-center">Loading graph...</div>;
+    if (isLoading)
+        return <div className="flex w-full h-full justify-center items-center">Loading graph...</div>;
 
-    if (isLoading) return <div className="flex w-full h-full justify-center items-center">Loading...</div>;
     if (error)
         return <div className="flex w-full h-full justify-center items-center text-red-500">Failed to load graph</div>;
 
@@ -306,7 +341,3 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
 };
 
 export default GraphPage;
-
-
-
-
