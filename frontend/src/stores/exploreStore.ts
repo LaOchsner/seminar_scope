@@ -5,16 +5,13 @@ import {
     type Connection,
     type Edge,
     type EdgeChange,
-    type Node,
     type NodeChange,
 } from '@xyflow/react';
 import { create } from 'zustand';
 // Imports from the colors.ts for the color state management
 import { getDeterministicColor, getSequentialColor } from '~/lib/colors';
-import type { FileExploreNodeData } from '~/types/explore/nodeData/fileNodeData';
-import type { VisualizationExploreNodeData } from '~/types/explore/nodeData/visualizationNodeData';
+import { ExploreNode, ExploreNodeData } from '~/types/explore/nodes';
 
-type ExploreNode = Node<FileExploreNodeData> | Node<VisualizationExploreNodeData>;
 export interface SavedPipeline {
     id: string;
     name: string;
@@ -34,7 +31,7 @@ interface ExploreFlowStore {
     onConnect: (connection: Connection) => void;
     setNodes: (nodes: ExploreNode[]) => void;
     setEdges: (edges: Edge[]) => void;
-    updateNodeData: (nodeId: string, newData: Partial<ExploreNode['data']>) => void;
+    updateNodeData: (nodeId: string, newData: Partial<ExploreNodeData>) => void;
     addNode: (node: ExploreNode) => void;
     removeNode: (nodeId: string) => void;
     removeEdge: (edgeId: string) => void;
@@ -175,7 +172,7 @@ export const useExploreFlowStore = create<ExploreFlowStore>((set, get) => ({
         const pipelines = JSON.parse(localStorage.getItem('savedPipelines') || '[]');
         const pipeline = pipelines.find((p: SavedPipeline) => p.id === pipelineId);
         if (pipeline) {
-            const restoredNodes = pipeline.nodes.map((node) => ({
+            const restoredNodes = pipeline.nodes.map((node: ExploreNode) => ({
                 ...node,
                 data: {
                     ...node.data,

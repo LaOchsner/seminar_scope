@@ -14,7 +14,7 @@ import HistogramMinerNode from '~/components/explore/miner/HistogramMinerNode';
 import ObjectEventGraphMinerNode from '~/components/explore/miner/ObjectEventGraphMinerNode';
 import OcelMinerNode from '~/components/explore/miner/OcelMinerNode';
 import OcptMinerNode from '~/components/explore/miner/OcptMinerNode';
-import { useExploreEventHandlers } from '~/hooks/useExploreEventHandlers';
+import { useEventHandlers } from '~/hooks/explore/useEventHandlers';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore } from '~/stores/store';
 
@@ -33,8 +33,7 @@ const Explore: React.FC = () => {
     const { nodes, edges, onEdgesChange } = useExploreFlowStore();
     const [type] = useDnD();
     const { dialogNodeId } = useFileDialogStore();
-    const { onNodesChange, onEdgeDelete, onDragOver, onDrop, handleConnect, isValidConnection } =
-        useExploreEventHandlers();
+    const { onNodesChange, onEdgeDelete, onDragOver, onDrop, handleConnect, isValidConnection } = useEventHandlers();
     const handleDrop = useCallback((event: DragEvent<HTMLElement>) => onDrop(event, type), [onDrop, type]);
 
     useMemo(() => {

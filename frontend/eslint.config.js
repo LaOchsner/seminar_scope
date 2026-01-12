@@ -24,5 +24,20 @@ export default tseslint.config({ ignores: ['dist'] }, {
       'warn',
       { allowConstantExport: true },
     ],
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          {
+            group: [
+              '~/hooks/explore/useConnections',
+              '~/hooks/explore/useNodeOperations',
+              '~/hooks/explore/useDragDrop',
+            ],
+            message: "This is an internal hook. Please import 'useEventHandlers' from '~/hooks/explore/useEventHandlers' instead.",
+          },
+        ],
+      },
+    ],
   },
 }, storybook.configs["flat/recommended"]);
