@@ -86,7 +86,10 @@ pub fn traditional_case_notion_type_level(
     for arc in arcs.into_iter() {
         if arc.target_type == starting_object_type {
             selected_event_types_set.insert(arc.source_type.clone());
-            selected_arcs.push(arc);
+            selected_arcs.push(ArcEntry {
+                source_type: starting_object_type.to_string(),
+                target_type: arc.source_type,
+            });
         } else {
             deselected_arcs.push(arc);
         }
