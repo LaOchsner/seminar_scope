@@ -11,8 +11,10 @@ import {
     BaseExploreNodeDropdownOption,
 } from '~/types/explore/nodeData/baseNodeData';
 import { MinerNode } from '~/types/explore/nodes';
+import { useExploreFlowStore } from '~/stores/exploreStore';
 
 const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
+    const { updateNodeData } = useExploreFlowStore();
     const [fileId, setFileId] = useState<null | string>(null);
     const [fileName, setFileName] = useState<string>('');
     const [algorithm, setAlgorithm] = useState<string>(node.data.algorithm ?? 'DF2');
@@ -32,8 +34,7 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
     }, [node.data.assets]);
 
     useEffect(() => {
-        const outputAssets = node.data.assets.filter((asset) => asset.io === 'output');
-        if (!data || !fileName || outputAssets.length > 0) return;
+        if (!data || !fileName) return;
 
         const asset: BaseExploreNodeAsset = {
             id: data.file_id,
@@ -43,23 +44,28 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
             name: `ocpt_${fileName}`,
         };
 
-        const updatedAssets = [...node.data.assets, asset];
-        node.data.onDataChange(node.id, { assets: updatedAssets });
-    }, [data, fileName]);
+        updateNodeData(node.id, (prev) => {
+             // Avoid adding duplicate assets if data triggers multiple times
+             const alreadyExists = prev.assets.some(a => a.id === asset.id && a.io === 'output');
+             if (alreadyExists) return prev;
+             
+             return {
+                 assets: [...prev.assets, asset]
+             };
+        });
+    }, [data, fileName, node.id, updateNodeData]);
 
     useEffect(() => {
         if (algorithm === node.data.algorithm) return;
 
-        const newAssets = node.data.assets.filter((asset) => asset.io !== 'output');
-
-        const updatedData = {
-            ...node.data,
-            assets: newAssets,
-            algorithm: algorithm,
-        };
-
-        node.data.onDataChange(node.id, updatedData);
-    }, [algorithm]);
+        updateNodeData(node.id, (prev) => {
+             const newAssets = prev.assets.filter((asset) => asset.io !== 'output');
+             return {
+                assets: newAssets,
+                algorithm: algorithm,
+             }
+        });
+    }, [algorithm, node.data.algorithm, node.id, updateNodeData]);
 
     const handleExportJson = () => {
         if (!data) {

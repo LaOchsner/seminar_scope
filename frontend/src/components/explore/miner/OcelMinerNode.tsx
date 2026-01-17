@@ -1,29 +1,30 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
 import { useGetOcel } from '~/services/queries';
 import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import { MinerNode } from '~/types/explore/nodes';
+import { useExploreFlowStore } from '~/stores/exploreStore';
 
 const OcelMinerNode = memo<NodeProps<MinerNode>>((node) => {
+    const { updateNodeData } = useExploreFlowStore();
     const [fileId, setFileId] = useState<null | string>(null);
     const [fileName, setFileName] = useState<string>('');
     const { isLoading, data } = useGetOcel(fileId);
 
     // Pick the input file
-    useMemo(() => {
+    useEffect(() => {
         const inputAsset = node.data.assets.find((asset) => asset.io === 'input');
         if (!inputAsset) return;
 
         setFileId(inputAsset.id);
         setFileName(inputAsset.name);
-    }, [node]);
+    }, [node.data.assets]);
 
     // Once mined OCEL data is returned, create output asset
     useEffect(() => {
-        const outputAssets = node.data.assets.filter((asset) => asset.io === 'output');
-        if (!data || !fileName || outputAssets.length > 1) return;
+        if (!data || !fileName) return;
 
         const asset: BaseExploreNodeAsset = {
             id: data.file_id, // assuming backend returns file_id
@@ -33,9 +34,13 @@ const OcelMinerNode = memo<NodeProps<MinerNode>>((node) => {
             name: `ocel_${fileName}`,
         };
 
-        const updatedAssets = [...node.data.assets, asset];
-        node.data.onDataChange(node.id, { assets: updatedAssets });
-    }, [data, fileName]);
+        updateNodeData(node.id, (prev) => {
+            const currentAssets = prev.assets.filter((a) => a.io !== 'output');
+            return {
+                assets: [...currentAssets, asset],
+            };
+        });
+    }, [data, fileName, node.id, updateNodeData]);
 
     return (
         <BaseMinerNode

@@ -5,17 +5,14 @@ import { Eye } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import CaseNotionDialog from '~/components/case_notion/ui/CaseNotionDialog';
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
-import { useExploreFlowStore } from '~/stores/exploreStore';
 import { BaseExploreNodeDropdownOption } from '~/types/explore/nodeData/baseNodeData';
 import { MinerNode } from '~/types/explore/nodes';
 
 const CaseNotionMinerNode = memo<NodeProps<MinerNode>>((node) => {
-    const { id, data: nodeData } = node;
-    const { assets } = nodeData;
+    const { assets } = node.data;
     const [fileId, setFileId] = useState<string | null>(null);
     const [fileName, setFileName] = useState<string>('');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const { updateNodeData } = useExploreFlowStore();
 
     useEffect(() => {
         const inputAsset = assets.find((a) => a.io === 'input');
@@ -66,7 +63,6 @@ const CaseNotionMinerNode = memo<NodeProps<MinerNode>>((node) => {
                 fileName={fileName}
                 isOpen={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
-                updateNodeData={updateNodeData}
             />
         </BaseMinerNode>
     );

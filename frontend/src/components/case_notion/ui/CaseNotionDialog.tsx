@@ -24,8 +24,9 @@ import {
 import GraphPage from '~/components/graph_visualization/GraphPage';
 import { getAdvancedCN, getConnectedComponentsCN, getGenericCN, getTraditionalCN } from '~/services/api';
 import { useGetCaseNotions, useGetOcelObjectTypes } from '~/services/queries';
-import { BaseExploreNodeAsset, BaseExploreNodeData } from '~/types/explore/nodeData/baseNodeData';
+import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import { MinerNode } from '~/types/explore/nodes';
+import { useExploreFlowStore } from '~/stores/exploreStore';
 
 interface CaseNotionDialogProps {
     node: NodeProps<MinerNode>;
@@ -33,10 +34,10 @@ interface CaseNotionDialogProps {
     fileName: string;
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
-    updateNodeData: (nodeId: string, data: Partial<BaseExploreNodeData>) => void;
 }
 
-const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, updateNodeData }: CaseNotionDialogProps) => {
+const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange }: CaseNotionDialogProps) => {
+    const { updateNodeData } = useExploreFlowStore();
     const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('traditional');
     const [selectedObjectType, setSelectedObjectType] = useState<string>('default');
     const [currentCnFileId, setCurrentCnFileId] = useState<string>('');
@@ -104,14 +105,6 @@ const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, update
     useEffect(() => {
         if (!cnGet.data || !fileName) return;
 
-        let currentAssets = [...node.data.assets];
-        const outputAssets = currentAssets.filter((asset) => asset.io === 'output');
-
-        if (outputAssets.length > 0) {
-            // Filter out existing output assets to replace them
-            currentAssets = currentAssets.filter((asset) => asset.io !== 'output');
-        }
-
         const asset: BaseExploreNodeAsset = {
             id: cnGet.data.case_ocels_file_id,
             io: 'output',
@@ -120,10 +113,15 @@ const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, update
             name: `cn_${cnGet.data.case_ocels_file_id}`,
         };
 
-        const updatedAssets = [...currentAssets, asset];
-        node.data.onDataChange(node.id, { assets: updatedAssets });
+        updateNodeData(node.id, (prev) => {
+            const currentAssets = prev.assets.filter((asset) => asset.io !== 'output');
+            return {
+                assets: [...currentAssets, asset],
+            };
+        });
+
         onOpenChange(false);
-    }, [cnGet.data]);
+    }, [cnGet.data, fileName, node.id, onOpenChange, updateNodeData]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>

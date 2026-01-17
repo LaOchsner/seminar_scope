@@ -1,24 +1,17 @@
 import { useCallback } from 'react';
-import { type Connection, type NodeChange } from '@xyflow/react';
-import { isEqual } from 'lodash-es';
+import { type NodeChange } from '@xyflow/react';
 import { useExploreFlowStore } from '~/stores/exploreStore';
-import { assetTypeToNodeType, isMinerNode } from '~/lib/explore/exploreNodes.utils';
 import { Logger } from '~/lib/logger';
-import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import { ExploreNodeData } from '~/types/explore/nodes';
-import { NodeFactory } from '~/model/explore/node-factory.model';
 
 const logger = Logger.getInstance();
 
 export const useNodeOperations = () => {
     const {
-        edges,
         onNodesChange: storeOnNodesChange,
         updateNodeData,
-        addNode,
         removeNode,
         getNode,
-        onConnect,
     } = useExploreFlowStore();
 
     /**
@@ -36,86 +29,15 @@ export const useNodeOperations = () => {
             try {
                 const node = getNode(id);
                 if (!node) throw new Error(`Could not find node for id: ${id}`);
-
-                const currentAssets: BaseExploreNodeAsset[] = node.data.assets;
-
-                // Only proceed if assets actually changed
-                if (!isEqual(currentAssets, newData.assets)) {
-                    logger.debug(`Assets have changed for node ${id}`, currentAssets, newData.assets);
-
-                    // Update the original node
-                    updateNodeData(id, newData);
-
-                    if (isMinerNode(node)) {
-                        // Handle removed assets
-                        const removedAssets = currentAssets.filter(
-                            (oldAsset) => !newData.assets?.some((newAsset) => isEqual(newAsset, oldAsset))
-                        );
-
-                        removedAssets.forEach((removedAsset) => {
-                            if (removedAsset.io === 'output') {
-                                // Find neighbors that were created from this asset using Edges
-                                const outgoingEdges = edges.filter((e) => e.source === id);
-
-                                const neighborsToDelete = outgoingEdges
-                                    .map((e) => getNode(e.target))
-                                    .filter((neighbor) => {
-                                        return neighbor?.data.assets.some(
-                                            (asset: BaseExploreNodeAsset) =>
-                                                asset.id === removedAsset.id && asset.io === 'input' // Note: It became input in the neighbor
-                                        );
-                                    });
-
-                                // Delete identified neighbors
-                                neighborsToDelete.forEach((neighbor) => {
-                                    if (neighbor) onNodeDelete(neighbor.id);
-                                });
-                            }
-                        });
-
-                        // Handle new assets
-                        const newAssets =
-                            newData.assets?.filter(
-                                (newAsset) => !currentAssets.some((oldAsset) => isEqual(newAsset, oldAsset))
-                            ) ?? [];
-
-                        const newOutputAssets = newAssets.filter((asset) => asset.io === 'output');
-
-                        newOutputAssets.forEach((asset, index) => {
-                            const nodeType = assetTypeToNodeType(asset.type);
-
-                            if (nodeType) {
-                                const newNodePosition = {
-                                    x: node.position.x + 400,
-                                    y: node.position.y + index * 150,
-                                };
-
-                                const newNode = NodeFactory.createNode(newNodePosition, nodeType);
-                                newNode.data.onDataChange = onNodeDataChange;
-                                newNode.data.assets = [{ ...asset, io: 'output' }];
-
-                                addNode(newNode);
-
-                                // Connect the original node to the new one
-                                const connection: Connection = {
-                                    source: id,
-                                    target: newNode.id,
-                                    sourceHandle: null,
-                                    targetHandle: null,
-                                };
-                                onConnect(connection);
-                            }
-                        });
-                    }
-                } else {
-                    // Assets have not changed — just update the node data
-                    updateNodeData(id, newData);
-                }
+                
+                // All side effects (creating downstream nodes, etc.) are now handled
+                // internally by the store's updateNodeData action.
+                updateNodeData(id, newData);
             } catch (err) {
                 logger.error(err);
             }
         },
-        [getNode, updateNodeData, addNode, onConnect, edges, onNodeDelete]
+        [getNode, updateNodeData]
     );
 
     /**

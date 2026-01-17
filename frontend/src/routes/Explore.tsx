@@ -15,6 +15,7 @@ import ObjectEventGraphMinerNode from '~/components/explore/miner/ObjectEventGra
 import OcelMinerNode from '~/components/explore/miner/OcelMinerNode';
 import OcptMinerNode from '~/components/explore/miner/OcptMinerNode';
 import { useEventHandlers } from '~/hooks/explore/useEventHandlers';
+import { useMinerReactions } from '~/hooks/explore/useMinerReactions';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore } from '~/stores/store';
 
@@ -35,6 +36,9 @@ const Explore: React.FC = () => {
     const { dialogNodeId } = useFileDialogStore();
     const { onNodesChange, onEdgeDelete, onDragOver, onDrop, handleConnect, isValidConnection } = useEventHandlers();
     const handleDrop = useCallback((event: DragEvent<HTMLElement>) => onDrop(event, type), [onDrop, type]);
+
+    // Activate automatic graph reactions (e.g., spawning new nodes from miners)
+    useMinerReactions();
 
     useMemo(() => {
         console.log(nodes);
