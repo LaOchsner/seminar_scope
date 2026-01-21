@@ -2,10 +2,10 @@ use axum::{Json, extract::Path as AxumPath, http::StatusCode, response::IntoResp
 use serde_json::json;
 use tokio::fs as tokio_fs;
 
-use process_mining::object_centric::conformance::object_centric_language_abstraction_struct::{
-    OCLanguageAbstraction, compute_fitness_precision,
+use process_mining::conformance::object_centric::object_centric_language_abstraction::{
+    compute_fitness_precision, OCLanguageAbstraction,
 };
-use process_mining::object_centric::ocpt::object_centric_process_tree_struct::{
+use process_mining::core::process_models::object_centric::ocpt::{
     OCPT as ProcessMiningOCPT, OCPTLeaf as ProcessMiningOCPTLeaf,
     OCPTLeafLabel as ProcessMiningOCPTLeafLabel, OCPTNode as ProcessMiningOCPTNode,
     OCPTOperator as ProcessMiningOCPTOperator, OCPTOperatorType as ProcessMiningOCPTOperatorType,
