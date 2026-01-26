@@ -13,12 +13,15 @@ export class MinerExploreNode extends BaseExploreNode<MinerExploreNodeData> impl
         super(position, nodeType);
     }
 
-    protected initializeData(nodeType: ExploreMinerNodeType): MinerExploreNodeData & { nodeType: ExploreMinerNodeType; nodeCategory: 'miner' } {
+    protected initializeData(
+        nodeType: ExploreMinerNodeType
+    ): MinerExploreNodeData & { nodeType: ExploreMinerNodeType; nodeCategory: 'miner' } {
         return {
             nodeType,
             nodeCategory: 'miner',
             assets: [],
             allowedAssetTypes: assetTypes,
+            colorMap: () => '',
         };
     }
 }

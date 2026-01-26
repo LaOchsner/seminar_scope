@@ -57,8 +57,11 @@ const FileSelectionDialog: React.FC<FileSelectionDialogProps> = ({ isOpen }) => 
                     origin: 'preprocessed',
                     io: 'output',
                 };
+
+                // Generate colors here for the event log
                 updateNodeData(dialogNodeId, () => ({
                     assets: [newAsset],
+                    // colorMap: generatedColrMap
                 }));
             }
             closeDialog();

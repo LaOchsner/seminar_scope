@@ -5,21 +5,30 @@ import { ExploreVisualizationNodeType } from '~/types/explore/nodeTypesCategorie
 import { assetTypes } from '~/types/files.types';
 import { BaseExploreNode } from '~/model/explore/base-node.model';
 
-export class VisualizationExploreNode extends BaseExploreNode<VisualizationExploreNodeData> implements VisualizationNode {
+export class VisualizationExploreNode
+    extends BaseExploreNode<VisualizationExploreNodeData>
+    implements VisualizationNode
+{
     declare type: ExploreVisualizationNodeType;
-    declare data: VisualizationExploreNodeData & { nodeType: ExploreVisualizationNodeType; nodeCategory: 'visualization' };
+    declare data: VisualizationExploreNodeData & {
+        nodeType: ExploreVisualizationNodeType;
+        nodeCategory: 'visualization';
+    };
 
     constructor(position: XYPosition, nodeType: ExploreVisualizationNodeType) {
         super(position, nodeType);
     }
 
-    protected initializeData(nodeType: ExploreVisualizationNodeType): VisualizationExploreNodeData & { nodeType: ExploreVisualizationNodeType; nodeCategory: 'visualization' } {
+    protected initializeData(
+        nodeType: ExploreVisualizationNodeType
+    ): VisualizationExploreNodeData & { nodeType: ExploreVisualizationNodeType; nodeCategory: 'visualization' } {
         return {
             nodeType,
             nodeCategory: 'visualization',
             assets: [],
             allowedAssetTypes: assetTypes,
             processedData: undefined,
+            colorMap: () => '',
         };
     }
 }

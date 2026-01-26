@@ -45,6 +45,14 @@ export const handleConnect = (connection: Connection) => {
                 return { assets: [...existingAssets, ...uniqueNewAssets] };
             });
         }
+
+        // Color Map Changes
+
+        // const { sourceColorMap } = sourceNode.data
+
+        // updateNodeData(target, (prev) => {
+        //     colorMap: sourceColorMap
+        // })
     }
 };
 

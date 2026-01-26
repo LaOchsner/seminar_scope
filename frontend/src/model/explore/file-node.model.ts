@@ -25,6 +25,7 @@ export class FileExploreNode extends BaseExploreNode<FileExploreNodeData> implem
             assets: [],
             allowedAssetTypes: this.getAllowedAssetTypes(nodeType),
             isDownstream: false, // Defaulted, will be overridden in constructor if necessary
+            colorMap: () => '',
         };
     }
 
