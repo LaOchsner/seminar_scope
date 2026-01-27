@@ -12,7 +12,9 @@ import FileSelectionDialog from '~/components/explore/file/ui/FileSelectionDialo
 import CaseNotionMinerNode from '~/components/explore/miner/CaseNotionMinerNode';
 import HistogramMinerNode from '~/components/explore/miner/HistogramMinerNode';
 import OcptMinerNode from '~/components/explore/miner/OcptMinerNode';
-import { useEventHandlers } from '~/hooks/explore/useEventHandlers';
+import { useConnections } from '~/hooks/explore/useConnections';
+import { useDragDrop } from '~/hooks/explore/useDragDrop';
+import { useNodeOperations } from '~/hooks/explore/useNodeOperations';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore } from '~/stores/store';
 import { RefocusProgressPanel } from '~/components/explore/RefocusProgressPanel';
@@ -30,7 +32,11 @@ const Explore: React.FC = () => {
     const { nodes, edges, onEdgesChange } = useExploreFlowStore();
     const [type] = useDnD();
     const { dialogNodeId } = useFileDialogStore();
-    const { onNodesChange, onEdgeDelete, onDragOver, onDrop, handleConnect, isValidConnection } = useEventHandlers();
+
+    const { onNodesChange } = useNodeOperations();
+    const { onEdgeDelete, handleConnect, isValidConnection } = useConnections();
+    const { onDragOver, onDrop } = useDragDrop();
+
     const handleDrop = useCallback((event: DragEvent<HTMLElement>) => onDrop(event, type), [onDrop, type]);
 
     useMemo(() => {

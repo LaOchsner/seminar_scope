@@ -5,11 +5,10 @@ import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore } from '~/stores/store';
 import { isFileNode, isVisualizationNode } from '~/lib/explore/exploreNodes.utils';
 import { VisualizationExploreNodeData } from '~/types/explore/nodeData/visualizationNodeData';
-import { ExploreNodeData } from '~/types/explore/nodes';
 import { ExploreNodeType } from '~/types/explore/nodeTypesCategories';
 import { NodeFactory } from '~/model/explore/node-factory.model';
 
-export const useDragDrop = (onNodeDataChange: (id: string, newData: Partial<ExploreNodeData>) => void) => {
+export const useDragDrop = () => {
     const { addNode, getNode } = useExploreFlowStore();
     const { openDialog } = useFileDialogStore();
     const { screenToFlowPosition } = useReactFlow();
@@ -61,7 +60,7 @@ export const useDragDrop = (onNodeDataChange: (id: string, newData: Partial<Expl
 
             addNode(newNode);
         },
-        [screenToFlowPosition, createVisualizationHandler, getNode, addNode, onNodeDataChange, openDialog]
+        [screenToFlowPosition, createVisualizationHandler, getNode, addNode, openDialog]
     );
 
     return {
