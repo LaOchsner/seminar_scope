@@ -1,5 +1,7 @@
-use process_mining::event_log::EventLog;
-use process_mining::event_log::{Attribute, AttributeValue, Event, Trace, XESEditableAttribute};
+use process_mining::core::event_data::case_centric::EventLog;
+use process_mining::core::event_data::case_centric::{
+    Attribute, AttributeValue, Event, Trace, XESEditableAttribute,
+};
 
 use crate::models::ocel::{IndexLinkedOCEL, LinkedOCELAccess, OCELAttributeValue};
 

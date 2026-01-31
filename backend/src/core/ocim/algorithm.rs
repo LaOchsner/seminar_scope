@@ -124,7 +124,7 @@ mod tests {
     use super::*;
     use crate::core::ocim::common_data::{GlobalData, LocalData};
     use crate::models::ocpt::{OCPTNode, OCPTOperatorType};
-    use process_mining::ocel::ocel_struct::OCEL;
+    use process_mining::core::event_data::object_centric::OCEL;
     use std::path::Path;
 
     #[test]

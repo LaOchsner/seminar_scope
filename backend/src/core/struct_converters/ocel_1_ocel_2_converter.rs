@@ -13,7 +13,7 @@ use crate::core::struct_converters::utils::{
 };
 use crate::models::ocel1::{Ocel1, Ocel1Event, Ocel1Object};
 use process_mining::OCEL;
-use process_mining::ocel::ocel_struct::{
+use process_mining::core::event_data::object_centric::{
     OCELEvent, OCELEventAttribute, OCELObject, OCELObjectAttribute, OCELRelationship, OCELType,
     OCELTypeAttribute,
 };
