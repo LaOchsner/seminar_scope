@@ -42,7 +42,7 @@ const BaseFileNode = memo<FileNodeProps>((props) => {
         if (isDownstream) {
             const hasLeftTarget = options.some((o) => o.position === Position.Left && o.type === 'target');
             if (!hasLeftTarget) {
-                options.push({ position: Position.Left, type: 'target' as const });
+                options.push({ id: 'target', position: Position.Left, type: 'target' as const });
             }
         }
 

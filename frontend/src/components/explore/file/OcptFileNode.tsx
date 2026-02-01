@@ -105,7 +105,10 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
             {...props}
             title="OCPT File"
             iconName="fileJson"
-            handleOptions={[{ position: Position.Right, type: 'source' as const }]}
+            handleOptions={[
+                { id: 'source', position: Position.Right, type: 'source' as const },
+                { id: 'target', position: Position.Left, type: 'target' as const },
+            ]}
             dropdownOptions={[{ label: 'Open File', action: 'openFileDialog' as const, icon: 'file' }]}
         >
             {hasFile && (
@@ -173,7 +176,7 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
                         </DropdownMenu>
                     </div>
                     <div className="relative mt-2 border-t pt-2">
-                        <Handle type="target" position={Position.Left} style={{ left: '-0.75rem' }} />
+                        <Handle id="conformanceTarget" type="target" position={Position.Left} style={{ left: '-0.75rem' }} />
                         <p className="text-xs font-semibold text-gray-500 mb-2">Conformance</p>
                         {!ocelFileId ? (
                             <p className="text-xs text-muted-foreground italic">Optional: Waiting for OCEL input</p>

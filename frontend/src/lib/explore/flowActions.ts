@@ -75,8 +75,8 @@ export const spawnDownstreamNode = (sourceNodeId: string, nodeType: ExploreNodeT
     const connection: Connection = {
         source: sourceNode.id,
         target: newNode.id,
-        sourceHandle: null,
-        targetHandle: null,
+        sourceHandle: 'source',
+        targetHandle: 'target',
     };
     handleConnect(connection);
 };
