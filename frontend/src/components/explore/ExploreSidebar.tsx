@@ -10,9 +10,7 @@ import {
 import DndCard from '~/components/explore/DndCard';
 import { iconMap } from '~/lib/iconMap';
 
-interface ExploreSidebarProps {}
-
-const ExploreSidebar: React.FC<ExploreSidebarProps> = ({}) => {
+const ExploreSidebar: React.FC = () => {
     return (
         <Sidebar side="right">
             <SidebarContent>

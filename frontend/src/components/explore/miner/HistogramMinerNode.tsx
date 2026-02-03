@@ -68,8 +68,8 @@ const HistogramMinerNode = memo<NodeProps<MinerNode>>((node) => {
             title="Histogram Miner"
             iconName="chartBar"
             handleOptions={[
-                { position: Position.Left, type: 'target' as const },
-                { position: Position.Right, type: 'source' as const },
+                { id: 'target', position: Position.Left, type: 'target' as const },
+                { id: 'source', position: Position.Right, type: 'source' as const },
             ]}
             dropdownOptions={[{ label: 'Change Source', action: 'changeSourceFile' as const }]}
             customActions={renderActions()}

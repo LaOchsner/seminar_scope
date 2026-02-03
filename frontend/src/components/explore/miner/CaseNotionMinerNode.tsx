@@ -167,8 +167,8 @@ const CaseNotionMinerNode = memo<NodeProps<MinerNode>>((node) => {
             title="Case Notion Miner"
             iconName="waves"
             handleOptions={[
-                { position: Position.Left, type: 'target' as const },
-                { position: Position.Right, type: 'source' as const },
+                { id: 'target', position: Position.Left, type: 'target' as const },
+                { id: 'source', position: Position.Right, type: 'source' as const },
             ]}
             dropdownOptions={dropdownOptions}
             isLoading={false}

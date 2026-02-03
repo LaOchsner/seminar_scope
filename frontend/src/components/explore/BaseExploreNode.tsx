@@ -1,5 +1,5 @@
 import { memo, ReactNode } from 'react';
-import { Handle, type NodeProps } from '@xyflow/react';
+import { Handle } from '@xyflow/react';
 import { Settings } from 'lucide-react';
 import { BaseNode } from '~/components/ui/base-node';
 import { DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '~/components/ui/dropdown-menu';
@@ -86,9 +86,10 @@ const BaseExploreNode = memo<BaseExploreNodeProps>(
                     </NodeHeaderActions>
                 </NodeHeader>
                 <div className="mt-2">{customContent || <p>empty</p>}</div>
-                {handleOptions.map((handleOption, index) => (
+                {handleOptions.map((handleOption) => (
                     <Handle
-                        key={`${id}-${handleOption.type}-${index}`}
+                        key={handleOption.id}
+                        id={handleOption.id}
                         position={handleOption.position}
                         type={handleOption.type}
                     />

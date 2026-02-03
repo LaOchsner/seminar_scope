@@ -1,28 +1,42 @@
 import { Connection, Edge } from '@xyflow/react';
 import { ExploreNode } from '~/types/explore/nodes';
 
-export const isTwoFileNodes = (sourceNode: ExploreNode, targetNode: ExploreNode) => {
+/**
+ * Prevents direct file-to-file connections, unless the target is a conformance handle.
+ * The conformance handle on the OcptFileNode is a special case that accepts
+ * an OCEL file node as input for conformance checking.
+ */
+export const isTwoFileNodes = (connection: Connection | Edge, sourceNode: ExploreNode, targetNode: ExploreNode) => {
+    if (connection.targetHandle === 'conformanceTarget') return false;
+
     const sourceCategory = sourceNode.data.nodeCategory;
     const targetCategory = targetNode.data.nodeCategory;
 
     return sourceCategory === 'file' && targetCategory === 'file';
 };
 
-export const isTwoVisualizationNodes = (sourceNode: ExploreNode, targetNode: ExploreNode) => {
-    const sourceCategory = sourceNode.data.nodeCategory;
-    const targetCategory = targetNode.data.nodeCategory;
-
-    return sourceCategory === 'visualization' && targetCategory === 'visualization';
+/**
+ * Ensures that only OCEL file nodes can connect to the conformance target handle.
+ * The conformance handle is used by the OcptFileNode to receive OCEL data
+ * for computing fitness and precision metrics.
+ */
+export const isInvalidConformanceTarget = (connection: Connection | Edge, sourceNode: ExploreNode): boolean => {
+    if (connection.targetHandle !== 'conformanceTarget') return false;
+    return sourceNode.data.nodeType !== 'ocelFileNode';
 };
 
+/**
+ * Validates whether a connection between two nodes is allowed.
+ * Passed to the ReactFlow component.
+ */
 export const validateConnection = (connection: Connection | Edge, nodes: ExploreNode[]): boolean => {
     const sourceNode = nodes.find((n) => n.id === connection.source);
     const targetNode = nodes.find((n) => n.id === connection.target);
 
     if (!sourceNode || !targetNode) return false;
 
-    if (isTwoFileNodes(sourceNode, targetNode)) return false;
-    if (isTwoVisualizationNodes(sourceNode, targetNode)) return false;
+    if (isTwoFileNodes(connection, sourceNode, targetNode)) return false;
+    if (isInvalidConformanceTarget(connection, sourceNode)) return false;
 
     return true;
 };

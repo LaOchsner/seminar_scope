@@ -91,8 +91,11 @@ export const deleteOcel = async (fileId: string) => {
     return response.data;
 };
 
-export const getConformance = async (fileId1: string, fileId2: string) => {
-    const response = await api.get(`/v1/conformance/${fileId1}/${fileId2}`);
+export const getConformance = async (
+    ocptFileId: string,
+    ocelFileId: string
+): Promise<{ fitness: number; precision: number }> => {
+    const response = await api.get(`/v1/conformance/ocpt/${ocptFileId}/ocel/${ocelFileId}`);
     return response.data;
 };
 

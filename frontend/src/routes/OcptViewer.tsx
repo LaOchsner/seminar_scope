@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import { scaleOrdinal } from '@visx/scale';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { SidebarProvider } from '~/components/ui/sidebar';
-import AppSidebar from '~/components/AppSidebar';
 import BreadcrumbNav from '~/components/BreadcrumbNav';
-// import Flow from '~/components/flow/Flow';
 import OCPT from '~/components/ocpt/OCPT';
+import OcptSidebar from '~/components/ocpt/OcptSidebar';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useIsOcptMode } from '~/stores/store';
 import { addIdsToTree } from '~/lib/ocpt/ocptAddIds';
@@ -61,19 +60,14 @@ const OcptViewer: React.FC = () => {
                 <BreadcrumbNav />
                 <div className="flex flex-1 h-full w-full">
                     {isOcptMode && node ? (
-                        <OCPT
-                            treeData={treeData}
-                            colorScale={colorScale}
-                            objectTypes={objectTypes}
-                            node={node}
-                        />
+                        <OCPT treeData={treeData} colorScale={colorScale} node={node} />
                     ) : (
                         // <Flow objectTypes={objectTypes} />
                         <div></div>
                     )}
                 </div>
                 {nodeId && viewState ? (
-                    <AppSidebar
+                    <OcptSidebar
                         objectTypes={objectTypes}
                         coloring={colorScale}
                         nodeId={nodeId}
@@ -83,6 +77,7 @@ const OcptViewer: React.FC = () => {
                                 viewState: { ...viewState, filteredObjectTypes: newFilteredObjectTypes },
                             });
                         }}
+                        conformanceData={nodeData?.conformanceData}
                     />
                 ) : (
                     <div>Can not load sidebar. No nodeId found.</div>

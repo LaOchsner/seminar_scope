@@ -125,8 +125,8 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
             title="OCPT Miner"
             iconName="treePine"
             handleOptions={[
-                { position: Position.Left, type: 'target' as const },
-                { position: Position.Right, type: 'source' as const },
+                { id: 'target', position: Position.Left, type: 'target' as const },
+                { id: 'source', position: Position.Right, type: 'source' as const },
             ]}
             dropdownOptions={dropdownOptions}
             onDropdownAction={handleDropdownAction}

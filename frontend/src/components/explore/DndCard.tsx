@@ -9,7 +9,7 @@ interface DndCardProps {
 }
 
 const DndCard: React.FC<DndCardProps> = ({ title, Icon, nodeType }) => {
-    const [_, setType] = useDnD();
+    const [, setType] = useDnD();
 
     const onDragStart = (event: DragEvent<HTMLDivElement>, nodeType: ExploreNodeType) => {
         setType(nodeType);
