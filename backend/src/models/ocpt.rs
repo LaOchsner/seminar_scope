@@ -81,7 +81,7 @@ pub struct OcptFE {
 #[serde(untagged)]
 pub enum HierarchyNode {
     Operator {
-        value: String,
+        value: OperatorValue,
         children: Vec<HierarchyNode>,
     },
     Activity {
@@ -102,6 +102,44 @@ pub struct ObjectTypeFE {
     pub ot: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exhibits: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum OperatorValue {
+    Legacy(String),
+    Operator(OperatorValueData),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OperatorValueData {
+    pub operator: OperatorFE,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identity: Option<Vec<IdentityRelationFE>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum OperatorFE {
+    Sequence,
+    Xor,
+    Parallel,
+    Loop,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IdentityRelationFE {
+    pub left: Vec<String>,
+    pub right: Vec<String>,
+    pub kind: IdentityRelationKindFE,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum IdentityRelationKindFE {
+    Sync,
+    ImpConcurrent,
+    ImpOrdered,
 }
 
 ////////// sid ///////////////////////////
