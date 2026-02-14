@@ -10,7 +10,7 @@ import { RenderTree } from '~/components/ocpt/OcptRendering';
 import NodeTooltip from '~/components/ocpt/ui/NodeTooltip';
 import ZoomButtons from '~/components/ocpt/ui/ZoomButtons';
 import { VisualizationNode } from '~/types/explore/nodes';
-import { type TreeNode } from '~/types/ocpt/ocpt.types';
+import { type Node } from '~/types/ocpt/ocpt.types';
 
 // Cast needed due to @visx/zoom + @types/react@18 incompatibility
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,7 +20,7 @@ export type OCPTProps = {
     width?: number;
     height?: number;
     margin?: { top: number; right: number; bottom: number; left: number };
-    treeData: TreeNode | null;
+    treeData: Node | null;
     colorScale: ScaleOrdinal<string, string, never>;
     node: VisualizationNode;
 };
@@ -40,8 +40,8 @@ const OCPTContent: React.FC<OCPTContentProps> = ({
     colorScale,
     node,
 }) => {
-    const [hoveredNode, setHoveredNode] = useState<HierarchyPointNode<TreeNode> | null>(null);
-    const [tree, setTree] = useState<HierarchyNode<TreeNode> | null>(null);
+    const [hoveredNode, setHoveredNode] = useState<HierarchyPointNode<Node> | null>(null);
+    const [tree, setTree] = useState<HierarchyNode<Node> | null>(null);
     const viewState = node.data.viewState;
     const filteredObjectTypes = viewState?.filteredObjectTypes || [];
 

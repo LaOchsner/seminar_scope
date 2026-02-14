@@ -3,7 +3,7 @@ import { GetCaseNotionsResponse } from '~/services/response.types';
 import { CaseOcelResponse } from '~/types/api/ocel_collection.api';
 import { CaseNotionApiResponse } from '~/types/case_notion.types';
 import { ExtendedFile } from '~/types/files.types';
-import { JSONSchema } from '~/types/ocpt/ocpt.types';
+import { OcptSchemaApi } from '~/types/ocpt/ocpt.types';
 
 // Import the new type
 
@@ -31,12 +31,11 @@ export const uploadFile = async (file: ExtendedFile) => {
     return response.data;
 };
 
-type getOcptResult = {
-    ocpt: JSONSchema;
+type GetOcptResponse = {
+    ocpt: OcptSchemaApi;
     file_id: string;
 };
-
-export const getOcpt = async (fileId: string): Promise<getOcptResult> => {
+export const getOcpt = async (fileId: string): Promise<GetOcptResponse> => {
     const response = await api.get(`/v1/objects/ocpt/${fileId}`);
     return response.data;
 };
@@ -112,7 +111,7 @@ export const getOcelObjectTypes = async (fileId: string): Promise<CaseNotionApiR
     return response.data;
 };
 
-export const mineOcpt = async (fileId: string, algorithm: string = 'DF2'): Promise<getOcptResult> => {
+export const mineOcpt = async (fileId: string, algorithm: string = 'DF2'): Promise<GetOcptResponse> => {
     if (algorithm === 'DF2') {
         const response = await api.get(`v1/ocpt/df2/${fileId}`);
         return response.data;

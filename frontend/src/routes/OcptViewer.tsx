@@ -9,10 +9,10 @@ import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useIsOcptMode } from '~/stores/store';
 import { addIdsToTree } from '~/lib/ocpt/ocptAddIds';
 import { VisualizationNode } from '~/types/explore/nodes';
-import { type TreeNode } from '~/types/ocpt/ocpt.types';
+import { type Node } from '~/types/ocpt/ocpt.types';
 
 const OcptViewer: React.FC = () => {
-    const [treeData, setTreeData] = useState<TreeNode | null>(null);
+    const [treeData, setTreeData] = useState<Node | null>(null);
     const [objectTypes, setObjectTypes] = useState<string[]>([]);
     const { nodeId } = useParams<{ nodeId: string }>();
     const [searchParams] = useSearchParams();

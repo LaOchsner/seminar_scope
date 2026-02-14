@@ -1,5 +1,5 @@
 import getLinkComponent from '~/components/ocpt/links/getLinkComponent';
-import { type HierarchyPointLinkObjectCentric, type TreeNode } from '~/types/ocpt/ocpt.types';
+import { type HierarchyPointLinkObjectCentric, type Node } from '~/types/ocpt/ocpt.types';
 
 const LinkLine = getLinkComponent({
     layout: 'cartesian',
@@ -8,7 +8,7 @@ const LinkLine = getLinkComponent({
 });
 
 interface OcptLinkProps {
-    link: HierarchyPointLinkObjectCentric<TreeNode>;
+    link: HierarchyPointLinkObjectCentric<Node>;
     linkId: number;
 }
 

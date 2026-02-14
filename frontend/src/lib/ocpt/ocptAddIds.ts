@@ -1,19 +1,17 @@
-import { CTreeNode, type JSONTreeNode, type TreeNode } from '~/types/ocpt/ocpt.types';
+import { type Node, type NodeWithoutId } from '~/types/ocpt/ocpt.types';
 
 let nodeIdCounter = 0;
 
-export const addIdsToTree = (jsonTreeData: JSONTreeNode): TreeNode => {
+export const addIdsToTree = (jsonTreeData: NodeWithoutId): Node => {
     nodeIdCounter = 0;
 
-    function addIdsRecursively(jsonNode: JSONTreeNode): TreeNode {
-        const id = nodeIdCounter++;
-        const treeNode = new CTreeNode(
-            id,
-            jsonNode.value,
-            jsonNode.isExpanded,
-            jsonNode.children ? jsonNode.children.map(addIdsRecursively) : undefined
-        );
-        return treeNode;
+    function addIdsRecursively(jsonNode: NodeWithoutId): Node {
+        return {
+            id: nodeIdCounter++,
+            value: jsonNode.value,
+            isExpanded: jsonNode.isExpanded,
+            children: jsonNode.children?.map(addIdsRecursively),
+        };
     }
 
     return addIdsRecursively(jsonTreeData);

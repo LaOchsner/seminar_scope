@@ -9,9 +9,9 @@ import {
     isSilentActivity,
     isTrueSilentActivity,
 } from '~/lib/ocpt/ocptGuards';
-import { TreeNode } from '~/types/ocpt/ocpt.types';
+import { Node } from '~/types/ocpt/ocpt.types';
 
-const parentIsArbitraryOrSkip = (parent: HierarchyPointNode<TreeNode> | null) => {
+const parentIsArbitraryOrSkip = (parent: HierarchyPointNode<Node> | null) => {
     if (!parent) return false;
 
     const value = parent.data.value;
@@ -19,9 +19,9 @@ const parentIsArbitraryOrSkip = (parent: HierarchyPointNode<TreeNode> | null) =>
 };
 
 interface OcptNodeProps {
-    node: HierarchyPointNode<TreeNode>;
+    node: HierarchyPointNode<Node>;
     key: number;
-    setHoveredNode: React.Dispatch<React.SetStateAction<HierarchyPointNode<TreeNode> | null>>;
+    setHoveredNode: React.Dispatch<React.SetStateAction<HierarchyPointNode<Node> | null>>;
     colorScale: ScaleOrdinal<string, string, never>;
 }
 
@@ -81,8 +81,6 @@ const OcptNode: React.FC<OcptNodeProps> = ({ node, key, setHoveredNode, colorSca
                 node={node}
                 key={key}
                 opacity={opacity}
-                ots={value.ots}
-                colorScale={colorScale}
             />
         );
 

@@ -1,16 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { Group } from '@visx/group';
+import { HierarchyPointNode } from '@visx/hierarchy/lib/types';
 import { ScaleOrdinal } from 'd3';
 import LegendRect from '~/components/ocpt/ui/LegendRect';
-import { type Activity, type NodeProps } from '~/types/ocpt/ocpt.types';
+import * as Ocpt from '~/types/ocpt/ocpt.types';
 
-interface TextNodeProps extends NodeProps {
+interface TextNodeProps {
+    width: number;
+    height: number;
     colorScale: ScaleOrdinal<string, string, never>;
     isSilent: boolean;
     opacity: number;
-    onMouseEnter?: (event: React.MouseEvent, node: any) => void;
-    onMouseMove?: (event: React.MouseEvent, node: any) => void;
-    onMouseLeave?: (event: React.MouseEvent, node: any) => void;
+    node: HierarchyPointNode<Ocpt.Node>;
+    key: number;
+    onMouseEnter?: (event: React.MouseEvent, node: HierarchyPointNode<Ocpt.Node>) => void;
+    onMouseMove?: (event: React.MouseEvent, node: HierarchyPointNode<Ocpt.Node>) => void;
+    onMouseLeave?: (event: React.MouseEvent, node: HierarchyPointNode<Ocpt.Node>) => void;
 }
 
 const getFillColor = (isSilent: boolean) => {
@@ -31,20 +36,18 @@ const TextNode: React.FC<TextNodeProps> = ({
     onMouseMove,
     onMouseLeave,
 }) => {
-    const activity = node.data.value as Activity;
+    const activity = node.data.value as Ocpt.Activity;
     const fillColor = getFillColor(isSilent);
     const textContent = activity.activity;
 
     // Create a ref to measure text width
     const textRef = useRef<SVGTextElement>(null);
-    const [textWidth, setTextWidth] = useState(0);
     const [nodeWidth, setNodeWidth] = useState(width);
 
     // Measure text after render
     useEffect(() => {
         if (textRef.current) {
             const bbox = textRef.current.getBBox();
-            setTextWidth(bbox.width);
             // Set node width based on text width with some padding
             setNodeWidth(Math.max(bbox.width + 20, width));
         }

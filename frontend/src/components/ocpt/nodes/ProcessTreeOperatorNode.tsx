@@ -1,53 +1,19 @@
-import { useEffect, useState } from 'react';
 import { Group } from '@visx/group';
-import type { ScaleOrdinal } from 'd3-scale';
+import { HierarchyPointNode } from '@visx/hierarchy/lib/types';
 import { Circle } from 'lucide-react';
 import ProcessTreeOperatorSVG from '~/components/ocpt/nodes/ProcessTreeOperatorSVG';
-import { type ExtendedProcessTreeOperatorType, NodeProps, type ObjectType } from '~/types/ocpt/ocpt.types';
+import * as Ocpt from '~/types/ocpt/ocpt.types';
 
-interface ProcessTreeNodeProps extends NodeProps {
-    operator: ExtendedProcessTreeOperatorType;
+interface ProcessTreeNodeProps {
+    width: number;
+    height: number;
+    node: HierarchyPointNode<Ocpt.Node>;
+    operator: Ocpt.ExtendedOperatorType;
     key: number;
     opacity: number;
-    ots?: ObjectType[];
-    colorScale?: ScaleOrdinal<string, string, never>;
 }
 
-const ProcessTreeOperatorNode: React.FC<ProcessTreeNodeProps> = ({
-    height,
-    width,
-    node,
-    key,
-    operator,
-    opacity,
-    ots,
-    colorScale,
-}) => {
-    const [flowers, setFlowers] = useState<{ x: number; y: number; color: string }[]>([]);
-
-    const radius = Math.min(width, height) / 2;
-
-    useEffect(() => {
-        console.log(node);
-        if (!ots || ots.length === 0 || !colorScale) return;
-
-        const divergingOts = ots.filter((ot) => ot.exhibits && ot.exhibits.includes('div')).map((ot) => ot.ot);
-
-        const totalFlowers = divergingOts.length;
-        const angleStep = 360 / totalFlowers; // Equal spacing around the circle
-
-        const flowers = divergingOts.map((divOt, i) => {
-            const angle = i * angleStep;
-            return {
-                x: radius * Math.cos((angle * Math.PI) / 180) - 10,
-                y: radius * Math.sin((angle * Math.PI) / 180) - 10,
-                color: colorScale(divOt),
-            };
-        });
-
-        setFlowers(flowers);
-    }, [ots]);
-
+const ProcessTreeOperatorNode: React.FC<ProcessTreeNodeProps> = ({ height, width, node, key, operator, opacity }) => {
     return (
         <Group top={node.y} left={node.x} key={key}>
             <rect
@@ -62,17 +28,6 @@ const ProcessTreeOperatorNode: React.FC<ProcessTreeNodeProps> = ({
                 ry={25}
                 opacity={opacity}
             />
-            {/* {flowers.map((flower, index) => (
-                <Flower
-                    key={`flower-${key}-${index}`} // Unique key for each flower
-                    x={flower.x}
-                    y={flower.y}
-                    size={20}
-                    className={` stroke-black`}
-                    opacity={opacity}
-                    fill={flower.color}
-                />
-            ))} */}
             {(() => {
                 switch (operator) {
                     case 'sequence':
