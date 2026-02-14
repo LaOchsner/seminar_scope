@@ -63,4 +63,24 @@ export const createColorSlice: StateCreator<ExploreFlowStore, [], [], ColorSlice
 
         return getDeterministicColor(objectType);
     },
+    setNodeColor: (nodeId: string, objectType: string, newColor: string) => {
+        const { getNode, updateNodeData } = get();
+        const node = getNode(nodeId);
+
+        if (!node) return;
+
+        // Cast to your node data type
+        const nodeData = node.data as FileExploreNodeData;
+
+        // Create a copy of the existing map
+        const updatedMap = { ...(nodeData.colorMap || {}) };
+
+        // Update the specific color
+        updatedMap[objectType] = newColor;
+
+        // Write back to the node (Triggers re-render in Graph/Histograms)
+        updateNodeData(nodeId, {
+            colorMap: updatedMap,
+        } as any);
+    },
 });

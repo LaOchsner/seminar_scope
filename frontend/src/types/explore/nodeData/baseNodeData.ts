@@ -6,7 +6,8 @@ export type BaseExploreNodeDropdownActionType =
     | 'openFileDialog'
     | 'changeSourceFile'
     | 'exportJson'
-    | 'viewObjectEventGraph';
+    | 'viewObjectEventGraph'
+    | 'setCustomColor';
 
 export interface BaseExploreNodeHandleOption {
     position: Position;
