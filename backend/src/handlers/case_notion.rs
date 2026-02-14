@@ -12,6 +12,7 @@ use crate::core::case_notion::traditional::{
 use crate::models::case_notion::GenericCaseNotion;
 use crate::models::ocel::{OCEL, OCELEvent, OCELObject};
 use crate::traits::import_export::ImportableFromPath;
+use async_trait::async_trait;
 use axum::{
     Json,
     extract::{Path, Query},
@@ -67,6 +68,14 @@ struct PersistedCaseNotion {
     #[serde(skip_serializing_if = "Option::is_none")]
     object_type: Option<String>,
     case_notion_file_id: String,
+}
+
+#[async_trait]
+impl ImportableFromPath for PersistedCaseNotion {
+    async fn import_from_path(file_id: &str) -> Result<Self, (StatusCode, String)> {
+        let path = format!("./temp/case_notion_{}.json", file_id);
+        Self::from_json_file(&path).await
+    }
 }
 
 struct LoadedCaseNotion {
@@ -150,37 +159,18 @@ async fn persist_case_ocel_payload(
 async fn load_persisted_case_notion(
     case_notion_file_id: &str,
 ) -> Result<LoadedCaseNotion, (StatusCode, String)> {
-    let path = format!("./temp/case_notion_{}.json", case_notion_file_id);
-    let bytes = match fs::read(&path).await {
+    let persisted = match PersistedCaseNotion::import_from_path(case_notion_file_id).await {
         Ok(data) => data,
-        Err(err) => {
-            eprintln!("read case notion file failed: {err}");
-            return Err(if err.kind() == std::io::ErrorKind::NotFound {
-                (
-                    StatusCode::NOT_FOUND,
-                    format!(
-                        "No stored case notion found for fileId: {}",
-                        case_notion_file_id
-                    ),
-                )
-            } else {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Failed to read stored case notion".to_string(),
-                )
-            });
-        }
-    };
-
-    let persisted: PersistedCaseNotion = match serde_json::from_slice(&bytes) {
-        Ok(data) => data,
-        Err(err) => {
-            eprintln!("parse case notion file failed: {err}");
+        Err((status, _message)) if status == StatusCode::NOT_FOUND => {
             return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Stored case notion is not valid JSON".to_string(),
+                StatusCode::NOT_FOUND,
+                format!(
+                    "No stored case notion found for fileId: {}",
+                    case_notion_file_id
+                ),
             ));
         }
+        Err((status, message)) => return Err((status, message)),
     };
 
     let PersistedCaseNotion {

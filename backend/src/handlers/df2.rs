@@ -3,6 +3,7 @@ use crate::core::struct_converters::ocpt_frontend_backend::{
     backend_to_frontend, frontend_to_backend,
 };
 use crate::models::ocpt::{OCPT, OcptFE};
+use crate::traits::import_export::ImportableFromPath;
 use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
 use serde_json::json;
 use tokio::fs;
@@ -34,16 +35,10 @@ pub async fn apply_df2(
     let ocpt_path = format!("./temp/ocpt_{}.json", generated_id);
 
     // Read the generated (frontend) OCPT.
-    let content = fs::read_to_string(&ocpt_path).await.map_err(|e| {
+    let ocpt_fe: OcptFE = OcptFE::import_from_path(&generated_id).await.map_err(|(status, message)| {
         (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Read generated OCPT failed: {e}"),
-        )
-    })?;
-    let ocpt_fe: OcptFE = serde_json::from_str(&content).map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Parse generated OCPT (frontend) failed: {e}"),
+            status,
+            format!("Load generated OCPT (frontend) failed: {message}"),
         )
     })?;
 

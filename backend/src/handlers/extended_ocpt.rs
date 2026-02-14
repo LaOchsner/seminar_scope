@@ -1,7 +1,7 @@
 use crate::core::identity_relations::get_extended_ocpt as extend_ocpt_with_identity_relations;
 use crate::core::struct_converters::ocpt_frontend_backend::backend_to_frontend;
 use crate::core::utils::relations::build_relations_from_ocels;
-use crate::handlers::ocpt::{ensure_temp_dir, read_ocpt_as_backend, read_ocpt_as_frontend};
+use crate::handlers::ocpt::ensure_temp_dir;
 use crate::models::ocel::OCEL;
 use crate::models::ocel_collection::OCELCollection;
 use crate::models::ocpt::OCPT;
@@ -11,7 +11,6 @@ use axum::{Json, http::StatusCode, response::IntoResponse};
 use serde::Deserialize;
 use serde_json::json;
 use std::io::ErrorKind;
-use std::path::Path as FsPath;
 use tokio::fs;
 use uuid::Uuid;
 
@@ -78,20 +77,7 @@ pub async fn apply_extended_ocpt(
         ));
     }
 
-    let ocpt_path = format!("./temp/ocpt_{}.json", ocpt_id);
-    if !FsPath::new(&ocpt_path).exists() {
-        return Err((
-            StatusCode::NOT_FOUND,
-            format!("OCPT file not found for file_id: {}", ocpt_id),
-        ));
-    }
-
-    let mut ocpt = read_ocpt_as_backend(&ocpt_path).await.map_err(|e| {
-        (
-            StatusCode::BAD_REQUEST,
-            format!("Failed to parse OCPT '{}': {}", ocpt_id, e),
-        )
-    })?;
+    let mut ocpt = OCPT::import_from_path(&ocpt_id).await?;
 
     if !ocpt.is_valid() {
         return Err((
@@ -115,28 +101,16 @@ pub async fn apply_extended_ocpt(
 
 pub async fn get_extended_ocpt(Path(file_id): Path<String>) -> impl IntoResponse {
     let path = format!("./temp/extended_ocpt_{}.json", file_id);
-    if !FsPath::new(&path).exists() {
-        return (
-            StatusCode::NOT_FOUND,
-            format!("Extended OCPT file not found for file_id: {}", file_id),
-        )
-            .into_response();
-    }
-
-    match read_ocpt_as_frontend(&path).await {
-        Ok(frontend_ocpt) => (
+    match OCPT::from_json_file(&path).await {
+        Ok(backend_ocpt) => (
             StatusCode::OK,
             Json(json!({
                 "file_id": file_id,
-                "extended_ocpt": frontend_ocpt
+                "extended_ocpt": backend_to_frontend(&backend_ocpt)
             })),
         )
             .into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to read stored extended OCPT: {}", e),
-        )
-            .into_response(),
+        Err((status, message)) => (status, message).into_response(),
     }
 }
 

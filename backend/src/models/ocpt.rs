@@ -171,6 +171,17 @@ impl ImportableFromPath for OCPT {
     }
 }
 
+/// Implementation of [`ImportableFromPath`] for frontend OCPT shape [`OcptFE`].
+///
+/// This is mainly used when intermediate frontend OCPT artifacts are read from disk.
+#[async_trait]
+impl ImportableFromPath for OcptFE {
+    async fn import_from_path(file_id: &str) -> Result<Self, (StatusCode, String)> {
+        let path = format!("./temp/ocpt_{}.json", file_id);
+        Self::from_json_file(&path).await
+    }
+}
+
 /// Implementation of [`ExportableToPath`] for [`OCPT`].
 ///
 /// This implementation generates a unique file ID, constructs the file path

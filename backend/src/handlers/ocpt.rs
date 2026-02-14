@@ -2,11 +2,11 @@ use crate::core::struct_converters::ocpt_frontend_backend::{
     backend_to_frontend, frontend_to_backend,
 };
 use crate::models::ocpt::{OCPT, OcptFE};
+use crate::traits::import_export::ImportableFromPath;
 use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse, response::Response};
 use axum_extra::extract::Multipart;
 use serde_json;
 use serde_json::Value;
-use std::path::Path as FsPath;
 use std::path::PathBuf;
 use tokio::fs;
 
@@ -123,81 +123,28 @@ pub(crate) async fn ensure_temp_dir() -> std::io::Result<()> {
     Ok(())
 }
 
-pub(crate) async fn read_ocpt_as_backend(path: &str) -> Result<OCPT, String> {
-    let content = fs::read_to_string(path)
-        .await
-        .map_err(|e| format!("read {}: {e}", path))?;
-
-    // 1) Try backend first
-    if let Ok(be) = serde_json::from_str::<OCPT>(&content) {
-        return Ok(be);
-    }
-
-    // 2) Fallback FE -> BE
-    let fe: OcptFE =
-        serde_json::from_str(&content).map_err(|e| format!("parse OCPT {}: {e}", path))?;
-
-    frontend_to_backend(fe).map_err(|e| format!("convert frontend OCPT {}: {e}", path))
-}
-
-// Helper: read an OCPT from disk and return the FE shape.
-pub(crate) async fn read_ocpt_as_frontend(path: &str) -> Result<OcptFE, String> {
-    let content = fs::read_to_string(path)
-        .await
-        .map_err(|e| format!("read {}: {e}", path))?;
-
-    // 1) Try FE first
-    if let Ok(fe) = serde_json::from_str::<OcptFE>(&content) {
-        return Ok(fe);
-    }
-
-    // 2) Fallback to BE → FE
-    let be: OCPT =
-        serde_json::from_str(&content).map_err(|e| format!("parse backend OCPT {}: {e}", path))?;
-
-    if !be.is_valid() {
-        return Err("backend OCPT failed is_valid()".to_string());
-    }
-
-    Ok(backend_to_frontend(&be))
-}
-
 pub async fn get_ocpt(Path(file_id): Path<String>) -> impl IntoResponse {
     println!("-> GET /v1/objects/ocpt/{}", file_id);
 
-    let ocpt_path = format!("./temp/ocpt_{}.json", file_id);
-    if !FsPath::new(&ocpt_path).exists() {
-        let msg = format!("OCPT file not found for fileId: {}", file_id);
-        eprintln!("{}", msg);
-        return (StatusCode::NOT_FOUND, msg).into_response();
-    }
-
-    match read_ocpt_as_frontend(&ocpt_path).await {
-        Ok(frontend_ocpt) => {
+    match OCPT::import_from_path(&file_id).await {
+        Ok(backend_ocpt) => {
             let payload = serde_json::json!({
                 "file_id": file_id,
-                "ocpt": frontend_ocpt
+                "ocpt": backend_to_frontend(&backend_ocpt)
             });
             (StatusCode::OK, Json(payload)).into_response()
         }
-        Err(e) => {
-            eprintln!("convert stored OCPT failed: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to convert stored OCPT to frontend format",
-            )
-                .into_response()
-        }
+        Err((status, message)) => (status, message).into_response(),
     }
 }
 
 pub async fn delete_ocpt(Path(file_id): Path<String>) -> impl IntoResponse {
-    println!("🗑️ DELETE /v1/objects/ocpt/{}", file_id);
+    println!("DELETE /v1/objects/ocpt/{}", file_id);
     let ocpt_path = format!("./temp/ocpt_{}.json", file_id);
     match fs::remove_file(&ocpt_path).await {
         Ok(_) => (StatusCode::NO_CONTENT, "Deleted file").into_response(),
         Err(e) => {
-            eprintln!("❌ Failed to delete file {}: {}", ocpt_path, e);
+            eprintln!("Failed to delete file {}: {}", ocpt_path, e);
             (StatusCode::INTERNAL_SERVER_ERROR, "Failed to delete file").into_response()
         }
     }
