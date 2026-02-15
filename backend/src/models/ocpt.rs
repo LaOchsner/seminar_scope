@@ -12,8 +12,8 @@ use uuid::Uuid;
 // Re-exported for downstream API consumers; not referenced in this module yet.
 pub use process_mining::core::process_models::object_centric::ocpt::{EventType, ObjectType};
 pub use process_mining::core::process_models::object_centric::ocpt::{
-    IdentityRelation, IdentityRelationKind, OCPT, OCPTLeaf, OCPTLeafLabel, OCPTNode, OCPTOperator,
-    OCPTOperatorType,
+    IdentityRelation, IdentityRelationKind, OCPTLeaf, OCPTLeafLabel, OCPTNode, OCPTOperator,
+    OCPTOperatorType, OCPT,
 };
 
 pub trait OCPTPretty {
@@ -133,14 +133,26 @@ pub struct IdentityRelationFE {
     pub left: Vec<String>,
     pub right: Vec<String>,
     pub kind: IdentityRelationKindFE,
+    #[serde(
+        rename = "batchSize",
+        alias = "batch_size",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub batch_size: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum IdentityRelationKindFE {
     Sync,
+    SubsetSync,
+    SubsetSyncPartition,
+    SubsetSyncOverlap,
     ImpConcurrent,
     ImpOrdered,
+    ImpBatch,
+    ObjectSplit,
+    ObjectMerge,
 }
 
 ////////// sid ///////////////////////////
