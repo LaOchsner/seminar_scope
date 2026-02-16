@@ -1,4 +1,5 @@
 import { Connection, Edge, EdgeChange, NodeChange } from '@xyflow/react';
+import { HistogramState } from '~/types/explore/nodeData/fileNodeData';
 import { ExploreNode, ExploreNodeData } from '~/types/explore/nodes';
 
 export interface GraphSlice {
@@ -20,4 +21,13 @@ export interface GraphSlice {
     clearFlow: () => void;
     refocusQueue: string[];
     setRefocusQueue: (queue: string[]) => void;
+
+    // --- Color (stored on node.data.colorMap / node.data.colorIndex) ---
+    initializeDataState: (nodeId: string, objectTypes: string[]) => void;
+    getColorForNode: (nodeId: string, objectType: string) => string;
+    setNodeColor: (nodeId: string, objectType: string, newColor: string) => void;
+
+    // --- Histogram (stored on node.data.histogramState) ---
+    setHistogramState: (nodeId: string, state: HistogramState) => void;
+    clearHistogramState: (nodeId: string) => void;
 }

@@ -1,26 +1,34 @@
 use crate::core::event_object_frequencies::{
-    histogram_builder::build_event_object_histograms, histogram_filtering::filter_ocel_histograms,
+    histogram_builder::{HistogramPerspective, build_histograms},
+    histogram_filtering::filter_ocel_histograms,
 };
 
 use crate::models::ocel::OCEL;
 use crate::traits::import_export::ImportableFromPath;
-use axum::{
-    extract::Path as AxumPath,
-    http::StatusCode,
-    response::IntoResponse,
-    Json as AxumJson,
-};
+use axum::{Json as AxumJson, extract::Path as AxumPath, http::StatusCode, response::IntoResponse};
 use tokio::fs as tokio_fs;
 use uuid::Uuid;
 
-/// GET /v1/event_object_frequencies/histogram/:file_id
-/// Returns: JSON object containing event-object frequency histograms
-pub async fn get_event_object_frequencies(
+/// GET /v1/event_object_frequencies/event_perspective_histogram/:file_id
+/// Returns: JSON object containing event-object frequency histograms from the event perspective
+pub async fn get_event_perspective_histogram(
     AxumPath(file_id): AxumPath<String>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let ocel = OCEL::import_from_path(&file_id).await?;
 
-    let histogram = build_event_object_histograms(&ocel);
+    let histogram = build_histograms(&ocel, HistogramPerspective::Event);
+
+    Ok(axum::Json(histogram))
+}
+
+/// GET /v1/event_object_frequencies/object_perspective_histogram/:file_id
+/// Returns: JSON object containing event-object frequency histograms from the object perspective
+pub async fn get_object_perspective_histogram(
+    AxumPath(file_id): AxumPath<String>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let ocel = OCEL::import_from_path(&file_id).await?;
+
+    let histogram = build_histograms(&ocel, HistogramPerspective::Object);
 
     Ok(axum::Json(histogram))
 }
@@ -35,14 +43,16 @@ pub async fn post_ocel_filter(
     let ocel = OCEL::import_from_path(&ocel_file_id).await?;
 
     // 2. Call filtering function
-    let filtered_ocels = match serde_json::to_string(&selection_json) {
-        Ok(json_str) => filter_ocel_histograms(&ocel, &json_str),
-        Err(e) => {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                format!("Failed to serialize selection JSON: {}", e),
-            ));
-        }
+    let json_str = serde_json::to_string(&selection_json).map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            format!("Failed to serialize selection JSON: {}", e),
+        )
+    })?;
+
+    let filtered_ocels = match filter_ocel_histograms(&ocel, &json_str) {
+        Ok(ocels) => ocels,
+        Err(e) => return Err((StatusCode::BAD_REQUEST, e)),
     };
 
     let mut ids = Vec::new();

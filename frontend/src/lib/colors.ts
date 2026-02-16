@@ -1,64 +1,47 @@
-import * as d3 from 'd3';
+/**
+ * Convert HSL values to a hex color string.
+ * h: 0–360, s: 0–100, l: 0–100
+ */
+function hslToHex(h: number, s: number, l: number): string {
+    s /= 100;
+    l /= 100;
+
+    const a = s * Math.min(l, 1 - l);
+    const f = (n: number) => {
+        const k = (n + h / 30) % 12;
+        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(255 * color)
+            .toString(16)
+            .padStart(2, '0');
+    };
+
+    return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+/** Golden angle ≈ 137.508° — ensures maximally distinct successive hues */
+const GOLDEN_ANGLE = 137.508;
 
 /**
- * Generates a deterministic, high-saturation, pleasant color from any string.
- * Used as a fallback/stateless generator.
+ * Returns a distinct color for a given sequential index.
+ * Uses the golden angle to spread hues evenly around the color wheel.
+ * Returns a hex string (e.g., "#4CAF50").
  */
-export function getDeterministicColor(str: string): string {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-        hash = hash & hash;
-    }
-    const hue = Math.abs(hash % 360);
-    const saturation = 60 + Math.abs(hash % 20);
-    const lightness = 40 + Math.abs(hash % 20);
-    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+export function getSequentialColor(index: number): string {
+    const hue = (index * GOLDEN_ANGLE) % 360;
+    return hslToHex(hue, 65, 55);
 }
 
 /**
- * Generates a distinct color based on a numeric index.
- * Uses the Golden Angle (~137.508°) to strictly prevent hue overlap.
- * Uses disjoint cycles for Saturation and Lightness to ensure variety.
+ * Deterministic fallback color based on a string key (e.g., object type name).
+ * Hashes the string to produce a stable hue.
+ * Returns a hex string.
  */
-export const getSequentialColor = (index: number): string => {
-    // Hue: Golden Angle (~137.508 degrees)
-    // This provides optimal distribution around the color wheel,
-    // ensuring no two indices share the same hue for a very long time.
-    const hue = (index * 137.508) % 360;
-
-    // Saturation: Cycle [Vibrant, Semi-Muted, Max, High]
-    // Cycle length 4
-    const saturationLevels = [75, 60, 100, 85];
-    const saturation = saturationLevels[index % saturationLevels.length];
-
-    // Lightness: Cycle [Mid, Dark, Light, Mid-Dark, Mid-Light]
-    // Cycle length 5 (Prime, coprime to 4) creates a 20-step unique S/L pattern
-    // Ranges constrained to 35-75% to avoid colors becoming indistinguishable (too black/white)
-    const lightnessLevels = [50, 35, 70, 45, 65];
-    const lightness = lightnessLevels[index % lightnessLevels.length];
-
-    return `hsl(${hue.toFixed(1)}, ${saturation}%, ${lightness}%)`;
-};
-
-/**
- * Helper to generate a gradient definition from a base color.
- * Useful for Object/Case styling where a gradient is preferred over solid color.
- */
-export const getObjectGradient = (baseColor: string, idPrefix: string) => {
-    // Generate a lighter version for the gradient top
-    const colorObj = d3.hsl(baseColor);
-    const lighter = colorObj.copy();
-
-    // Increase lightness but cap it at 95% to prevent pure white washout
-    lighter.l = Math.min(lighter.l + 0.35, 0.95);
-
-    return {
-        id: `${idPrefix}-gradient-${baseColor.replace(/[^a-zA-Z0-9]/g, '')}`,
-        base: baseColor,
-        lighter: lighter.toString(),
-        css: `linear-gradient(135deg, ${lighter.toString()} 0%, ${baseColor} 100%)`,
-    };
-};
-
-export const DESELECTED_COLOR = '#D1D5DB';
+export function getDeterministicColor(key: string): string {
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) {
+        hash = key.charCodeAt(i) + ((hash << 5) - hash);
+        hash |= 0; // Convert to 32-bit integer
+    }
+    const hue = Math.abs(hash) % 360;
+    return hslToHex(hue, 65, 55);
+}

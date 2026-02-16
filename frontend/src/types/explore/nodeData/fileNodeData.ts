@@ -1,5 +1,9 @@
-import { HistogramState } from '~/stores/slices/histogramSlice.types';
 import type { BaseExploreNodeData } from '~/types/explore/nodeData/baseNodeData';
+
+export interface HistogramState {
+    selections: Record<string, number[]>;
+    isSubmitted: boolean;
+}
 
 export interface FileNodeViewState {
     filteredObjectTypes: string[];

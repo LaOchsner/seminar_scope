@@ -59,7 +59,7 @@ const OcelViewer: React.FC = () => {
                 <BreadcrumbNav />
                 <div className="flex flex-1 h-full w-full overflow-hidden">
                     {fileId ? (
-                        <OcelVisualization fileId={fileId} sourceType={sourceType} />
+                        <OcelVisualization fileId={fileId} sourceType={sourceType} nodeId={nodeId} />
                     ) : (
                         <div className="flex flex-1 items-center justify-center">
                             <p className="text-gray-500">No OCEL file connected.</p>
