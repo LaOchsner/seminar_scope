@@ -6,10 +6,93 @@ import { ExploreNodeType } from '~/types/explore/nodeTypesCategories';
 import { AssetType } from '~/types/files.types';
 import { NodeFactory } from '~/model/explore/node-factory.model';
 
+function hslToHex(h: number, s: number, l: number): string {
+    s /= 100;
+    l /= 100;
+    const a = s * Math.min(l, 1 - l);
+    const f = (n: number) => {
+        const k = (n + h / 30) % 12;
+        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(255 * color)
+            .toString(16)
+            .padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+export function getDeterministicColor(key: string): string {
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) {
+        hash = key.charCodeAt(i) + ((hash << 5) - hash);
+        hash |= 0;
+    }
+    const hue = Math.abs(hash) % 360;
+    return hslToHex(hue, 65, 55);
+}
+
+export function generateColorMap(keys: string[]): Record<string, string> {
+    const map: Record<string, string> = {};
+    keys.forEach((key) => {
+        map[key] = getDeterministicColor(key);
+    });
+    return map;
+}
+
 /**
- * Handles the connection of two nodes and propagates assets.
- * This can be used outside of a React component/hook context.
+ * Forces a complete Color Map to be copied to all downstream nodes recursively.
  */
+export const propagateMapDownstream = (sourceNodeId: string, newMap: Record<string, string>) => {
+    //  Get fresh state immediately
+    const state = useExploreFlowStore.getState();
+    const { nodes, edges, updateNodeData } = state;
+
+    console.log(`[Propagation] Starting from Source: ${sourceNodeId}`);
+    console.log(`[Propagation] Pushing Colors:`, newMap);
+
+    const visited = new Set<string>();
+
+    const propagate = (currentId: string) => {
+        if (visited.has(currentId)) return;
+        visited.add(currentId);
+
+        // Find all edges pointing AWAY from the current node
+        const outgoingEdges = edges.filter((e) => e.source === currentId);
+
+        if (outgoingEdges.length === 0) {
+            console.log(`[Propagation] Node ${currentId} has no outgoing edges. Stopping.`);
+            return;
+        }
+
+        outgoingEdges.forEach((edge) => {
+            const targetNode = nodes.find((n) => n.id === edge.target);
+
+            if (targetNode) {
+                console.log(`[Propagation] -> Updating Target Node: ${targetNode.id}`);
+
+                // Update the Child Node
+                updateNodeData(targetNode.id, (prev: any) => ({
+                    colorMap: { ...(prev.colorMap || {}), ...newMap },
+                }));
+
+                // Recurse to children
+                propagate(targetNode.id);
+            } else {
+                console.warn(`[Propagation] Found edge to ${edge.target} but node is missing in store.`);
+            }
+        });
+    };
+
+    propagate(sourceNodeId);
+};
+
+export const updateNodeColorAndPropagate = (nodeId: string, key: string, color: string) => {
+    const { updateNodeData } = useExploreFlowStore.getState();
+    updateNodeData(nodeId, (prev: any) => ({
+        colorMap: { ...(prev.colorMap || {}), [key]: color },
+    }));
+    propagateMapDownstream(nodeId, { [key]: color });
+};
+
 export const handleConnect = (connection: Connection) => {
     const { source, target } = connection;
     const { updateNodeData, onConnect, getNode } = useExploreFlowStore.getState();
@@ -17,74 +100,48 @@ export const handleConnect = (connection: Connection) => {
     const sourceNode = getNode(source);
     const targetNode = getNode(target);
 
-    // Add Edge
     onConnect(connection);
 
-    // Propagate Assets
     if (sourceNode && targetNode) {
         const propagatedAssets: BaseExploreNodeAsset[] = (sourceNode.data.assets || [])
             .filter((asset) => asset.io === 'output')
             .flatMap((asset) => {
-                // Assets arriving via the conformance handle are inputs for
-                // conformance checking and should not be propagated downstream.
-                if (connection.targetHandle === 'conformanceTarget') {
+                if (connection.targetHandle === 'conformanceTarget')
                     return [{ ...asset, io: 'input' } as BaseExploreNodeAsset];
-                }
-
-                // If the target is a File Node, it acts as a pass-through/source.
-                // We strictly set it as an OUTPUT asset so it can be chained immediately.
-                if (isFileNode(targetNode)) {
-                    return [{ ...asset, io: 'output' } as BaseExploreNodeAsset];
-                }
-
-                // For other nodes (miners), it comes in as input
+                if (isFileNode(targetNode)) return [{ ...asset, io: 'output' } as BaseExploreNodeAsset];
                 return [{ ...asset, io: 'input' } as BaseExploreNodeAsset];
             });
 
-        if (propagatedAssets.length > 0) {
-            updateNodeData(target, (prev) => {
+        const sourceColorMap = (sourceNode.data as any).colorMap as Record<string, string> | undefined;
+
+        updateNodeData(target, (prev) => {
+            const updates: any = {};
+            if (propagatedAssets.length > 0) {
                 const existingAssets = prev.assets || [];
                 const uniqueNewAssets = propagatedAssets.filter(
-                    (newAsset) =>
-                        !existingAssets.some((existing) => existing.id === newAsset.id && existing.io === newAsset.io)
+                    (newAsset) => !existingAssets.some((e) => e.id === newAsset.id && e.io === newAsset.io)
                 );
-                return { assets: [...existingAssets, ...uniqueNewAssets] };
-            });
-        }
-
-        // Color Map Changes
-
-        // const { sourceColorMap } = sourceNode.data
-
-        // updateNodeData(target, (prev) => {
-        //     colorMap: sourceColorMap
-        // })
+                updates.assets = [...existingAssets, ...uniqueNewAssets];
+            }
+            if (sourceColorMap) {
+                const existingMap = (prev as any).colorMap || {};
+                updates.colorMap = { ...existingMap, ...sourceColorMap };
+            }
+            return updates;
+        });
     }
 };
 
-/**
- * Spawns a downstream node and connects it to the source node.
- */
 export const spawnDownstreamNode = (sourceNodeId: string, nodeType: ExploreNodeType) => {
     const { nodes, addNode } = useExploreFlowStore.getState();
     const sourceNode = nodes.find((n) => n.id === sourceNodeId);
     if (!sourceNode) return;
 
-    const newNodePosition = {
-        x: sourceNode.position.x + 400,
-        y: sourceNode.position.y,
-    };
-
+    const newNodePosition = { x: sourceNode.position.x + 400, y: sourceNode.position.y };
     const newNode = NodeFactory.createNode(newNodePosition, nodeType, true);
     addNode(newNode);
 
-    const connection: Connection = {
-        source: sourceNode.id,
-        target: newNode.id,
-        sourceHandle: 'source',
-        targetHandle: 'target',
-    };
-    handleConnect(connection);
+    handleConnect({ source: sourceNode.id, target: newNode.id, sourceHandle: 'source', targetHandle: 'target' });
 };
 
 export interface HandleMinerOutputParams {
@@ -95,9 +152,6 @@ export interface HandleMinerOutputParams {
     inputFileName: string;
 }
 
-/**
- * Handles the output of a miner node, updating the node's assets and spawning a downstream node if needed.
- */
 export const handleMinerOutput = ({
     nodeId,
     outputAssetId,
@@ -119,54 +173,47 @@ export const handleMinerOutput = ({
         name: inputFileName,
     };
 
-    // 1. Always update the Miner Node with the new output asset
     updateNodeData(nodeId, (prev) => {
         const currentAssets = prev.assets.filter((a) => a.io !== 'output');
-        return {
-            assets: [...currentAssets, newAsset],
-        };
+        return { assets: [...currentAssets, newAsset] };
     });
 
-    // 2. Check for existing downstream connection
     const existingEdge = edges.find((edge) => edge.source === nodeId);
 
     if (existingEdge) {
         const targetNode = nodes.find((n) => n.id === existingEdge.target);
-
-        // If the connected node is of the correct type, update it instead of spawning a new one
         if (targetNode && targetNode.type === outputNodeType) {
-            updateNodeData(targetNode.id, (prev) => {
-                // File nodes typically have 1 output asset (the file itself).
-                // We replace any existing output assets with the new one.
-                const otherAssets = prev.assets.filter((a) => a.io !== 'output');
+            updateNodeData(targetNode.id, (prev: any) => {
+                const otherAssets = prev.assets.filter((a: any) => a.io !== 'output');
+                const sourceColorMap = (node.data as any).colorMap;
+                const existingColorMap = prev.colorMap || {};
+                const nextColorMap = sourceColorMap ? { ...existingColorMap, ...sourceColorMap } : existingColorMap;
                 return {
                     assets: [...otherAssets, { ...newAsset, io: 'output' }],
+                    colorMap: nextColorMap,
                 };
             });
+            // Force propagate here too just in case
+            if ((node.data as any).colorMap) {
+                propagateMapDownstream(nodeId, (node.data as any).colorMap);
+            }
             return;
         }
     }
 
-    // 3. If no suitable downstream node exists, spawn a new one
     spawnDownstreamNode(nodeId, outputNodeType);
 };
 
-/**
- * Manually pulls assets from upstream nodes connected to the target node.
- * Useful for syncing stale nodes or re-triggering propagation.
- */
 export const pullUpstreamData = (targetNodeId: string) => {
     const { edges, getNode, updateNodeData } = useExploreFlowStore.getState();
     const targetNode = getNode(targetNodeId);
-
     if (!targetNode) return;
 
-    // Find incoming edges
     const incomingEdges = edges.filter((edge) => edge.target === targetNodeId);
-
     if (incomingEdges.length === 0) return;
 
     const newAssets: BaseExploreNodeAsset[] = [];
+    let mergedUpstreamColors: Record<string, string> = {};
 
     incomingEdges.forEach((edge) => {
         const sourceNode = getNode(edge.source);
@@ -174,32 +221,30 @@ export const pullUpstreamData = (targetNodeId: string) => {
             const propagatedAssets = (sourceNode.data.assets || [])
                 .filter((asset) => asset.io === 'output')
                 .map((asset) => {
-                    // If the target is a File Node, it acts as a pass-through.
-                    if (isFileNode(targetNode)) {
-                        return { ...asset, io: 'output' } as BaseExploreNodeAsset;
-                    }
-                    // For other nodes, it comes in as input
+                    if (isFileNode(targetNode)) return { ...asset, io: 'output' } as BaseExploreNodeAsset;
                     return { ...asset, io: 'input' } as BaseExploreNodeAsset;
                 });
-            console.log(propagatedAssets);
             newAssets.push(...propagatedAssets);
+            const sourceColors = (sourceNode.data as any).colorMap;
+            if (sourceColors) mergedUpstreamColors = { ...mergedUpstreamColors, ...sourceColors };
         }
     });
 
-    if (newAssets.length > 0) {
-        updateNodeData(targetNodeId, (prev) => {
-            // Keep existing non-input assets (e.g. outputs)
-            // But usually we want to REPLACE inputs if we are pulling fresh data.
-            // If we have multiple inputs, this might need refinement, but for now assuming replacement of inputs is desired behavior for a "Refresh".
-            const otherAssets = (prev.assets || []).filter((a) => a.io !== 'input');
-
-            // Deduplicate new assets
-            const uniqueNewAssets = newAssets.filter(
-                (newAsset, index, self) => index === self.findIndex((t) => t.id === newAsset.id && t.io === newAsset.io)
-            );
-            console.log(uniqueNewAssets);
-
-            return { assets: [...otherAssets, ...uniqueNewAssets] };
+    if (newAssets.length > 0 || Object.keys(mergedUpstreamColors).length > 0) {
+        updateNodeData(targetNodeId, (prev: any) => {
+            const updates: any = {};
+            if (newAssets.length > 0) {
+                const otherAssets = (prev.assets || []).filter((a: any) => a.io !== 'input');
+                const uniqueNewAssets = newAssets.filter(
+                    (newAsset, index, self) =>
+                        index === self.findIndex((t) => t.id === newAsset.id && t.io === newAsset.io)
+                );
+                updates.assets = [...otherAssets, ...uniqueNewAssets];
+            }
+            if (Object.keys(mergedUpstreamColors).length > 0) {
+                updates.colorMap = { ...(prev.colorMap || {}), ...mergedUpstreamColors };
+            }
+            return updates;
         });
     }
 };

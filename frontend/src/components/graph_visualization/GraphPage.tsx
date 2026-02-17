@@ -30,14 +30,12 @@ const GraphPage: React.FC<GraphPageProps> = ({
     const containerRef = useRef<HTMLDivElement | null>(null);
     const svgRef = useRef<SVGSVGElement | null>(null);
 
-    // Read colorMap from the node's viewState instead of global ColorSlice
-    const { getNode } = useExploreFlowStore();
-    const node = nodeId ? getNode(nodeId) : undefined;
-    const nodeColorMap: Record<string, string> = (node?.data as any)?.viewState?.colorMap ?? {};
+    const getColorForNode = useExploreFlowStore((s) => s.getColorForNode);
 
-    const getColorForObject = (objectType: string): string => {
-        return nodeColorMap[objectType] ?? getDeterministicColor(objectType);
-    };
+    const colorMap = useExploreFlowStore((s) => {
+        const node = s.nodes.find((n) => n.id === nodeId);
+        return (node?.data as any)?.colorMap as Record<string, string> | undefined;
+    });
 
     const { data, isLoading, error } = useGetLogGraphs(fileId);
 
@@ -45,20 +43,17 @@ const GraphPage: React.FC<GraphPageProps> = ({
     const [startingObjects, setStartingObjects] = useState<string[]>([]);
 
     function pushBidirectional(arr: any[], a: any, b: any) {
-        // We push both directions to make the graph undirected
         arr.push([a, b]);
         arr.push([b, a]);
     }
 
-    // Reset startingObjects when switching away from generic/editable mode
     useEffect(() => {
         if (!editable) {
             setStartingObjects([]);
         }
     }, [editable]);
 
-    // 1. Sync React State with Payload (Output)
-
+    // Sync React State with Payload
     useEffect(() => {
         if (!editable || !localGraph) return;
 
@@ -69,8 +64,6 @@ const GraphPage: React.FC<GraphPageProps> = ({
 
         const e2o_relations: any[] = [];
         const o2o_relations: any[] = [];
-        console.log('local graph');
-        console.log(localGraph);
 
         localGraph.links.forEach((l: any) => {
             if (l.deselected) return;
@@ -89,28 +82,20 @@ const GraphPage: React.FC<GraphPageProps> = ({
             if (source.group === 'event' && target.group === 'object') {
                 pushBidirectional(e2o_relations, sourceType, targetType);
             }
-
             if (source.group === 'object' && target.group === 'event') {
                 pushBidirectional(e2o_relations, sourceType, targetType);
             }
-
             if (source.group === 'object' && target.group === 'object') {
                 pushBidirectional(e2o_relations, sourceType, targetType);
             }
         });
 
-        console.log('e20');
-        console.log(e2o_relations);
         const payload = { start_types, e2o_relations, o2o_relations };
-
         onGenericPayloadChange?.(payload);
-    }, [localGraph, startingObjects, editable]);
+    }, [localGraph, startingObjects, editable, onGenericPayloadChange]);
 
     useEffect(() => {
         if (!data) return;
-
-        // Prevent resetting the graph when in generic/editable mode if it already exists.
-        // This ensures the user's selections are preserved when the parent component updates (e.g. after mining).
         if (editable && localGraph) return;
 
         const nodes: any[] = [];
@@ -187,7 +172,6 @@ const GraphPage: React.FC<GraphPageProps> = ({
 
         const updateConnectedLinks = (node: any) => {
             if (!localGraph) return;
-
             const newLinks = localGraph.links.map((l: any) => {
                 const connected = l.source.id === node.id || l.target.id === node.id;
                 if (connected) {
@@ -195,7 +179,6 @@ const GraphPage: React.FC<GraphPageProps> = ({
                 }
                 return l;
             });
-
             setLocalGraph({ ...localGraph, links: newLinks });
         };
 
@@ -213,25 +196,34 @@ const GraphPage: React.FC<GraphPageProps> = ({
                 d.deselected = !d.deselected;
                 updateLinkStyles();
             });
-        // --- NODE STYLING ---
+
         const getFill = (d: any) => {
             if (d.deselected) return '#C0C0C0';
-            // Objects (Types) get color from node viewState, Events (Activities) get White
-            return d.group === 'object' ? getColorForObject(d.id) : 'white';
+
+            if (d.group === 'object') {
+                // Direct Access: Use the subscribed colorMap variable.
+                // This is the fastest and most reliable way since colorMap triggers the re-render.
+                if (colorMap && colorMap[d.id]) {
+                    return colorMap[d.id];
+                }
+
+                // Fallback: This prevents white nodes if the map is momentarily missing
+                return getDeterministicColor(d.id);
+            }
+
+            return 'white'; // Events are white
         };
 
         const getStroke = (d: any) => {
             if (d.deselected) return '#333';
-            // Events get Black border, Objects get White
             return d.group === 'event' ? 'black' : '#fff';
         };
 
         const getStrokeWidth = (d: any) => {
-            // Thicker border for Events
             return d.group === 'event' ? 2.5 : 1.5;
         };
 
-        const graphNode = g
+        const node = g
             .append('g')
             .selectAll('circle')
             .data(localGraph.nodes)
@@ -261,29 +253,24 @@ const GraphPage: React.FC<GraphPageProps> = ({
             )
             .on('click', function (event, d: any) {
                 if (!editable) return;
-
                 const self = d3.select(this);
 
                 if (d.group === 'object') {
                     if (event.shiftKey) {
-                        // Shift + Click on Object Node: Toggle as Start Node
                         const isCurrentlyStarting = startingObjects.includes(d.id);
                         setStartingObjects((prev) =>
                             isCurrentlyStarting ? prev.filter((x) => x !== d.id) : [...prev, d.id]
                         );
-                        // Update visual feedback immediately
                         self.attr('stroke', isCurrentlyStarting ? getStroke(d) : 'black').attr(
                             'stroke-width',
                             isCurrentlyStarting ? getStrokeWidth(d) : 6
                         );
                     } else {
-                        // Regular Click on Object Node: Toggle Deselection
                         d.deselected = !d.deselected;
                         self.attr('fill', getFill(d)).attr('stroke-opacity', d.deselected ? 0.35 : 1);
                         updateConnectedLinks(d);
                     }
                 } else {
-                    // Event Node (d.group !== 'object'): Regular Click toggles deselection
                     d.deselected = !d.deselected;
                     self.attr('fill', getFill(d)).attr('stroke-opacity', d.deselected ? 0.35 : 1);
                     updateConnectedLinks(d);
@@ -309,14 +296,12 @@ const GraphPage: React.FC<GraphPageProps> = ({
                 .attr('x2', (d: any) => d.target.x)
                 .attr('y2', (d: any) => d.target.y);
 
-            graphNode.attr('cx', (d: any) => d.x).attr('cy', (d: any) => d.y);
+            node.attr('cx', (d: any) => d.x).attr('cy', (d: any) => d.y);
             label.attr('x', (d: any) => d.x).attr('y', (d: any) => d.y);
         });
-    }, [localGraph, editable, startingObjects, fileId, nodeColorMap]);
+    }, [localGraph, editable, startingObjects, fileId, nodeId, getColorForNode, colorMap]);
 
     if (isLoading) return <div className="flex w-full h-full justify-center items-center">Loading graph...</div>;
-
-    if (isLoading) return <div className="flex w-full h-full justify-center items-center">Loading...</div>;
     if (error)
         return <div className="flex w-full h-full justify-center items-center text-red-500">Failed to load graph</div>;
 
@@ -324,7 +309,6 @@ const GraphPage: React.FC<GraphPageProps> = ({
         <div className="w-full h-full p-2">
             {editable && (
                 <div className="mt-2 flex flex-col gap-2">
-                    {/* Section 1: Active State with Badges */}
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span className="font-semibold text-foreground/90">Starting Object Types:</span>
                         {startingObjects.length > 0 ? (
@@ -334,7 +318,11 @@ const GraphPage: React.FC<GraphPageProps> = ({
                                         key={obj}
                                         className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs text-foreground"
                                     >
-                                        <LegendRect size={8} fill={getDeterministicColor(obj)} />
+                                        {/* 4. Fix Legend to use same logic as Graph */}
+                                        <LegendRect
+                                            size={8}
+                                            fill={(colorMap && colorMap[obj]) || getDeterministicColor(obj)}
+                                        />
                                         {obj}
                                     </span>
                                 ))}
@@ -344,7 +332,6 @@ const GraphPage: React.FC<GraphPageProps> = ({
                         )}
                     </div>
 
-                    {/* Section 2: Horizontal Control Legend */}
                     <div className="flex items-center gap-4 border-t border-border/50 pt-2 text-xs text-muted-foreground">
                         <div className="flex items-center gap-2">
                             <MousePointer className="h-3 w-3" />

@@ -23,8 +23,6 @@ const GOLDEN_ANGLE = 137.508;
 
 /**
  * Returns a distinct color for a given sequential index.
- * Uses the golden angle to spread hues evenly around the color wheel.
- * Returns a hex string (e.g., "#4CAF50").
  */
 export function getSequentialColor(index: number): string {
     const hue = (index * GOLDEN_ANGLE) % 360;
@@ -33,8 +31,6 @@ export function getSequentialColor(index: number): string {
 
 /**
  * Deterministic fallback color based on a string key (e.g., object type name).
- * Hashes the string to produce a stable hue.
- * Returns a hex string.
  */
 export function getDeterministicColor(key: string): string {
     let hash = 0;
@@ -44,4 +40,16 @@ export function getDeterministicColor(key: string): string {
     }
     const hue = Math.abs(hash) % 360;
     return hslToHex(hue, 65, 55);
+}
+
+/**
+ * Generates a complete color map for a list of keys (Object Types).
+ * This ensures all types get a deterministic color assigned immediately.
+ */
+export function generateColorMap(keys: string[]): Record<string, string> {
+    const map: Record<string, string> = {};
+    keys.forEach((key) => {
+        map[key] = getDeterministicColor(key);
+    });
+    return map;
 }

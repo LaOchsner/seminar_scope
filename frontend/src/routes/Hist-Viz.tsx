@@ -16,6 +16,7 @@ import { HistogramChart } from '~/components/HistogramChart';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useSetFilteredHistogramMutation } from '~/services/mutation';
 import { useGetHistogramEventPersp, useGetHistogramObjectPersp } from '~/services/queries';
+import { getDeterministicColor } from '~/lib/colors';
 import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import { FileExploreNodeData } from '~/types/explore/nodeData/fileNodeData';
 import '~/styles/hist-viz.css';
@@ -49,6 +50,22 @@ export default function HistViz() {
     const [isEditing, setIsEditing] = useState(true);
 
     const { getNode, setHistogramState, getColorForNode, initializeDataState, updateNodeData } = useExploreFlowStore();
+
+    // New Color Logic
+    const colorMap = useExploreFlowStore((s) => {
+        const node = s.nodes.find((n) => n.id === nodeId);
+        return (node?.data as any)?.colorMap as Record<string, string> | undefined;
+    });
+
+    const getObjectColor = useCallback(
+        (objectType: string) => {
+            if (colorMap && colorMap[objectType]) {
+                return colorMap[objectType];
+            }
+            return getDeterministicColor(objectType);
+        },
+        [colorMap]
+    );
 
     const node = nodeId ? getNode(nodeId) : undefined;
 
@@ -283,11 +300,6 @@ export default function HistViz() {
             ],
         };
 
-        console.group('Submitting Filtered Data');
-        console.log('Raw Payload Object:', finalPayload);
-        console.log('JSON String:', JSON.stringify(finalPayload, null, 2));
-        console.groupEnd();
-
         setFilteredHistogram(
             { fileId: fileId!, payload: finalPayload },
             {
@@ -418,7 +430,8 @@ export default function HistViz() {
                                             search={objectSearch}
                                             setSearch={setObjectSearch}
                                             isEditing={isEditing}
-                                            getColor={(type) => getColorForNode(nodeId!, type)}
+                                            // --- CHANGED: Pass Color Getter ---
+                                            getColor={getObjectColor}
                                         />
                                         <Select
                                             value={sortMode}
@@ -477,6 +490,8 @@ export default function HistViz() {
                                                                                 fileId={fileId || ''}
                                                                                 nodeId={nodeId || ''}
                                                                                 perspective={perspective}
+                                                                                // --- CHANGED: Pass Color ---
+                                                                                color={getObjectColor(e.object_type)}
                                                                             />
                                                                         </div>
                                                                     );
@@ -498,6 +513,7 @@ export default function HistViz() {
                             </div>
                         )}
                     </div>
+                    {/* --- FOOTER (Submit/Edit Buttons) --- */}
                     {currentData && (
                         <div className="absolute bottom-0 left-0 w-full h-[70px] bg-white border-t border-gray-200 flex items-center justify-end px-8 shadow-inner-top z-10">
                             {isEditing ? (
@@ -528,9 +544,19 @@ interface HistogramCardProps {
     fileId: string;
     nodeId: string;
     perspective: Perspective;
+    color: string; // <--- PROP ADDED
 }
 
-function HistogramCard({ entry, selectedIdx, onSelect, isEditing, fileId, nodeId, perspective }: HistogramCardProps) {
+function HistogramCard({
+    entry,
+    selectedIdx,
+    onSelect,
+    isEditing,
+    fileId,
+    nodeId,
+    perspective,
+    color,
+}: HistogramCardProps) {
     const chartId = `${perspective}_${entry.event_type}_${entry.object_type}`;
     return (
         <HistogramChart
@@ -544,6 +570,7 @@ function HistogramCard({ entry, selectedIdx, onSelect, isEditing, fileId, nodeId
             object_type={entry.object_type}
             perspective={perspective}
             disabled={!isEditing}
+            color={color} // <--- PASSED DOWN
         />
     );
 }
