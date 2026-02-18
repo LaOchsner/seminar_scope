@@ -6,6 +6,7 @@ import { Label } from '~/components/ui/label';
 import { ScrollArea } from '~/components/ui/scroll-area';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { getDeterministicColor } from '~/lib/colors';
+import { updateNodeColorAndPropagate } from '~/lib/explore/flowActions';
 import { FileExploreNodeData } from '~/types/explore/nodeData/fileNodeData';
 
 interface ColorCustomizationDialogProps {
@@ -15,11 +16,13 @@ interface ColorCustomizationDialogProps {
 }
 
 export const ColorCustomizationDialog: React.FC<ColorCustomizationDialogProps> = ({ isOpen, onClose, nodeId }) => {
-    // 1. Reactive subscription: Updates automatically if the store changes
+    //  Reactive subscription: Updates automatically if the store changes
     const node = useExploreFlowStore((state) => state.nodes.find((n) => n.id === nodeId));
-    const { setNodeColor, getColorForNode } = useExploreFlowStore();
 
-    // 2. Derive list strictly from the Node's existing Color Map
+    // We only need the getter from the store now. The setting is handled by the action.
+    const { getColorForNode } = useExploreFlowStore();
+
+    // Derive list strictly from the Node's existing Color Map
     const objectTypes = useMemo(() => {
         if (!node || !node.data) return [];
 
@@ -31,8 +34,16 @@ export const ColorCustomizationDialog: React.FC<ColorCustomizationDialogProps> =
         return Object.keys(map).sort();
     }, [node]);
 
+    //  Update to use the Propagation Action
     const handleReset = (type: string) => {
-        setNodeColor(nodeId, type, getDeterministicColor(type));
+        const defaultColor = getDeterministicColor(type);
+        // This updates THIS node and ALL connected nodes
+        updateNodeColorAndPropagate(nodeId, type, defaultColor);
+    };
+
+    const handleColorChange = (type: string, newColor: string) => {
+        // This updates THIS node and ALL connected nodes
+        updateNodeColorAndPropagate(nodeId, type, newColor);
     };
 
     if (!node) return null;
@@ -42,7 +53,9 @@ export const ColorCustomizationDialog: React.FC<ColorCustomizationDialogProps> =
             <DialogContent className="sm:max-w-[400px]">
                 <DialogHeader>
                     <DialogTitle>Customize Colors</DialogTitle>
-                    <DialogDescription>Modify colors for specific object types in this node.</DialogDescription>
+                    <DialogDescription>
+                        Modify colors for specific object types. Changes will propagate downstream immediately.
+                    </DialogDescription>
                 </DialogHeader>
 
                 <ScrollArea className="h-[300px] w-full pr-4">
@@ -64,7 +77,7 @@ export const ColorCustomizationDialog: React.FC<ColorCustomizationDialogProps> =
                                             <input
                                                 type="color"
                                                 value={getColorForNode(nodeId, type)}
-                                                onChange={(e) => setNodeColor(nodeId, type, e.target.value)}
+                                                onChange={(e) => handleColorChange(type, e.target.value)}
                                                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] p-0 border-0 cursor-pointer"
                                             />
                                         </div>

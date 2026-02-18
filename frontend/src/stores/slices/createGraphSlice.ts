@@ -1,7 +1,7 @@
 import { addEdge, applyEdgeChanges, applyNodeChanges } from '@xyflow/react';
 import { StateCreator } from 'zustand';
 import { ExploreFlowStore } from '~/stores/exploreStore';
-import { getDeterministicColor, getSequentialColor } from '~/lib/colors';
+import { getDeterministicColor } from '~/lib/colors';
 import { isFileNode, isVisualizationNode } from '~/lib/explore/exploreNodes.utils';
 import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import { FileExploreNodeData, HistogramState } from '~/types/explore/nodeData/fileNodeData';
@@ -113,7 +113,7 @@ export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice
     refocusQueue: [],
     setRefocusQueue: (queue) => set({ refocusQueue: queue }),
 
-    // ─── Color (on node.data) ────────────────────────────────────────────
+    // ─── Color Logic (Fixed to Sync with Store) ──────────────────────────
     initializeDataState: (nodeId: string, objectTypes: string[]) => {
         const { getNode, updateNodeData } = get();
         const node = getNode(nodeId);
@@ -121,24 +121,13 @@ export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice
 
         const nodeData = node.data as FileExploreNodeData;
         const currentMap = { ...(nodeData.colorMap || {}) };
-        let currentIndex = nodeData.colorIndex || 0;
         let hasChanges = false;
 
-        const usedColors = new Set(Object.values(currentMap));
-        const uniqueTypes = Array.from(new Set(objectTypes));
-
-        uniqueTypes.forEach((type) => {
+        objectTypes.forEach((type) => {
+            // Only fill if TRULY missing
             if (!currentMap[type]) {
-                let color = '';
-                let attempts = 0;
-                do {
-                    color = getSequentialColor(currentIndex);
-                    currentIndex++;
-                    attempts++;
-                } while (usedColors.has(color) && attempts < 100);
-
-                currentMap[type] = color;
-                usedColors.add(color);
+                // use Deterministic to match FileSelectionDialog exactly
+                currentMap[type] = getDeterministicColor(type);
                 hasChanges = true;
             }
         });
@@ -146,20 +135,23 @@ export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice
         if (hasChanges) {
             updateNodeData(nodeId, {
                 colorMap: currentMap,
-                colorIndex: currentIndex,
             } as Partial<FileExploreNodeData>);
         }
     },
 
     getColorForNode: (nodeId: string, objectType: string): string => {
         const node = get().getNode(nodeId);
-        if (!node) return getDeterministicColor(objectType);
 
-        const nodeData = node.data as FileExploreNodeData;
-        if (nodeData.colorMap && nodeData.colorMap[objectType]) {
-            return nodeData.colorMap[objectType];
+        // Try to read from the Node's Data (The Source of Truth)
+        if (node) {
+            const nodeData = node.data as FileExploreNodeData;
+            if (nodeData.colorMap && nodeData.colorMap[objectType]) {
+                return nodeData.colorMap[objectType];
+            }
         }
 
+        // If missing, return the SAME deterministic color used by the Dialog.
+        // This is not a "random fallback" but a guaranteed match to the original scheme.
         return getDeterministicColor(objectType);
     },
 
@@ -177,7 +169,7 @@ export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice
         } as Partial<FileExploreNodeData>);
     },
 
-    // ─── Histogram (on node.data) ──��─────────────────────────────────────
+    // ─── Histogram (on node.data) ───────────────────────────────────────
     setHistogramState: (nodeId: string, state: HistogramState) => {
         const { updateNodeData } = get();
         updateNodeData(nodeId, {

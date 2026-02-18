@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import FileShowcase from '~/components/explore/file/ui/FileShowcase';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore, useStoredFiles } from '~/stores/store';
-import { generateColorMap, propagateMapDownstream } from '~/lib/explore/flowActions';
+import { generateColorMap } from '~/lib/colors';
+import { propagateMapDownstream } from '~/lib/explore/flowActions';
 import { refocusPipeline } from '~/lib/explore/refocusPipeline';
 import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import { ExtendedFile } from '~/types/files.types';
@@ -18,6 +19,7 @@ const FileSelectionDialog: React.FC<FileSelectionDialogProps> = ({ isOpen }) => 
     const { files } = useStoredFiles();
     const { getNode, updateNodeData } = useExploreFlowStore();
 
+    // Fix for Radix UI scroll locking bug
     useEffect(() => {
         if (!isOpen) {
             const timer = setTimeout(() => {
@@ -55,17 +57,21 @@ const FileSelectionDialog: React.FC<FileSelectionDialogProps> = ({ isOpen }) => 
                     io: 'output',
                 };
 
-                // ---Generate Color Map ---
+                // --- COLOR LOGIC ---
+                // Get object types from file metadata
                 const objectTypes: string[] = (file as any).objectTypes || (file as any).metadata?.objectTypes || [];
+
+                // Generate the color map (Now imported from colors.ts)
                 const generatedColorMap = generateColorMap(objectTypes);
 
-                // --- Update Source Node ---
+                // Update the Current Node (Source of Truth)
                 updateNodeData(dialogNodeId, (prev) => ({
                     assets: [newAsset],
                     colorMap: generatedColorMap,
                 }));
 
-                // --- FIX: Wait 10ms for state to settle, THEN propagate ---
+                // Force Update Downstream Nodes
+                // Wait 10ms for state to settle, then propagate
                 setTimeout(() => {
                     propagateMapDownstream(dialogNodeId, generatedColorMap);
                 }, 10);

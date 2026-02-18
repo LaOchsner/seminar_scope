@@ -544,7 +544,7 @@ interface HistogramCardProps {
     fileId: string;
     nodeId: string;
     perspective: Perspective;
-    color: string; // <--- PROP ADDED
+    color: string;
 }
 
 function HistogramCard({
@@ -570,7 +570,7 @@ function HistogramCard({
             object_type={entry.object_type}
             perspective={perspective}
             disabled={!isEditing}
-            color={color} // <--- PASSED DOWN
+            color={color}
         />
     );
 }

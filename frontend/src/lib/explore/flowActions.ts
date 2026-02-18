@@ -19,7 +19,6 @@ function hslToHex(h: number, s: number, l: number): string {
     };
     return `#${f(0)}${f(8)}${f(4)}`;
 }
-
 export function getDeterministicColor(key: string): string {
     let hash = 0;
     for (let i = 0; i < key.length; i++) {
@@ -29,7 +28,6 @@ export function getDeterministicColor(key: string): string {
     const hue = Math.abs(hash) % 360;
     return hslToHex(hue, 65, 55);
 }
-
 export function generateColorMap(keys: string[]): Record<string, string> {
     const map: Record<string, string> = {};
     keys.forEach((key) => {
@@ -37,7 +35,6 @@ export function generateColorMap(keys: string[]): Record<string, string> {
     });
     return map;
 }
-
 /**
  * Forces a complete Color Map to be copied to all downstream nodes recursively.
  */
@@ -45,35 +42,26 @@ export const propagateMapDownstream = (sourceNodeId: string, newMap: Record<stri
     //  Get fresh state immediately
     const state = useExploreFlowStore.getState();
     const { nodes, edges, updateNodeData } = state;
-
     console.log(`[Propagation] Starting from Source: ${sourceNodeId}`);
     console.log(`[Propagation] Pushing Colors:`, newMap);
-
     const visited = new Set<string>();
-
     const propagate = (currentId: string) => {
         if (visited.has(currentId)) return;
         visited.add(currentId);
-
         // Find all edges pointing AWAY from the current node
         const outgoingEdges = edges.filter((e) => e.source === currentId);
-
         if (outgoingEdges.length === 0) {
             console.log(`[Propagation] Node ${currentId} has no outgoing edges. Stopping.`);
             return;
         }
-
         outgoingEdges.forEach((edge) => {
             const targetNode = nodes.find((n) => n.id === edge.target);
-
             if (targetNode) {
                 console.log(`[Propagation] -> Updating Target Node: ${targetNode.id}`);
-
                 // Update the Child Node
                 updateNodeData(targetNode.id, (prev: any) => ({
                     colorMap: { ...(prev.colorMap || {}), ...newMap },
                 }));
-
                 // Recurse to children
                 propagate(targetNode.id);
             } else {
@@ -81,10 +69,8 @@ export const propagateMapDownstream = (sourceNodeId: string, newMap: Record<stri
             }
         });
     };
-
     propagate(sourceNodeId);
 };
-
 export const updateNodeColorAndPropagate = (nodeId: string, key: string, color: string) => {
     const { updateNodeData } = useExploreFlowStore.getState();
     updateNodeData(nodeId, (prev: any) => ({
@@ -92,16 +78,12 @@ export const updateNodeColorAndPropagate = (nodeId: string, key: string, color: 
     }));
     propagateMapDownstream(nodeId, { [key]: color });
 };
-
 export const handleConnect = (connection: Connection) => {
     const { source, target } = connection;
     const { updateNodeData, onConnect, getNode } = useExploreFlowStore.getState();
-
     const sourceNode = getNode(source);
     const targetNode = getNode(target);
-
     onConnect(connection);
-
     if (sourceNode && targetNode) {
         const propagatedAssets: BaseExploreNodeAsset[] = (sourceNode.data.assets || [])
             .filter((asset) => asset.io === 'output')
@@ -111,9 +93,7 @@ export const handleConnect = (connection: Connection) => {
                 if (isFileNode(targetNode)) return [{ ...asset, io: 'output' } as BaseExploreNodeAsset];
                 return [{ ...asset, io: 'input' } as BaseExploreNodeAsset];
             });
-
         const sourceColorMap = (sourceNode.data as any).colorMap as Record<string, string> | undefined;
-
         updateNodeData(target, (prev) => {
             const updates: any = {};
             if (propagatedAssets.length > 0) {
@@ -131,19 +111,15 @@ export const handleConnect = (connection: Connection) => {
         });
     }
 };
-
 export const spawnDownstreamNode = (sourceNodeId: string, nodeType: ExploreNodeType) => {
     const { nodes, addNode } = useExploreFlowStore.getState();
     const sourceNode = nodes.find((n) => n.id === sourceNodeId);
     if (!sourceNode) return;
-
     const newNodePosition = { x: sourceNode.position.x + 400, y: sourceNode.position.y };
     const newNode = NodeFactory.createNode(newNodePosition, nodeType, true);
     addNode(newNode);
-
     handleConnect({ source: sourceNode.id, target: newNode.id, sourceHandle: 'source', targetHandle: 'target' });
 };
-
 export interface HandleMinerOutputParams {
     nodeId: string;
     outputAssetId: string | null | undefined;
@@ -151,7 +127,6 @@ export interface HandleMinerOutputParams {
     outputNodeType: ExploreNodeType;
     inputFileName: string;
 }
-
 export const handleMinerOutput = ({
     nodeId,
     outputAssetId,
@@ -160,11 +135,9 @@ export const handleMinerOutput = ({
     inputFileName,
 }: HandleMinerOutputParams) => {
     if (!outputAssetId || !inputFileName) return;
-
     const { updateNodeData, getNode, edges, nodes } = useExploreFlowStore.getState();
     const node = getNode(nodeId);
     if (!node) return;
-
     const newAsset: BaseExploreNodeAsset = {
         id: outputAssetId,
         io: 'output',
@@ -172,14 +145,11 @@ export const handleMinerOutput = ({
         type: outputAssetType,
         name: inputFileName,
     };
-
     updateNodeData(nodeId, (prev) => {
         const currentAssets = prev.assets.filter((a) => a.io !== 'output');
         return { assets: [...currentAssets, newAsset] };
     });
-
     const existingEdge = edges.find((edge) => edge.source === nodeId);
-
     if (existingEdge) {
         const targetNode = nodes.find((n) => n.id === existingEdge.target);
         if (targetNode && targetNode.type === outputNodeType) {
@@ -200,21 +170,16 @@ export const handleMinerOutput = ({
             return;
         }
     }
-
     spawnDownstreamNode(nodeId, outputNodeType);
 };
-
 export const pullUpstreamData = (targetNodeId: string) => {
     const { edges, getNode, updateNodeData } = useExploreFlowStore.getState();
     const targetNode = getNode(targetNodeId);
     if (!targetNode) return;
-
     const incomingEdges = edges.filter((edge) => edge.target === targetNodeId);
     if (incomingEdges.length === 0) return;
-
     const newAssets: BaseExploreNodeAsset[] = [];
     let mergedUpstreamColors: Record<string, string> = {};
-
     incomingEdges.forEach((edge) => {
         const sourceNode = getNode(edge.source);
         if (sourceNode) {
@@ -229,7 +194,6 @@ export const pullUpstreamData = (targetNodeId: string) => {
             if (sourceColors) mergedUpstreamColors = { ...mergedUpstreamColors, ...sourceColors };
         }
     });
-
     if (newAssets.length > 0 || Object.keys(mergedUpstreamColors).length > 0) {
         updateNodeData(targetNodeId, (prev: any) => {
             const updates: any = {};

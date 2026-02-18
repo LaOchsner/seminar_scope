@@ -22,7 +22,7 @@ export interface GraphSlice {
     refocusQueue: string[];
     setRefocusQueue: (queue: string[]) => void;
 
-    // --- Color (stored on node.data.colorMap / node.data.colorIndex) ---
+    // --- Color (stored strictly on node.data.colorMap) ---
     initializeDataState: (nodeId: string, objectTypes: string[]) => void;
     getColorForNode: (nodeId: string, objectType: string) => string;
     setNodeColor: (nodeId: string, objectType: string, newColor: string) => void;
