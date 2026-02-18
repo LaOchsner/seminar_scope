@@ -19,7 +19,7 @@ export const useGraphInteractions = (
 ) => {
     const getColorForNode = useExploreFlowStore((s) => s.getColorForNode);
 
-    //Subscribe to the actual colorMap data so D3 re-renders on color change
+    // Subscribe to the actual colorMap data
     const colorMap = useExploreFlowStore((s) => {
         const node = s.nodes.find((n) => n.id === nodeId);
         return (node?.data as any)?.colorMap as Record<string, string> | undefined;
@@ -49,7 +49,7 @@ export const useGraphInteractions = (
         }
     }, [data]);
 
-    // --- Reliable Map of ID -> Object Type (Used for Labels only now) ---
+    // --- Reliable Map of ID -> Object Type ---
     const objectTypeLookup = useMemo(() => {
         const map = new Map<string, string>();
         if (!data || !data.objects) return map;
@@ -179,7 +179,6 @@ export const useGraphInteractions = (
     useEffect(() => {
         if (!data || !svgRef.current) return;
 
-        // This set is used for validity checks, but colors now come strictly from store
         const validObjectTypes = new Set<string>();
         if (Array.isArray(data.objectTypes)) {
             data.objectTypes.forEach((t: any) => {
@@ -284,8 +283,25 @@ export const useGraphInteractions = (
 
         nodesRef.current.forEach((n) => {
             if (!positionsRef.current.has(n.id)) {
-                n.x = width / 2 + Math.random() * 200 - 100;
-                n.y = height / 2 + Math.random() * 200 - 100;
+                let newX: number, newY: number, overlapping: boolean;
+                let attempts = 0;
+
+                // Keep generating random positions until we find one that doesn't overlap
+                // or we hit the attempt limit
+                do {
+                    newX = width / 2 + Math.random() * 400 - 200;
+                    newY = height / 2 + Math.random() * 400 - 200;
+
+                    overlapping = Array.from(positionsRef.current.values()).some(
+                        (p) => Math.hypot(p.x - newX, p.y - newY) < NODE_GAP
+                    );
+
+                    attempts++;
+                    if (attempts > 100) break;
+                } while (overlapping);
+
+                n.x = newX;
+                n.y = newY;
                 positionsRef.current.set(n.id, { x: n.x, y: n.y });
             } else {
                 const pos = positionsRef.current.get(n.id)!;
@@ -294,6 +310,11 @@ export const useGraphInteractions = (
             }
         });
 
+        Array.from(positionsRef.current.keys()).forEach((id) => {
+            if (!nodesRef.current.find((n) => n.id === id)) positionsRef.current.delete(id);
+        });
+
+        // D3 Rendering
         g.selectAll('line')
             .data(
                 edgesRef.current.filter((d) => !collapsedNodes.has(d.source.id) && !collapsedNodes.has(d.target.id)),
@@ -353,9 +374,11 @@ export const useGraphInteractions = (
                 const hasHiddenNeighbors = neighbors.some((n) => collapsedNodes.has(n.id));
                 if (hasHiddenNeighbors) return 'lightgray';
 
+                // VALIDATION:
                 const isInvalidObject = d.type === 'object' && !validObjectTypes.has(d.label);
                 if (d.type === 'event' || isInvalidObject) return 'white';
 
+                // --- Using colors from store ---
                 return getColorForNode(nodeId, d.label);
             })
             .attr('stroke', (d) => {
@@ -373,6 +396,7 @@ export const useGraphInteractions = (
                 setContextMenu({ x, y, node: d });
             });
 
+        // (Text rendering logic...)
         nodeGroup.each(function (d) {
             const group = d3.select(this);
             const showId = d.type === 'object';
