@@ -1,4 +1,5 @@
 import type { HierarchyPointNode } from '@visx/hierarchy/lib/types';
+import type { IdentityOperatorApi } from '~/types/ocpt/identityOcpt.types';
 import {
     type Activity,
     type ExtendedOperator,
@@ -24,7 +25,15 @@ export function isTrueSilentActivity(value: unknown): value is SilentActivity {
 }
 
 export function isExtendedProcessTreeOperatorNode(value: unknown): value is ExtendedOperator {
-    return value != null && typeof value === 'object' && 'operator' in value && 'ots' in value && Array.isArray(value.ots);
+    return (
+        value != null && typeof value === 'object' && 'operator' in value && 'ots' in value && Array.isArray(value.ots)
+    );
+}
+
+export function isIdentityOperatorApi(value: unknown): value is IdentityOperatorApi {
+    return (
+        value != null && typeof value === 'object' && 'operator' in value && !('ots' in value) && !('activity' in value)
+    );
 }
 
 export function isActivityLeafNode(

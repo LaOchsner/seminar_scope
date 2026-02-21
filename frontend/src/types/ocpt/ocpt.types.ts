@@ -1,8 +1,17 @@
 import { HierarchyPointLink } from '@visx/hierarchy/lib/types';
 
+export type IdentityRelationKind = 'sync' | 'impConcurrent' | 'tempImp';
+
+export interface IdentityRelation {
+    left: string[];
+    right: string[];
+    kind: IdentityRelationKind;
+}
+
 export type Exhibit = 'div' | 'con' | 'def';
 export type OperatorType = 'sequence' | 'parallel' | 'loop' | 'xor';
 export type ExtendedOperatorType = OperatorType | 'skip' | 'arbitrary';
+
 export interface ObjectType {
     ot: string;
     exhibits?: Exhibit[];
@@ -20,10 +29,11 @@ export interface SilentActivity extends Activity {
 export interface ExtendedOperator {
     operator: ExtendedOperatorType;
     ots: ObjectType[]; // This is not in the paper but it is important for the projections!
+    identity?: IdentityRelation[];
 }
 
 export interface NodeWithoutId {
-    value: Activity | OperatorType | SilentActivity | ExtendedOperator;
+    value: Activity | SilentActivity | OperatorType | ExtendedOperator;
     isExpanded?: boolean;
     children: Node[];
 }

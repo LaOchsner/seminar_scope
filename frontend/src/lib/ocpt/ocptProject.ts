@@ -2,11 +2,13 @@ import type { HierarchyPointNode } from '@visx/hierarchy/lib/types';
 import {
     isActivity,
     isExtendedProcessTreeOperatorNode,
+    isIdentityOperatorApi,
     isProcessTreeOperator,
     isSilentActivity,
     isTrueSilentActivity,
 } from '~/lib/ocpt/ocptGuards';
-import { type Node, type ObjectType } from '~/types/ocpt/ocpt.types';
+import type { IdentityRelation } from '~/types/ocpt/identityOcpt.types';
+import { type ExtendedOperatorType, type Node, type ObjectType } from '~/types/ocpt/ocpt.types';
 
 export const projectTreeOntoOT = (root: HierarchyPointNode<Node>, targetObjectTypes: string[]): void => {
     if (!root.children || targetObjectTypes.length === 0) return;
@@ -150,6 +152,16 @@ const intersectMultipleObjectTypes = (sets: ObjectType[][]): ObjectType[] => {
     });
 };
 
+/**
+ * Goes through the OCPT received from the API with DFS and changes each node
+ * that is a @type {OperatorType} or an @type {IdentityOperatorApi} into an @type {ExtendedOperator}.
+ *
+ * This way we can be sure that each OperatorNode has the "ots" property correctly populated
+ * as this is required for the projections.
+ *
+ * In this step we already propagate the ots from the leaf nodes upwards and store them in the operator nodes.
+ * This way the projection
+ */
 export const updateTreeWithExtendedOperators = (node: HierarchyPointNode<Node>): HierarchyPointNode<Node> => {
     // Base case: if node is a leaf, return it unchanged
     if (!node.children || node.children.length === 0) {
@@ -162,10 +174,9 @@ export const updateTreeWithExtendedOperators = (node: HierarchyPointNode<Node>):
     // Get the value of the current node
     const nodeValue = node.data.value;
 
-    // Check if this node has a process tree operator
-    if (isProcessTreeOperator(nodeValue)) {
-        // Collect object types from all children
-        const childrenObjectTypes = node.children.map((child) => {
+    // Collect object types from all children (shared by both branches below)
+    const collectChildrenOTs = () =>
+        node.children!.map((child) => {
             const childValue = child.data.value;
             if (
                 isActivity(childValue) ||
@@ -177,13 +188,20 @@ export const updateTreeWithExtendedOperators = (node: HierarchyPointNode<Node>):
             return [];
         });
 
-        // Calculate the intersection of all children's object types
-        const intersectedOTs = intersectMultipleObjectTypes(childrenObjectTypes);
+    // Check if this node has a process tree operator (plain string like "sequence")
+    if (isProcessTreeOperator(nodeValue)) {
+        const intersectedOTs = intersectMultipleObjectTypes(collectChildrenOTs());
+        node.data.value = { operator: nodeValue, ots: intersectedOTs };
+    }
 
-        // Create a new ExtendedProcessTreeOperator with the same operator as the original node
-        // and the intersected object types
-        const operator = nodeValue;
-        node.data.value = { operator, ots: intersectedOTs };
+    // Check if the node is an IdentityOperator received from the API that does not have an ots property yet
+    else if (isIdentityOperatorApi(nodeValue)) {
+        const intersectedOTs = intersectMultipleObjectTypes(collectChildrenOTs());
+        node.data.value = {
+            operator: nodeValue.operator as ExtendedOperatorType,
+            ots: intersectedOTs,
+            identity: nodeValue.identity as IdentityRelation[] | undefined,
+        };
     }
 
     return node;

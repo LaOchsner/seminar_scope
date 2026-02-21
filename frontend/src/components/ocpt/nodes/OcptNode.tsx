@@ -5,6 +5,7 @@ import TextNode from '~/components/ocpt/nodes/TextNode';
 import {
     isActivity,
     isExtendedProcessTreeOperatorNode,
+    isIdentityOperatorApi,
     isProcessTreeOperator,
     isSilentActivity,
     isTrueSilentActivity,
@@ -15,7 +16,10 @@ const parentIsArbitraryOrSkip = (parent: HierarchyPointNode<Node> | null) => {
     if (!parent) return false;
 
     const value = parent.data.value;
-    return isExtendedProcessTreeOperatorNode(value) && (value.operator === 'arbitrary' || value.operator === 'skip');
+    if (isExtendedProcessTreeOperatorNode(value)) {
+        return value.operator === 'arbitrary' || value.operator === 'skip';
+    }
+    return false;
 };
 
 interface OcptNodeProps {
@@ -73,9 +77,12 @@ const OcptNode: React.FC<OcptNodeProps> = ({ node, key, setHoveredNode, colorSca
                 node={node}
                 key={key}
                 opacity={opacity}
+                onMouseEnter={() => setHoveredNode(node)}
+                onMouseMove={() => setHoveredNode(node)}
+                onMouseLeave={() => setHoveredNode(null)}
             />
         );
-    } else if (isExtendedProcessTreeOperatorNode(value))
+    } else if (isExtendedProcessTreeOperatorNode(value) || isIdentityOperatorApi(value)) {
         return (
             <ProcessTreeOperatorNode
                 operator={value.operator}
@@ -84,8 +91,13 @@ const OcptNode: React.FC<OcptNodeProps> = ({ node, key, setHoveredNode, colorSca
                 node={node}
                 key={key}
                 opacity={opacity}
+                identityKinds={value.identity?.length ? [...new Set(value.identity.map((r) => r.kind))] : undefined}
+                onMouseEnter={() => setHoveredNode(node)}
+                onMouseMove={() => setHoveredNode(node)}
+                onMouseLeave={() => setHoveredNode(null)}
             />
         );
+    }
 
     console.error('Unknown node type', node);
     return null;

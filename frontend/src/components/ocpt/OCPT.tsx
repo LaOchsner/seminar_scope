@@ -22,7 +22,8 @@ export type OCPTProps = {
     margin?: { top: number; right: number; bottom: number; left: number };
     treeData: Node | null;
     colorScale: ScaleOrdinal<string, string, never>;
-    node: VisualizationNode;
+    node?: VisualizationNode;
+    filteredObjectTypes?: string[];
     showDetails?: boolean;
     onExportReady?: (exportFn: () => void) => void;
 };
@@ -41,14 +42,15 @@ const OCPTContent: React.FC<OCPTContentProps> = ({
     treeData,
     colorScale,
     node,
+    filteredObjectTypes: filteredObjectTypesProp,
     showDetails,
     onExportReady,
 }) => {
     const [hoveredNode, setHoveredNode] = useState<HierarchyPointNode<Node> | null>(null);
     const [tree, setTree] = useState<HierarchyNode<Node> | null>(null);
     const treeGroupRef = useRef<SVGGElement>(null);
-    const viewState = node.data.viewState;
-    const filteredObjectTypes = viewState?.filteredObjectTypes || [];
+    const viewState = node?.data.viewState;
+    const filteredObjectTypes = filteredObjectTypesProp ?? viewState?.filteredObjectTypes ?? [];
 
     useEffect(() => {
         const copyTreeData = JSON.parse(JSON.stringify(treeData));

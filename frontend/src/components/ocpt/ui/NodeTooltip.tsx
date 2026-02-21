@@ -2,41 +2,29 @@ import { useEffect, useState } from 'react';
 import { usePopper } from 'react-popper';
 import LegendRect from '~/components/ocpt/ui/LegendRect';
 import '~/components/ocpt/ui/NodeTooltip.css';
-import { Activity } from '~/types/ocpt/ocpt.types';
+import { isActivity, isExtendedProcessTreeOperatorNode, isIdentityOperatorApi } from '~/lib/ocpt/ocptGuards';
+import type { IdentityRelation } from '~/types/ocpt/identityOcpt.types';
+import type { Activity } from '~/types/ocpt/ocpt.types';
 
-const NodeTooltip = ({ hoverPoint, transformMatrix, coloring }: any) => {
-    if (!hoverPoint) return null;
-
-    const { scaleX, scaleY, translateX, translateY } = transformMatrix;
-
-    // Adjust the tooltip position based on the transformation
-    const adjustedX = hoverPoint.x * scaleX + translateX;
-    const adjustedY = hoverPoint.y * scaleY + translateY;
-
-    const activityNode = hoverPoint.data.value as Activity;
-
+const ActivityTooltipContent = ({ value, coloring }: { value: Activity; coloring: any }) => {
     const legendGlyphSize = 15;
-
     return (
-        <XYPopper x={adjustedX} y={adjustedY}>
+        <>
             <div className="pb-1 mb-1 text-sm font-bold leading-none border-b border-gray-200 border-opacity-20">
-                {activityNode.activity}
+                {value.activity}
             </div>
             <div className="grid gap-x-2" style={{ gridTemplateColumns: 'max-content 1fr' }}>
                 <div className="grid gap-y-2">
-                    {activityNode.ots.map((ot, index) => (
+                    {value.ots.map((ot, index) => (
                         <div key={index} className="grid grid-cols-2 items-center gap-x-4">
-                            {/* Left side: ot.ot with legend */}
                             <div className="flex items-center">
                                 <LegendRect fill={coloring(ot.ot)} size={legendGlyphSize} />
                                 <span className="px-1 font-semibold rounded">{ot.ot}</span>
                             </div>
-
-                            {/* Right side: ot.exhibits */}
                             <div>
                                 {ot.exhibits &&
-                                    ot.exhibits.map((exhibit, index) => (
-                                        <span className="ml-1" key={index}>
+                                    ot.exhibits.map((exhibit, i) => (
+                                        <span className="ml-1" key={i}>
                                             {exhibit}
                                         </span>
                                     ))}
@@ -45,8 +33,107 @@ const NodeTooltip = ({ hoverPoint, transformMatrix, coloring }: any) => {
                     ))}
                 </div>
             </div>
-        </XYPopper>
+        </>
     );
+};
+
+const OtLabel = ({ ot, coloring }: { ot: string; coloring: any }) => (
+    <span className="inline-flex items-center gap-0.5">
+        <LegendRect fill={coloring(ot)} size={12} />
+        <span className="font-medium">{ot}</span>
+    </span>
+);
+
+const IdentityRelationItem = ({ relation, coloring }: { relation: IdentityRelation; coloring: any }) => {
+    const kindLabel = relation.kind === 'sync' ? 'Synchronous' : 'Implicitly Concurrent';
+    return (
+        <div className="py-1">
+            <div className="text-xs text-gray-400 mb-0.5">{kindLabel}</div>
+            <div className="flex items-center gap-1 text-sm flex-wrap">
+                {relation.left.map((ot, i) => (
+                    <span key={i} className="inline-flex items-center">
+                        {i > 0 && <span className="text-gray-400 mr-1">,</span>}
+                        <OtLabel ot={ot} coloring={coloring} />
+                    </span>
+                ))}
+                <span className="text-gray-400">{relation.kind === 'sync' ? '=' : '||'}</span>
+                {relation.right.map((ot, i) => (
+                    <span key={i} className="inline-flex items-center">
+                        {i > 0 && <span className="text-gray-400 mr-1">,</span>}
+                        <OtLabel ot={ot} coloring={coloring} />
+                    </span>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const OperatorTooltipContent = ({
+    operator,
+    identity,
+    coloring,
+}: {
+    operator: string;
+    identity: IdentityRelation[];
+    coloring: any;
+}) => {
+    return (
+        <>
+            <div className="pb-1 mb-1 text-sm font-bold leading-none border-b border-gray-200 border-opacity-20">
+                {operator}
+            </div>
+            <div className="text-xs font-semibold text-gray-400 mb-1">Identity Relations</div>
+            <div className="divide-y divide-gray-700">
+                {identity.map((rel, i) => (
+                    <IdentityRelationItem key={i} relation={rel} coloring={coloring} />
+                ))}
+            </div>
+        </>
+    );
+};
+
+const NodeTooltip = ({ hoverPoint, transformMatrix, coloring }: any) => {
+    if (!hoverPoint) return null;
+
+    const { scaleX, scaleY, translateX, translateY } = transformMatrix;
+
+    const adjustedX = hoverPoint.x * scaleX + translateX;
+    const adjustedY = hoverPoint.y * scaleY + translateY;
+
+    const value = hoverPoint.data.value;
+
+    // Activity or SilentActivity tooltip
+    if (isActivity(value)) {
+        return (
+            <XYPopper x={adjustedX} y={adjustedY}>
+                <ActivityTooltipContent value={value} coloring={coloring} />
+            </XYPopper>
+        );
+    }
+
+    // Operator with identity relations (post-projection with ots)
+    if (isExtendedProcessTreeOperatorNode(value) && value.identity?.length) {
+        return (
+            <XYPopper x={adjustedX} y={adjustedY}>
+                <OperatorTooltipContent operator={value.operator} identity={value.identity} coloring={coloring} />
+            </XYPopper>
+        );
+    }
+
+    // Operator object from API (pre-projection, no ots)
+    if (isIdentityOperatorApi(value) && Array.isArray((value as any).identity) && (value as any).identity.length > 0) {
+        return (
+            <XYPopper x={adjustedX} y={adjustedY}>
+                <OperatorTooltipContent
+                    operator={value.operator}
+                    identity={(value as any).identity}
+                    coloring={coloring}
+                />
+            </XYPopper>
+        );
+    }
+
+    return null;
 };
 
 // THIS IS THE EXAMPLE CODE FROM VISX
