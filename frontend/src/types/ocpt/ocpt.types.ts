@@ -26,6 +26,13 @@ export interface SilentActivity extends Activity {
     isSilent: boolean;
 }
 
+// Pre-projection operator shape from the Identity OCPT API.
+// Operators arrive as objects (not plain strings) and may carry identity relations.
+export interface IdentityOperatorApi {
+    operator: OperatorType;
+    identity?: IdentityRelation[]; // Even if there is no identity, it will still be value: { operator: X }
+}
+
 export interface ExtendedOperator {
     operator: ExtendedOperatorType;
     ots: ObjectType[]; // This is not in the paper but it is important for the projections!
@@ -33,7 +40,7 @@ export interface ExtendedOperator {
 }
 
 export interface NodeWithoutId {
-    value: Activity | SilentActivity | OperatorType | ExtendedOperator;
+    value: Activity | SilentActivity | OperatorType | IdentityOperatorApi | ExtendedOperator;
     isExpanded?: boolean;
     children: Node[];
 }

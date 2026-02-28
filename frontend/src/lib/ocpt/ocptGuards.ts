@@ -1,8 +1,8 @@
 import type { HierarchyPointNode } from '@visx/hierarchy/lib/types';
-import type { IdentityOperatorApi } from '~/types/ocpt/identityOcpt.types';
 import {
     type Activity,
     type ExtendedOperator,
+    type IdentityOperatorApi,
     type Node,
     type OperatorType,
     type SilentActivity,

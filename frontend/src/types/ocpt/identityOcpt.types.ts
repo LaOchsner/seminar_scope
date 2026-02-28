@@ -1,37 +1,11 @@
-import type {
-    Activity,
-    ExtendedOperator,
-    IdentityRelation,
-    Node,
-    OperatorType,
-    SilentActivity,
-} from '~/types/ocpt/ocpt.types';
-
-export type { IdentityRelation, IdentityRelationKind } from '~/types/ocpt/ocpt.types';
-
-export interface IdentityOperatorApi {
-    operator: OperatorType;
-    identity?: IdentityRelation[]; // Even if there is no identity, it will still be value: { operator: X }
-}
-
-export interface IdentityOcptNodeWithoutId {
-    value: Activity | SilentActivity | IdentityOperatorApi | ExtendedOperator;
-    isExpanded?: boolean;
-    children: IdentityOcptNode[];
-}
-
-export interface IdentityOcptNode extends IdentityOcptNodeWithoutId {
-    id: number;
-}
+import type { Node, NodeWithoutId } from '~/types/ocpt/ocpt.types';
 
 export interface IdentityOcptSchemaApi {
     ots: string[];
-    hierarchy: IdentityOcptNodeWithoutId;
+    hierarchy: NodeWithoutId;
 }
 
 export interface IdentityOcptSchema {
     ots: string[];
-    hierarchy: IdentityOcptNode;
+    hierarchy: Node;
 }
-
-export type AnyOcptNode = Node | IdentityOcptNode;

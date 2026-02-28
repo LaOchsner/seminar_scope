@@ -1,7 +1,6 @@
 import { Group } from '@visx/group';
 import { HierarchyPointNode } from '@visx/hierarchy/lib/types';
 import ProcessTreeOperatorSVG from '~/components/ocpt/nodes/ProcessTreeOperatorSVG';
-import type { IdentityRelationKind } from '~/types/ocpt/identityOcpt.types';
 import * as Ocpt from '~/types/ocpt/ocpt.types';
 
 interface ProcessTreeNodeProps {
@@ -11,7 +10,7 @@ interface ProcessTreeNodeProps {
     operator: Ocpt.ExtendedOperatorType;
     key: number;
     opacity: number;
-    identityKinds?: IdentityRelationKind[];
+    identityKinds?: Ocpt.IdentityRelationKind[];
     onMouseEnter?: () => void;
     onMouseMove?: () => void;
     onMouseLeave?: () => void;

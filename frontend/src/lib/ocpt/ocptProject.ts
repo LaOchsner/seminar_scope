@@ -7,8 +7,7 @@ import {
     isSilentActivity,
     isTrueSilentActivity,
 } from '~/lib/ocpt/ocptGuards';
-import type { IdentityRelation } from '~/types/ocpt/identityOcpt.types';
-import { type ExtendedOperatorType, type Node, type ObjectType } from '~/types/ocpt/ocpt.types';
+import { type ExtendedOperatorType, type IdentityRelation, type Node, type ObjectType } from '~/types/ocpt/ocpt.types';
 
 export const projectTreeOntoOT = (root: HierarchyPointNode<Node>, targetObjectTypes: string[]): void => {
     if (!root.children || targetObjectTypes.length === 0) return;
