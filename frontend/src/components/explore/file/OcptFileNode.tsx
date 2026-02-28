@@ -15,12 +15,11 @@ import {
 } from '~/components/ui/dropdown-menu';
 import BaseFileNode from '~/components/explore/file/BaseFileNode';
 import { useExploreFlowStore } from '~/stores/exploreStore';
-import { useGetConformanceOcptOcel, useGetConformanceOcptOcpt, useGetOcpt } from '~/services/queries';
+import { useGetConformanceOcptOcel, useGetConformanceOcptOcpt, useGetIdentityOcpt, useGetOcpt } from '~/services/queries';
 import { FileNode } from '~/types/explore/nodes';
 
 const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
     const [fileId, setFileId] = useState<null | string>(null);
-    const { data } = useGetOcpt(fileId, true);
     const navigate = useNavigate();
     const { updateNodeData } = useExploreFlowStore();
     const { id, data: nodeData } = props;
@@ -71,6 +70,20 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
         }
     }, [conformanceMode, conformanceData, id, updateNodeData]);
 
+    const ocptAsset = useMemo(
+        () => assets.find((a) => a.io === 'output' && (a.type === 'ocptFile' || a.type === 'ocptAsset' || a.type === 'identityOcptAsset')),
+        [assets]
+    );
+    const isIdentityAsset = ocptAsset?.type === 'identityOcptAsset';
+
+    useMemo(() => {
+        setFileId(ocptAsset?.id ?? null);
+    }, [ocptAsset]);
+
+    const { data: regularOcptData } = useGetOcpt(isIdentityAsset ? null : fileId, true);
+    const { data: identityOcptData } = useGetIdentityOcpt(isIdentityAsset ? fileId : null, true);
+    const data = isIdentityAsset ? identityOcptData : regularOcptData;
+
     useEffect(() => {
         if (data && viewState.colorScale.domain.length === 0) {
             const initialViewState = {
@@ -84,24 +97,15 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
         }
     }, [data, viewState, id, updateNodeData]);
 
-    const visualize = (filter?: string) => {
-        navigate(`/data/pipeline/explore/ocpt/${id}${filter ? `?filter=${filter}` : ''}`);
-    };
-
-    const ocptAsset = useMemo(
-        () => assets.find((a) => a.io === 'output' && (a.type === 'ocptFile' || a.type === 'ocptAsset')),
-        [assets]
-    );
-
-    useMemo(() => {
-        setFileId(ocptAsset?.id ?? null);
-    }, [ocptAsset]);
-
     useEffect(() => {
         if (data) {
             updateNodeData(id, { processedData: data.ocpt });
         }
     }, [data, id, updateNodeData]);
+
+    const visualize = (filter?: string) => {
+        navigate(`/data/pipeline/explore/ocpt/${id}${filter ? `?filter=${filter}` : ''}`);
+    };
 
     const handleObjectTypeToggle = (objectType: string) => {
         if (viewState) {

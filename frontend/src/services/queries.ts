@@ -6,11 +6,13 @@ import {
     getConformanceOcptOcpt,
     getConnectedComponentsCN,
     getHistogram,
+    getIdentityOcpt,
     getLogGraphs,
     getOcelCollection,
     getOcelObjectTypes,
     getOcpt,
     getTraditionalCN,
+    mineIdentityOcpt,
     mineOcpt,
 } from '~/services/api';
 import { getOcel } from '~/services/api';
@@ -65,6 +67,24 @@ export const useMineOcpt = (nodeId: string, fileId: string | null, algorithm: st
     return useQuery({
         queryKey: ['mineOcpt', nodeId, fileId, algorithm],
         queryFn: () => mineOcpt(fileId!, algorithm),
+        enabled: Boolean(fileId) && shouldFetch,
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useMineIdentityOcpt = (nodeId: string, fileId: string | null, algorithm: string, shouldFetch: boolean) => {
+    return useQuery({
+        queryKey: ['mineIdentityOcpt', nodeId, fileId, algorithm],
+        queryFn: () => mineIdentityOcpt(fileId!, algorithm),
+        enabled: Boolean(fileId) && shouldFetch,
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetIdentityOcpt = (fileId: string | null, shouldFetch: boolean) => {
+    return useQuery({
+        queryKey: ['getIdentityOcpt', fileId],
+        queryFn: () => getIdentityOcpt(fileId!),
         enabled: Boolean(fileId) && shouldFetch,
         refetchOnWindowFocus: false,
     });

@@ -40,6 +40,21 @@ export const getOcpt = async (fileId: string): Promise<GetOcptResponse> => {
     return response.data;
 };
 
+export const getIdentityOcpt = async (fileId: string): Promise<GetOcptResponse> => {
+    const response = await api.get(`/v1/objects/extended_ocpt/${fileId}`);
+    return { file_id: response.data.file_id, ocpt: response.data.extended_ocpt };
+};
+
+export const mineIdentityOcpt = async (ocelFileId: string, baseAlgorithm: string = 'DF2'): Promise<GetOcptResponse> => {
+    // Mine base OCPT
+    const endpoint = baseAlgorithm.toLowerCase() === 'ocim' ? 'ocim' : 'df2';
+    const baseResponse = await api.get(`v1/ocpt/${endpoint}/${ocelFileId}`);
+    const baseFileId: string = baseResponse.data.file_id;
+    // Extend with identity relations using the same OCEL
+    const extendedResponse = await api.get(`v1/ocpt/extend/${baseFileId}?ocel_id=${ocelFileId}`);
+    return { file_id: extendedResponse.data.file_id, ocpt: extendedResponse.data.extended_ocpt };
+};
+
 export const getOcel = async (fileId: string) => {
     const response = await api.get(`/v1/objects/ocel/${fileId}`);
     return response.data;
