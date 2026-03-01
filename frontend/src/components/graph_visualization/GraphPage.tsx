@@ -6,8 +6,6 @@ import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useGetLogGraphs } from '~/services/queries';
 import { getDeterministicColor } from '~/lib/colors';
 
-type EdgeMode = 'both' | 'forward' | 'backward' | 'none';
-
 interface CaseGraphData {
     deselected_object_types?: string[];
     deselected_event_types?: string[];
@@ -99,80 +97,40 @@ const GraphPage: React.FC<GraphPageProps> = ({
     useEffect(() => {
         if (!data) return;
         if (editable && localGraph) return;
-        console.log('API data1:', data.arcs);
+
         const nodes: any[] = [];
-        data.event_types.forEach((et: string) =>
+        const links: any[] = [];
+
+        data.event_types.forEach((et: string) => {
             nodes.push({
                 id: et,
                 group: 'event',
                 deselected: caseNotionGraph?.deselected_event_types?.includes(et) ?? false,
-            })
-        );
+            });
+        });
 
-        
-
-        data.object_types.forEach((ot: string) =>
+        data.object_types.forEach((ot: string) => {
             nodes.push({
                 id: ot,
                 group: 'object',
                 deselected: caseNotionGraph?.deselected_object_types?.includes(ot) ?? false,
-            })
-        );
-
-        const deselectedLinks: any[] = [];
-        const selectedLinks: any[] = [];
-        const hasCaseNotionData =
-            caseNotionGraph &&
-            Array.isArray(caseNotionGraph.deselected_arcs) &&
-            caseNotionGraph.deselected_arcs.length > 0;
-
-        if (hasCaseNotionData) {
-            data.arcs.forEach((a: any) => {
-                const isDeselected =
-                    caseNotionGraph?.deselected_arcs?.some(
-                        (da) => da.source_type === a.source_type && da.target_type === a.target_type
-                    ) ?? false;
-
-                const edgeMode: EdgeMode = isDeselected ? 'none' : editable ? 'both' : 'forward';
-                const link = {
-                    source: a.source_type,
-                    target: a.target_type,
-                    edgeMode,
-                    originalEdgeMode: edgeMode,
-                    deselected: isDeselected,
-                };
-
-                if (isDeselected) {
-                    deselectedLinks.push(link);
-                } else {
-                    selectedLinks.push(link);
-                }
             });
-        } else {
-            data.arcs.forEach((a: any) => {
-                const isDeselected =
-                    caseNotionGraph?.deselected_arcs?.some(
-                        (da) => da.source_type === a.source_type && da.target_type === a.target_type
-                    ) ?? false;
+        });
 
-                const edgeMode: EdgeMode = isDeselected ? 'none' : 'both';
+        data.arcs.forEach((a: any) => {
+            const isDeselected =
+                caseNotionGraph?.deselected_arcs?.some(
+                    (da) => da.source_type === a.source_type && da.target_type === a.target_type
+                ) ?? false;
 
-                const link = {
-                    source: a.source_type,
-                    target: a.target_type,
-                    edgeMode,
-                    originalEdgeMode: edgeMode,
-                    deselected: isDeselected,
-                };
-
-                if (isDeselected) {
-                    deselectedLinks.push(link);
-                } else {
-                    selectedLinks.push(link);
-                }
+            links.push({
+                source: a.source_type,
+                target: a.target_type,
+                deselected: isDeselected,
+                originalDeselected: isDeselected,
             });
-        }
-        const links = [...deselectedLinks, ...selectedLinks];
+        });
+
         setLocalGraph({ nodes, links });
     }, [data, caseNotionGraph, editable]);
 
@@ -231,14 +189,12 @@ const GraphPage: React.FC<GraphPageProps> = ({
             .enter()
             .append('line')
             .attr('stroke-width', 3)
-            .on('click', (_, d: any) => {
+            .attr('stroke', (d: any) => (d.deselected ? '#C0C0C0' : 'black'))
+            .attr('stroke-opacity', (d: any) => (d.deselected ? 0.35 : 0.85))
+            .on('click', function (_, d: any) {
                 if (!editable) return;
-                console.log('di local graph');
-                console.log(localGraph.links);
-                d.edgeMode = nextEdgeMode(d.edgeMode);
-                d.deselected = d.edgeMode === 'none';
-
-                updatedLinkStyles();
+                d.deselected = !d.deselected;
+                updateLinkStyles();
             });
 
         const getFill = (d: any) => {
@@ -274,11 +230,9 @@ const GraphPage: React.FC<GraphPageProps> = ({
             .enter()
             .append('circle')
             .attr('r', 12)
-            .attr('fill', (d: any) =>
-                d.deselected ? '#C0C0C0' : d.group === 'object' ? getColorForObject(fileId, d.id) : 'white'
-            )
-            .attr('stroke', 'black')
-            .attr('stroke-width', 2)
+            .attr('fill', getFill)
+            .attr('stroke', (d: any) => (startingObjects.includes(d.id) ? 'black' : getStroke(d)))
+            .attr('stroke-width', (d: any) => (startingObjects.includes(d.id) ? 6 : getStrokeWidth(d)))
             .call(
                 d3
                     .drag<SVGCircleElement, any>()
@@ -331,8 +285,10 @@ const GraphPage: React.FC<GraphPageProps> = ({
             .append('text')
             .text((d: any) => d.id)
             .attr('font-size', 10)
+            .attr('font-weight', '600')
+            .attr('text-anchor', 'middle')
             .attr('dy', -18)
-            .attr('text-anchor', 'middle');
+            .attr('fill', '#333');
 
         simulation.on('tick', () => {
             link.attr('x1', (d: any) => d.source.x)
