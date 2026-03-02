@@ -53,11 +53,9 @@ export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice
     removeNode: (nodeId) => {
         const state = get();
         const nodeToDelete = state.nodes.find((n) => n.id === nodeId);
-
         // Smart Cleanup: If a FileNode is deleted, remove its assets from connected VisualizationNodes
         if (nodeToDelete && isFileNode(nodeToDelete)) {
             const outgoingEdges = state.edges.filter((edge) => edge.source === nodeId);
-
             const updatedNodes = state.nodes.map((node) => {
                 const incomingEdge = outgoingEdges.find((e) => e.target === node.id);
                 if (incomingEdge && isVisualizationNode(node)) {
@@ -68,10 +66,8 @@ export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice
                 }
                 return node;
             }) as ExploreNode[];
-
             set({ nodes: updatedNodes });
         }
-
         set((state) => ({
             nodes: state.nodes.filter((node) => node.id !== nodeId),
             edges: state.edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
@@ -79,29 +75,22 @@ export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice
     },
     removeEdge: (edgeId) => {
         const state = get();
-
         if (state.nodes.some((n) => n.data.isStale)) return;
-
         const edge = state.edges.find((e) => e.id === edgeId);
-
         if (edge) {
             const sourceNode = state.nodes.find((n) => n.id === edge.source);
             const targetNode = state.nodes.find((n) => n.id === edge.target);
-
             if (sourceNode && targetNode) {
                 const filteredAssets = targetNode.data.assets.filter(
                     (asset: BaseExploreNodeAsset) =>
                         !sourceNode.data.assets.some((sourceAsset) => sourceAsset.id === asset.id)
                 );
-
                 const updatedNodes = state.nodes.map((node) =>
                     node.id === edge.target ? { ...node, data: { ...node.data, assets: filteredAssets } } : node
                 ) as ExploreNode[];
-
                 set({ nodes: updatedNodes });
             }
         }
-
         set((state) => ({
             edges: state.edges.filter((edge) => edge.id !== edgeId),
         }));
@@ -112,17 +101,14 @@ export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice
     clearFlow: () => set({ nodes: [], edges: [], currentPipeline: { id: null, name: null }, refocusQueue: [] }),
     refocusQueue: [],
     setRefocusQueue: (queue) => set({ refocusQueue: queue }),
-
     // ─── Color Logic (Fixed to Sync with Store) ──────────────────────────
     initializeDataState: (nodeId: string, objectTypes: string[]) => {
         const { getNode, updateNodeData } = get();
         const node = getNode(nodeId);
         if (!node) return;
-
         const nodeData = node.data as FileExploreNodeData;
         const currentMap = { ...(nodeData.colorMap || {}) };
         let hasChanges = false;
-
         objectTypes.forEach((type) => {
             // Only fill if TRULY missing
             if (!currentMap[type]) {
@@ -131,17 +117,14 @@ export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice
                 hasChanges = true;
             }
         });
-
         if (hasChanges) {
             updateNodeData(nodeId, {
                 colorMap: currentMap,
             } as Partial<FileExploreNodeData>);
         }
     },
-
     getColorForNode: (nodeId: string, objectType: string): string => {
         const node = get().getNode(nodeId);
-
         // Try to read from the Node's Data (The Source of Truth)
         if (node) {
             const nodeData = node.data as FileExploreNodeData;
@@ -149,26 +132,21 @@ export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice
                 return nodeData.colorMap[objectType];
             }
         }
-
         // If missing, return the SAME deterministic color used by the Dialog.
         // This is not a "random fallback" but a guaranteed match to the original scheme.
         return getDeterministicColor(objectType);
     },
-
     setNodeColor: (nodeId: string, objectType: string, newColor: string) => {
         const { getNode, updateNodeData } = get();
         const node = getNode(nodeId);
         if (!node) return;
-
         const nodeData = node.data as FileExploreNodeData;
         const updatedMap = { ...(nodeData.colorMap || {}) };
         updatedMap[objectType] = newColor;
-
         updateNodeData(nodeId, {
             colorMap: updatedMap,
         } as Partial<FileExploreNodeData>);
     },
-
     // ─── Histogram (on node.data) ───────────────────────────────────────
     setHistogramState: (nodeId: string, state: HistogramState) => {
         const { updateNodeData } = get();
@@ -176,7 +154,6 @@ export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice
             histogramState: state,
         } as Partial<FileExploreNodeData>);
     },
-
     clearHistogramState: (nodeId: string) => {
         const { updateNodeData } = get();
         updateNodeData(nodeId, {

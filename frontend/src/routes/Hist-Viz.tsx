@@ -49,7 +49,7 @@ export default function HistViz() {
     const [allSelections, setAllSelections] = useState<Record<string, number[]>>({});
     const [isEditing, setIsEditing] = useState(true);
 
-    const { getNode, setHistogramState, getColorForNode, initializeDataState, updateNodeData } = useExploreFlowStore();
+    const { getNode, setHistogramState, initializeDataState, updateNodeData } = useExploreFlowStore();
 
     // New Color Logic
     const colorMap = useExploreFlowStore((s) => {
