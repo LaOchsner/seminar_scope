@@ -10,11 +10,9 @@ import { FileNode } from '~/types/explore/nodes';
 const OcelFileNode = memo<NodeProps<FileNode>>((props) => {
     const navigate = useNavigate();
     const hasFile = props.data.assets.length > 0;
-
     const openObjectEventGraph = () => {
         navigate(`/data/pipeline/explore/ocel/${props.id}`);
     };
-
     return (
         <BaseFileNode
             {...props}
@@ -45,5 +43,4 @@ const OcelFileNode = memo<NodeProps<FileNode>>((props) => {
         </BaseFileNode>
     );
 });
-
 export default OcelFileNode;
