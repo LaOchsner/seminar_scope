@@ -9,8 +9,6 @@ use super::{
     Relation,
 };
 
-const DEFAULT_VIOLATION_THRESHOLD: f64 = 0.0;
-
 fn collect_activities(node: &OCPTNode, out: &mut HashSet<String>) {
     match node {
         OCPTNode::Leaf(leaf) => {
@@ -179,6 +177,7 @@ pub fn get_extended_ocpt(
     ocpt: OCPTNode,
     relations: &[Relation],
     candidates: Option<Vec<HashSet<String>>>,
+    violation_threshold: f64,
 ) -> OCPTNode {
     match ocpt {
         OCPTNode::Leaf(leaf) => {
@@ -188,7 +187,7 @@ pub fn get_extended_ocpt(
                     relations,
                     activity,
                     &available,
-                    DEFAULT_VIOLATION_THRESHOLD,
+                    violation_threshold,
                 ) {
                     let first: HashSet<String> = first_types.into_iter().collect();
                     let last: HashSet<String> = last_types.into_iter().collect();
@@ -240,7 +239,7 @@ pub fn get_extended_ocpt(
                             ot1,
                             ot2,
                             &sub_relations,
-                            DEFAULT_VIOLATION_THRESHOLD,
+                            violation_threshold,
                             family,
                         ) else {
                             continue;
@@ -272,11 +271,17 @@ pub fn get_extended_ocpt(
                                     subset_wrapped,
                                     relations,
                                     Some(next_candidates),
+                                    violation_threshold,
                                 );
                             }
                             backend_kind => {
                                 let extended_inner =
-                                    get_extended_ocpt(wrapped, relations, Some(next_candidates));
+                                    get_extended_ocpt(
+                                        wrapped,
+                                        relations,
+                                        Some(next_candidates),
+                                        violation_threshold,
+                                    );
                                 return wrap_identity(extended_inner, ot1, ot2, backend_kind);
                             }
                         }
@@ -287,7 +292,14 @@ pub fn get_extended_ocpt(
             let extended_children = op
                 .children
                 .into_iter()
-                .map(|child| get_extended_ocpt(child, relations, Some(candidates.clone())))
+                .map(|child| {
+                    get_extended_ocpt(
+                        child,
+                        relations,
+                        Some(candidates.clone()),
+                        violation_threshold,
+                    )
+                })
                 .collect();
 
             op.children = extended_children;
@@ -340,7 +352,7 @@ mod tests {
             singleton("packages"),
         ];
 
-        let extended_root = get_extended_ocpt(ocpt.root, &relations, Some(candidates));
+        let extended_root = get_extended_ocpt(ocpt.root, &relations, Some(candidates), 0.0);
         let extended = OCPT {
             root: extended_root,
         };
