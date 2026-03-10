@@ -1,0 +1,398 @@
+{
+  "ots": [
+    "customers",
+    "employees",
+    "items",
+    "orders",
+    "packages",
+    "products"
+  ],
+  "hierarchy": {
+    "value": {
+      "operator": "sequence",
+      "identity": [
+        {
+          "left": [
+            "customers"
+          ],
+          "right": [
+            "packages"
+          ],
+          "kind": "sync"
+        }
+      ]
+    },
+    "children": [
+      {
+        "value": {
+          "operator": "sequence",
+          "identity": [
+            {
+              "left": [
+                "orders"
+              ],
+              "right": [
+                "items"
+              ],
+              "kind": "impConcurrent"
+            }
+          ]
+        },
+        "children": [
+          {
+            "value": {
+              "operator": "sequence"
+            },
+            "children": [
+              {
+                "value": {
+                  "isSilent": false,
+                  "activity": "place order",
+                  "ots": [
+                    {
+                      "ot": "customers",
+                      "exhibits": [
+                        "div"
+                      ]
+                    },
+                    {
+                      "ot": "items",
+                      "exhibits": [
+                        "con"
+                      ]
+                    },
+                    {
+                      "ot": "orders"
+                    },
+                    {
+                      "ot": "products",
+                      "exhibits": [
+                        "div",
+                        "con"
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "value": {
+                  "operator": "loop"
+                },
+                "children": [
+                  {
+                    "value": {
+                      "operator": "xor"
+                    },
+                    "children": [
+                      {
+                        "value": {
+                          "isSilent": false,
+                          "activity": "failed delivery",
+                          "ots": [
+                            {
+                              "ot": "employees",
+                              "exhibits": [
+                                "div"
+                              ]
+                            },
+                            {
+                              "ot": "items",
+                              "exhibits": [
+                                "con"
+                              ]
+                            },
+                            {
+                              "ot": "packages"
+                            },
+                            {
+                              "ot": "products",
+                              "exhibits": [
+                                "div",
+                                "con"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "value": {
+                          "isSilent": false,
+                          "activity": "send package",
+                          "ots": [
+                            {
+                              "ot": "employees",
+                              "exhibits": [
+                                "div",
+                                "con"
+                              ]
+                            },
+                            {
+                              "ot": "items",
+                              "exhibits": [
+                                "con"
+                              ]
+                            },
+                            {
+                              "ot": "packages"
+                            },
+                            {
+                              "ot": "products",
+                              "exhibits": [
+                                "div",
+                                "con"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "value": {
+                          "isSilent": false,
+                          "activity": "create package",
+                          "ots": [
+                            {
+                              "ot": "employees",
+                              "exhibits": [
+                                "div"
+                              ]
+                            },
+                            {
+                              "ot": "items",
+                              "exhibits": [
+                                "con"
+                              ]
+                            },
+                            {
+                              "ot": "packages"
+                            },
+                            {
+                              "ot": "products",
+                              "exhibits": [
+                                "div",
+                                "con"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "value": {
+                          "isSilent": false,
+                          "activity": "item out of stock",
+                          "ots": [
+                            {
+                              "ot": "employees",
+                              "exhibits": [
+                                "div"
+                              ]
+                            },
+                            {
+                              "ot": "items"
+                            },
+                            {
+                              "ot": "products",
+                              "exhibits": [
+                                "div"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "value": {
+                          "isSilent": false,
+                          "activity": "reorder item",
+                          "ots": [
+                            {
+                              "ot": "employees",
+                              "exhibits": [
+                                "div"
+                              ]
+                            },
+                            {
+                              "ot": "items"
+                            },
+                            {
+                              "ot": "products",
+                              "exhibits": [
+                                "div"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "value": {
+                          "isSilent": false,
+                          "activity": "confirm order",
+                          "ots": [
+                            {
+                              "ot": "customers",
+                              "exhibits": [
+                                "div",
+                                "con",
+                                "def"
+                              ]
+                            },
+                            {
+                              "ot": "employees",
+                              "exhibits": [
+                                "div",
+                                "con",
+                                "def"
+                              ]
+                            },
+                            {
+                              "ot": "items",
+                              "exhibits": [
+                                "div",
+                                "con",
+                                "def"
+                              ]
+                            },
+                            {
+                              "ot": "orders",
+                              "exhibits": [
+                                "div",
+                                "con",
+                                "def"
+                              ]
+                            },
+                            {
+                              "ot": "packages",
+                              "exhibits": [
+                                "div",
+                                "con",
+                                "def"
+                              ]
+                            },
+                            {
+                              "ot": "products",
+                              "exhibits": [
+                                "div",
+                                "con",
+                                "def"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "value": {
+                          "isSilent": false,
+                          "activity": "payment reminder",
+                          "ots": [
+                            {
+                              "ot": "items",
+                              "exhibits": [
+                                "con"
+                              ]
+                            },
+                            {
+                              "ot": "orders"
+                            },
+                            {
+                              "ot": "products",
+                              "exhibits": [
+                                "div",
+                                "con"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "value": {
+                          "isSilent": false,
+                          "activity": "pick item",
+                          "ots": [
+                            {
+                              "ot": "employees",
+                              "exhibits": [
+                                "div"
+                              ]
+                            },
+                            {
+                              "ot": "items"
+                            },
+                            {
+                              "ot": "products",
+                              "exhibits": [
+                                "div"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "value": {
+                          "isSilent": false,
+                          "activity": "package delivered",
+                          "ots": [
+                            {
+                              "ot": "employees",
+                              "exhibits": [
+                                "div"
+                              ]
+                            },
+                            {
+                              "ot": "items",
+                              "exhibits": [
+                                "con"
+                              ]
+                            },
+                            {
+                              "ot": "packages"
+                            },
+                            {
+                              "ot": "products",
+                              "exhibits": [
+                                "div",
+                                "con"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "value": {
+                          "isSilent": false,
+                          "activity": "pay order",
+                          "ots": [
+                            {
+                              "ot": "items",
+                              "exhibits": [
+                                "con"
+                              ]
+                            },
+                            {
+                              "ot": "orders"
+                            },
+                            {
+                              "ot": "products",
+                              "exhibits": [
+                                "div",
+                                "con"
+                              ]
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "value": {
+                      "isSilent": true,
+                      "activity": "",
+                      "ots": []
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

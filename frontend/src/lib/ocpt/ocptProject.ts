@@ -1,36 +1,33 @@
 import type { HierarchyPointNode } from '@visx/hierarchy/lib/types';
 import {
-    categorizeNode,
     isActivity,
     isExtendedProcessTreeOperatorNode,
+    isIdentityOperatorApi,
     isProcessTreeOperator,
     isSilentActivity,
     isTrueSilentActivity,
 } from '~/lib/ocpt/ocptGuards';
-import { ExtendedProcessTreeOperator, type ObjectType, SilentActivity, type TreeNode } from '~/types/ocpt/ocpt.types';
+import { type ExtendedOperatorType, type IdentityRelation, type Node, type ObjectType } from '~/types/ocpt/ocpt.types';
 
-export const projectTreeOntoOT = (root: HierarchyPointNode<TreeNode>, targetObjectTypes: string[]): void => {
+export const projectTreeOntoOT = (root: HierarchyPointNode<Node>, targetObjectTypes: string[]): void => {
     if (!root.children || targetObjectTypes.length === 0) return;
     updateNode(root, targetObjectTypes);
     console.log(root);
 };
 
-const updateNode = (node: HierarchyPointNode<TreeNode>, targetObjectTypes: string[]): HierarchyPointNode<TreeNode> => {
+const updateNode = (node: HierarchyPointNode<Node>, targetObjectTypes: string[]): HierarchyPointNode<Node> => {
     // Base Case: Leaf Node: Make SilentActivity iff targetObjectTypes not included and/or simply return the node.
-    const categorizedNode = categorizeNode(node); // We use this as a TypeGuard to ensure that the Node is both a leaf and an Activity.
-    if (categorizedNode.type === 'leaf') {
+    if (isActivity(node.data.value)) {
         // Leaf node does not contain the targetObjectTypes => Activity is SilentActivity
-        const activityData = categorizedNode.node.data.value;
+        const activityData = node.data.value;
         if (!activityData.ots.some((ot) => targetObjectTypes.includes(ot.ot))) {
-            const newSilentActivity = new SilentActivity(activityData.activity, activityData.ots, true);
-
-            node.data.value = newSilentActivity;
+            node.data.value = { activity: activityData.activity, ots: activityData.ots, isSilent: true };
         }
 
         return node;
     }
     // Otherwise node is Internal Node:
-    const nodeChildren = categorizedNode.node.children.map((child) => updateNode(child, targetObjectTypes));
+    const nodeChildren = (node.children || []).map((child) => updateNode(child, targetObjectTypes));
     node.children = nodeChildren;
 
     // Skip case
@@ -42,7 +39,7 @@ const updateNode = (node: HierarchyPointNode<TreeNode>, targetObjectTypes: strin
                 return [];
             })
         );
-        node.data.value = new ExtendedProcessTreeOperator('skip', childrendIntersectOT);
+        node.data.value = { operator: 'skip', ots: childrendIntersectOT };
     }
     // Arbitrary case
     else if (isArbitrarySubtree(nodeChildren, targetObjectTypes)) {
@@ -53,7 +50,7 @@ const updateNode = (node: HierarchyPointNode<TreeNode>, targetObjectTypes: strin
                 return [];
             })
         );
-        node.data.value = new ExtendedProcessTreeOperator('arbitrary', childrendIntersectOT);
+        node.data.value = { operator: 'arbitrary', ots: childrendIntersectOT };
     }
 
     return node;
@@ -62,7 +59,7 @@ const updateNode = (node: HierarchyPointNode<TreeNode>, targetObjectTypes: strin
 // Exclusive type of replacements for an OCPT Operator Node for the object type ot
 // 1. "Arbitary" -> Objects of targetObjectTypes can take part or can not take part in the activities of the subtree
 // (divergent in all subtrees so regular Activity with targetObjectTypes being div or SilenctActivity being div or ArbitraryOperator)
-const isArbitrarySubtree = (nodeChildren: HierarchyPointNode<TreeNode>[], targetObjectTypes: string[]) => {
+const isArbitrarySubtree = (nodeChildren: HierarchyPointNode<Node>[], targetObjectTypes: string[]) => {
     const childrenResults = nodeChildren.map((child) => {
         const value = child.data.value;
         // Either:
@@ -100,7 +97,7 @@ const isArbitrarySubtree = (nodeChildren: HierarchyPointNode<TreeNode>[], target
 };
 
 // 2. "Skip" -> Objects of targetObjectTypes completely skip the subtree (Leafs are SilentActivities)
-const isSkipSubtree = (nodeChildren: HierarchyPointNode<TreeNode>[]) => {
+const isSkipSubtree = (nodeChildren: HierarchyPointNode<Node>[]) => {
     const childrenResults = nodeChildren.map((child) => {
         const value = child.data.value;
         // Either:
@@ -154,7 +151,17 @@ const intersectMultipleObjectTypes = (sets: ObjectType[][]): ObjectType[] => {
     });
 };
 
-export const updateTreeWithExtendedOperators = (node: HierarchyPointNode<TreeNode>): HierarchyPointNode<TreeNode> => {
+/**
+ * Goes through the OCPT received from the API with DFS and changes each node
+ * that is a @type {OperatorType} or an @type {IdentityOperatorApi} into an @type {ExtendedOperator}.
+ *
+ * This way we can be sure that each OperatorNode has the "ots" property correctly populated
+ * as this is required for the projections.
+ *
+ * In this step we already propagate the ots from the leaf nodes upwards and store them in the operator nodes.
+ * This way the projection
+ */
+export const updateTreeWithExtendedOperators = (node: HierarchyPointNode<Node>): HierarchyPointNode<Node> => {
     // Base case: if node is a leaf, return it unchanged
     if (!node.children || node.children.length === 0) {
         return node;
@@ -166,10 +173,9 @@ export const updateTreeWithExtendedOperators = (node: HierarchyPointNode<TreeNod
     // Get the value of the current node
     const nodeValue = node.data.value;
 
-    // Check if this node has a process tree operator
-    if (isProcessTreeOperator(nodeValue)) {
-        // Collect object types from all children
-        const childrenObjectTypes = node.children.map((child) => {
+    // Collect object types from all children (shared by both branches below)
+    const collectChildrenOTs = () =>
+        node.children!.map((child) => {
             const childValue = child.data.value;
             if (
                 isActivity(childValue) ||
@@ -181,13 +187,20 @@ export const updateTreeWithExtendedOperators = (node: HierarchyPointNode<TreeNod
             return [];
         });
 
-        // Calculate the intersection of all children's object types
-        const intersectedOTs = intersectMultipleObjectTypes(childrenObjectTypes);
+    // Check if this node has a process tree operator (plain string like "sequence")
+    if (isProcessTreeOperator(nodeValue)) {
+        const intersectedOTs = intersectMultipleObjectTypes(collectChildrenOTs());
+        node.data.value = { operator: nodeValue, ots: intersectedOTs };
+    }
 
-        // Create a new ExtendedProcessTreeOperator with the same operator as the original node
-        // and the intersected object types
-        const operator = nodeValue;
-        node.data.value = new ExtendedProcessTreeOperator(operator, intersectedOTs);
+    // Check if the node is an IdentityOperator received from the API that does not have an ots property yet
+    else if (isIdentityOperatorApi(nodeValue)) {
+        const intersectedOTs = intersectMultipleObjectTypes(collectChildrenOTs());
+        node.data.value = {
+            operator: nodeValue.operator as ExtendedOperatorType,
+            ots: intersectedOTs,
+            identity: nodeValue.identity as IdentityRelation[] | undefined,
+        };
     }
 
     return node;

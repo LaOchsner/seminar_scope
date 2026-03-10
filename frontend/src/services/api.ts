@@ -3,7 +3,7 @@ import { GetCaseNotionsResponse } from '~/services/response.types';
 import { CaseOcelResponse } from '~/types/api/ocel_collection.api';
 import { CaseNotionApiResponse } from '~/types/case_notion.types';
 import { ExtendedFile } from '~/types/files.types';
-import { JSONSchema } from '~/types/ocpt/ocpt.types';
+import { OcptSchemaApi } from '~/types/ocpt/ocpt.types';
 
 // Import the new type
 
@@ -31,14 +31,28 @@ export const uploadFile = async (file: ExtendedFile) => {
     return response.data;
 };
 
-type getOcptResult = {
-    ocpt: JSONSchema;
+type GetOcptResponse = {
+    ocpt: OcptSchemaApi;
     file_id: string;
 };
-
-export const getOcpt = async (fileId: string): Promise<getOcptResult> => {
+export const getOcpt = async (fileId: string): Promise<GetOcptResponse> => {
     const response = await api.get(`/v1/objects/ocpt/${fileId}`);
     return response.data;
+};
+
+export const getIdentityOcpt = async (fileId: string): Promise<GetOcptResponse> => {
+    const response = await api.get(`/v1/objects/extended_ocpt/${fileId}`);
+    return { file_id: response.data.file_id, ocpt: response.data.extended_ocpt };
+};
+
+export const mineIdentityOcpt = async (ocelFileId: string, baseAlgorithm: string = 'DF2'): Promise<GetOcptResponse> => {
+    // Mine base OCPT
+    const endpoint = baseAlgorithm.toLowerCase() === 'ocim' ? 'ocim' : 'df2';
+    const baseResponse = await api.get(`v1/ocpt/${endpoint}/${ocelFileId}`);
+    const baseFileId: string = baseResponse.data.file_id;
+    // Extend with identity relations using the same OCEL
+    const extendedResponse = await api.get(`v1/ocpt/extend/${baseFileId}?ocel_id=${ocelFileId}`);
+    return { file_id: extendedResponse.data.file_id, ocpt: extendedResponse.data.extended_ocpt };
 };
 
 export const getOcel = async (fileId: string) => {
@@ -112,7 +126,7 @@ export const getOcelObjectTypes = async (fileId: string): Promise<CaseNotionApiR
     return response.data;
 };
 
-export const mineOcpt = async (fileId: string, algorithm: string = 'DF2'): Promise<getOcptResult> => {
+export const mineOcpt = async (fileId: string, algorithm: string = 'DF2'): Promise<GetOcptResponse> => {
     if (algorithm === 'DF2') {
         const response = await api.get(`v1/ocpt/df2/${fileId}`);
         return response.data;

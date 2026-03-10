@@ -8,15 +8,16 @@ import OcptLink from '~/components/ocpt/links/OcptLink';
 import OcptNode from '~/components/ocpt/nodes/OcptNode';
 import { useOriginalRenderedOcpt, useRenderedOcpt } from '~/stores/store';
 import { projectTreeOntoOT, updateTreeWithExtendedOperators } from '~/lib/ocpt/ocptProject';
-import { type FilteredObjectTypes, type TreeNode } from '~/types/ocpt/ocpt.types';
+import { type Node } from '~/types/ocpt/ocpt.types';
 
 interface RenderTreeProps {
-    rootNode: HierarchyNode<TreeNode>;
-    filteredObjectTypes: FilteredObjectTypes;
-    setHoveredNode: React.Dispatch<React.SetStateAction<HierarchyPointNode<TreeNode> | null>>;
+    rootNode: HierarchyNode<Node>;
+    filteredObjectTypes: string[];
+    setHoveredNode: React.Dispatch<React.SetStateAction<HierarchyPointNode<Node> | null>>;
     colorScale: ScaleOrdinal<string, string, never>;
     sizeWidth: number;
     sizeHeight: number;
+    showDetails?: boolean;
 }
 
 export const RenderTree: React.FC<RenderTreeProps> = ({
@@ -26,12 +27,13 @@ export const RenderTree: React.FC<RenderTreeProps> = ({
     colorScale,
     sizeWidth,
     sizeHeight,
+    showDetails,
 }) => {
-    const [links, setLinks] = useState<HierarchyPointLink<TreeNode>[]>([]);
+    const [links, setLinks] = useState<HierarchyPointLink<Node>[]>([]);
 
-    const [originalRenderedTree, setOriginalRenderedTree] = useState<HierarchyPointNode<TreeNode> | null>(null);
-    const [renderedTree, setRenderedTree] = useState<HierarchyPointNode<TreeNode> | null>(null);
-    const prevRenderedTreeRef = useRef<HierarchyPointNode<TreeNode> | null>(null);
+    const [originalRenderedTree, setOriginalRenderedTree] = useState<HierarchyPointNode<Node> | null>(null);
+    const [renderedTree, setRenderedTree] = useState<HierarchyPointNode<Node> | null>(null);
+    const prevRenderedTreeRef = useRef<HierarchyPointNode<Node> | null>(null);
 
     const { setRenderedOcpt } = useRenderedOcpt();
     const { setOriginalRenderedOcpt } = useOriginalRenderedOcpt();
@@ -53,7 +55,7 @@ export const RenderTree: React.FC<RenderTreeProps> = ({
         // In the case where originalRenderedTree has not been initialized yet
         if (!originalRenderedTree) return;
 
-        let newTree: HierarchyPointNode<TreeNode>;
+        let newTree: HierarchyPointNode<Node>;
         if (filteredObjectTypes.length > 0) {
             newTree = cloneDeep(originalRenderedTree);
             projectTreeOntoOT(newTree, filteredObjectTypes);
@@ -102,7 +104,7 @@ export const RenderTree: React.FC<RenderTreeProps> = ({
                             .reverse()
                             .map((node, key) => {
                                 if (!node.data) return null;
-                                const checkedNode = node as HierarchyPointNode<TreeNode>;
+                                const checkedNode = node as HierarchyPointNode<Node>;
 
                                 return (
                                     <OcptNode
@@ -110,6 +112,7 @@ export const RenderTree: React.FC<RenderTreeProps> = ({
                                         key={key}
                                         setHoveredNode={setHoveredNode}
                                         colorScale={colorScale}
+                                        showDetails={showDetails}
                                     />
                                 );
                             })}

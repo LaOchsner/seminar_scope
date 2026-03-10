@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { scaleOrdinal } from '@visx/scale';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { SidebarProvider } from '~/components/ui/sidebar';
@@ -9,11 +9,20 @@ import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useIsOcptMode } from '~/stores/store';
 import { addIdsToTree } from '~/lib/ocpt/ocptAddIds';
 import { VisualizationNode } from '~/types/explore/nodes';
-import { type TreeNode } from '~/types/ocpt/ocpt.types';
+import { type Node } from '~/types/ocpt/ocpt.types';
 
 const OcptViewer: React.FC = () => {
-    const [treeData, setTreeData] = useState<TreeNode | null>(null);
+    const [treeData, setTreeData] = useState<Node | null>(null);
     const [objectTypes, setObjectTypes] = useState<string[]>([]);
+    const [filteredObjectTypes, setFilteredObjectTypes] = useState<string[]>([]);
+    const [showDetails, setShowDetails] = useState(false);
+    const exportFnRef = useRef<(() => void) | null>(null);
+    const handleExportReady = useCallback((fn: () => void) => {
+        exportFnRef.current = fn;
+    }, []);
+    const handleExport = useCallback(() => {
+        exportFnRef.current?.();
+    }, []);
     const { nodeId } = useParams<{ nodeId: string }>();
     const [searchParams] = useSearchParams();
     const { getNode, updateNodeData } = useExploreFlowStore();
@@ -60,9 +69,22 @@ const OcptViewer: React.FC = () => {
                 <BreadcrumbNav />
                 <div className="flex flex-1 h-full w-full">
                     {isOcptMode && node ? (
-                        <OCPT treeData={treeData} colorScale={colorScale} node={node} />
+                        <OCPT
+                            treeData={treeData}
+                            colorScale={colorScale}
+                            node={node}
+                            showDetails={showDetails}
+                            onExportReady={handleExportReady}
+                        />
+                    ) : treeData ? (
+                        <OCPT
+                            treeData={treeData}
+                            colorScale={colorScale}
+                            filteredObjectTypes={filteredObjectTypes}
+                            showDetails={showDetails}
+                            onExportReady={handleExportReady}
+                        />
                     ) : (
-                        // <Flow objectTypes={objectTypes} />
                         <div></div>
                     )}
                 </div>
@@ -78,6 +100,20 @@ const OcptViewer: React.FC = () => {
                             });
                         }}
                         conformanceData={nodeData?.conformanceData}
+                        showDetails={showDetails}
+                        onShowDetailsChange={setShowDetails}
+                        onExport={handleExport}
+                    />
+                ) : treeData ? (
+                    <OcptSidebar
+                        objectTypes={objectTypes}
+                        coloring={colorScale}
+                        nodeId={undefined}
+                        filteredObjectTypes={filteredObjectTypes}
+                        onFilteredObjectTypesChange={setFilteredObjectTypes}
+                        showDetails={showDetails}
+                        onShowDetailsChange={setShowDetails}
+                        onExport={handleExport}
                     />
                 ) : (
                     <div>Can not load sidebar. No nodeId found.</div>

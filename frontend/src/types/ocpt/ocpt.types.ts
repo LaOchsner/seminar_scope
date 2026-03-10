@@ -1,98 +1,64 @@
-import { HierarchyPointLink, HierarchyPointNode } from '@visx/hierarchy/lib/types';
+import { HierarchyPointLink } from '@visx/hierarchy/lib/types';
 
-export type ProcessTreeOperators = 'sequence' | 'parallel' | 'loop' | 'xor';
-export type ExtendedProcessTreeOperatorType = ProcessTreeOperators | 'skip' | 'arbitrary';
+export type IdentityRelationKind = 'sync' | 'impConcurrent' | 'tempImp';
 
-export interface IExtendedProcessTreeOperator {
-    operator: ExtendedProcessTreeOperatorType;
-    ots: ObjectType[];
-}
-
-export class ExtendedProcessTreeOperator implements IExtendedProcessTreeOperator {
-    operator: ExtendedProcessTreeOperatorType;
-    ots: ObjectType[];
-
-    constructor(operator: ExtendedProcessTreeOperatorType, ots: ObjectType[]) {
-        this.operator = operator;
-        this.ots = ots;
-    }
+export interface IdentityRelation {
+    left: string[];
+    right: string[];
+    kind: IdentityRelationKind;
 }
 
 export type Exhibit = 'div' | 'con' | 'def';
+export type OperatorType = 'sequence' | 'parallel' | 'loop' | 'xor';
+export type ExtendedOperatorType = OperatorType | 'skip' | 'arbitrary';
 
 export interface ObjectType {
     ot: string;
     exhibits?: Exhibit[];
 }
 
-export interface IActivity {
+export interface Activity {
     activity: string;
     ots: ObjectType[];
 }
 
-export interface TreeNode extends JSONTreeNode {
+export interface SilentActivity extends Activity {
+    isSilent: boolean;
+}
+
+// Pre-projection operator shape from the Identity OCPT API.
+// Operators arrive as objects (not plain strings) and may carry identity relations.
+export interface IdentityOperatorApi {
+    operator: OperatorType;
+    identity?: IdentityRelation[]; // Even if there is no identity, it will still be value: { operator: X }
+}
+
+export interface ExtendedOperator {
+    operator: ExtendedOperatorType;
+    ots: ObjectType[]; // This is not in the paper but it is important for the projections!
+    identity?: IdentityRelation[];
+}
+
+export interface NodeWithoutId {
+    value: Activity | SilentActivity | OperatorType | IdentityOperatorApi | ExtendedOperator;
+    isExpanded?: boolean;
+    children: Node[];
+}
+
+export interface Node extends NodeWithoutId {
     id: number;
 }
 
-export interface JSONTreeNode {
-    value: Activity | ProcessTreeOperators | SilentActivity | ExtendedProcessTreeOperator;
-    isExpanded?: boolean;
-    children?: TreeNode[];
-}
-
-export class CTreeNode implements TreeNode {
-    id: number;
-    value: Activity | ProcessTreeOperators | SilentActivity | ExtendedProcessTreeOperator;
-    isExpanded?: boolean;
-    children?: TreeNode[];
-
-    constructor(
-        id: number,
-        value: Activity | ProcessTreeOperators | SilentActivity | ExtendedProcessTreeOperator,
-        isExpanded?: boolean,
-        children?: TreeNode[]
-    ) {
-        this.id = id;
-        this.value = value;
-        this.isExpanded = isExpanded;
-        this.children = children;
-    }
-}
-
-export interface JSONSchema {
+export interface OcptSchemaApi {
     ots: string[];
-    hierarchy: JSONTreeNode;
+    hierarchy: NodeWithoutId;
 }
 
-export interface NodeProps {
-    height: number;
-    width: number;
-    node: HierarchyPointNode<TreeNode>;
-    key: number;
+export interface OcptSchema {
+    ots: string[];
+    hierarchy: Node;
 }
-
-export class Activity implements IActivity {
-    activity: string;
-    ots: ObjectType[];
-
-    constructor(activity: string, ots: ObjectType[]) {
-        this.activity = activity;
-        this.ots = ots;
-    }
-}
-
-export type FilteredObjectTypes = string[] | [];
 
 export interface HierarchyPointLinkObjectCentric<T> extends HierarchyPointLink<T> {
     ot?: ObjectType;
-}
-
-export class SilentActivity extends Activity {
-    isSilent: boolean;
-
-    constructor(activity: string, ots: ObjectType[], isSilent: boolean) {
-        super(activity, ots);
-
-        this.isSilent = isSilent;
-    }
 }
