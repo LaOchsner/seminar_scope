@@ -19,7 +19,7 @@ multipart = "0.18.0"
 nalgebra = "0.34.1"
 ordered-float = "5.0.0"
 petgraph = "0.8.3"
-process_mining = { git = "https://github.com/BPM-Research-Group/rust4pm_BPM.git", package = "process_mining", rev = "1c493d2e1d2accda43b77d95ace5e224add7c965" }
+process_mining = { git = "https://github.com/BPM-Research-Group/rust4pm_BPM.git", package = "process_mining" }
 rayon = "1.11.0"
 rustc-hash = "2.1.1"
 serde = { version = "1.0.219", features = ["derive"] }
@@ -38,3 +38,4 @@ lto = "thin"
 codegen-units = 1
 panic = "abort"
 strip = true
+

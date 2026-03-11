@@ -6,9 +6,54 @@ use crate::models::ocel::{IndexLinkedOCEL, OCEL};
 use crate::models::ocpt::OCPT as BackendOCPT;
 use crate::traits::import_export::ImportableFromPath;
 use process_mining::conformance::object_centric::footprint_based_ocpt::{
-    FootprintConformance, compute_footprint_conformance, compute_footprint_conformance_ocpt_vs_ocpt,
+    FootprintConformance, compute_footprint_conformance, compute_footprint_conformance_abstractions,
+    compute_footprint_conformance_ocpt_vs_ocpt,
 };
 use process_mining::conformance::object_centric::object_centric_language_abstraction::compute_fitness_precision;
+
+fn maybe_compute_footprint<F>(
+    log_abs: &OCLanguageAbstraction,
+    model_abs: &OCLanguageAbstraction,
+    compute: F,
+) -> Option<FootprintConformance>
+where
+    F: FnOnce() -> FootprintConformance,
+{
+    if !log_abs.ident.is_empty() || !model_abs.ident.is_empty() {
+        Some(compute())
+    } else {
+        None
+    }
+}
+
+fn select_top_level_scores(
+    log_abs: &OCLanguageAbstraction,
+    model_abs: &OCLanguageAbstraction,
+    footprint: Option<&FootprintConformance>,
+) -> (f64, f64) {
+    if let Some(footprint) = footprint {
+        (footprint.overall_fitness, footprint.overall_precision)
+    } else {
+        compute_fitness_precision(log_abs, model_abs)
+    }
+}
+
+fn footprint_log_suffix(footprint: Option<&FootprintConformance>) -> String {
+    match footprint {
+        Some(footprint) => format!(
+            " footprint={{control_fitness={} control_precision={} multiplicity_fitness={} multiplicity_precision={} identity_fitness={} identity_precision={} overall_fitness={} overall_precision={}}}",
+            footprint.control_fitness,
+            footprint.control_precision,
+            footprint.multiplicity_fitness,
+            footprint.multiplicity_precision,
+            footprint.identity_fitness,
+            footprint.identity_precision,
+            footprint.overall_fitness,
+            footprint.overall_precision
+        ),
+        None => " footprint=null".to_string(),
+    }
+}
 
 fn conformance_payload(
     fitness: f64,
@@ -59,14 +104,21 @@ pub async fn get_conformance_ocpt_abstraction(
     };
 
     let model_abs = OCLanguageAbstraction::create_from_oc_process_tree(&ocpt);
-    let (fitness, precision) = compute_fitness_precision(&abstraction, &model_abs);
+    let footprint = maybe_compute_footprint(&abstraction, &model_abs, || {
+        compute_footprint_conformance_abstractions(&abstraction, &model_abs)
+    });
+    let (fitness, precision) = select_top_level_scores(&abstraction, &model_abs, footprint.as_ref());
 
     println!(
-        "[conformance ocpt_abstraction] ocpt_id={} abstraction_id={} fitness={} precision={}",
-        ocpt_id, abstraction_id, fitness, precision
+        "[conformance ocpt_abstraction] ocpt_id={} abstraction_id={} fitness={} precision={}{}",
+        ocpt_id,
+        abstraction_id,
+        fitness,
+        precision,
+        footprint_log_suffix(footprint.as_ref())
     );
 
-    Json(conformance_payload(fitness, precision, None)).into_response()
+    Json(conformance_payload(fitness, precision, footprint.as_ref())).into_response()
 }
 
 /// GET /v1/conformance/extended_ocpt/{extended_ocpt_id}/abstraction/{abstraction_id}
@@ -84,14 +136,21 @@ pub async fn get_conformance_extended_ocpt_abstraction(
     };
 
     let model_abs = OCLanguageAbstraction::create_from_oc_process_tree(&extended_ocpt);
-    let (fitness, precision) = compute_fitness_precision(&abstraction, &model_abs);
+    let footprint = maybe_compute_footprint(&abstraction, &model_abs, || {
+        compute_footprint_conformance_abstractions(&abstraction, &model_abs)
+    });
+    let (fitness, precision) = select_top_level_scores(&abstraction, &model_abs, footprint.as_ref());
 
     println!(
-        "[conformance extended_ocpt_abstraction] extended_ocpt_id={} abstraction_id={} fitness={} precision={}",
-        extended_ocpt_id, abstraction_id, fitness, precision
+        "[conformance extended_ocpt_abstraction] extended_ocpt_id={} abstraction_id={} fitness={} precision={}{}",
+        extended_ocpt_id,
+        abstraction_id,
+        fitness,
+        precision,
+        footprint_log_suffix(footprint.as_ref())
     );
 
-    Json(conformance_payload(fitness, precision, None)).into_response()
+    Json(conformance_payload(fitness, precision, footprint.as_ref())).into_response()
 }
 
 /// GET /v1/conformance/ocpt/{ocpt_id}/ocel/{ocel_id}"
@@ -112,26 +171,21 @@ pub async fn get_conformance_ocpt_ocel(
     let locel: IndexLinkedOCEL = IndexLinkedOCEL::from_ocel(ocel_struct);
     let model_abs = OCLanguageAbstraction::create_from_oc_process_tree(&ocpt_backend);
     let log_abs = OCLanguageAbstraction::create_from_ocel(&locel);
-    let (fitness, precision) = compute_fitness_precision(&log_abs, &model_abs);
-    let footprint = compute_footprint_conformance(&locel, &ocpt_backend);
+    let footprint = maybe_compute_footprint(&log_abs, &model_abs, || {
+        compute_footprint_conformance(&locel, &ocpt_backend)
+    });
+    let (fitness, precision) = select_top_level_scores(&log_abs, &model_abs, footprint.as_ref());
 
     println!(
-        "[conformance ocpt_ocel] ocpt_id={} ocel_id={} fitness={} precision={} footprint={{control_fitness={} control_precision={} multiplicity_fitness={} multiplicity_precision={} identity_fitness={} identity_precision={} overall_fitness={} overall_precision={}}}",
+        "[conformance ocpt_ocel] ocpt_id={} ocel_id={} fitness={} precision={}{}",
         ocpt_id,
         ocel_id,
         fitness,
         precision,
-        footprint.control_fitness,
-        footprint.control_precision,
-        footprint.multiplicity_fitness,
-        footprint.multiplicity_precision,
-        footprint.identity_fitness,
-        footprint.identity_precision,
-        footprint.overall_fitness,
-        footprint.overall_precision
+        footprint_log_suffix(footprint.as_ref())
     );
 
-    Json(conformance_payload(fitness, precision, Some(&footprint))).into_response()
+    Json(conformance_payload(fitness, precision, footprint.as_ref())).into_response()
 }
 
 /// GET /v1/conformance/ocpt_1/{ocpt_id_1}/ocpt_2/{ocpt_id_2}
@@ -150,26 +204,21 @@ pub async fn get_conformance_ocpt_ocpt(
 
     let a_abs = OCLanguageAbstraction::create_from_oc_process_tree(&ocpt_1);
     let b_abs = OCLanguageAbstraction::create_from_oc_process_tree(&ocpt_2);
-    let (fitness, precision) = compute_fitness_precision(&a_abs, &b_abs);
-    let footprint = compute_footprint_conformance_ocpt_vs_ocpt(&ocpt_1, &ocpt_2);
+    let footprint = maybe_compute_footprint(&a_abs, &b_abs, || {
+        compute_footprint_conformance_ocpt_vs_ocpt(&ocpt_1, &ocpt_2)
+    });
+    let (fitness, precision) = select_top_level_scores(&a_abs, &b_abs, footprint.as_ref());
 
     println!(
-        "[conformance ocpt_ocpt] ocpt_id_1={} ocpt_id_2={} fitness={} precision={} footprint={{control_fitness={} control_precision={} multiplicity_fitness={} multiplicity_precision={} identity_fitness={} identity_precision={} overall_fitness={} overall_precision={}}}",
+        "[conformance ocpt_ocpt] ocpt_id_1={} ocpt_id_2={} fitness={} precision={}{}",
         ocpt_id_1,
         ocpt_id_2,
         fitness,
         precision,
-        footprint.control_fitness,
-        footprint.control_precision,
-        footprint.multiplicity_fitness,
-        footprint.multiplicity_precision,
-        footprint.identity_fitness,
-        footprint.identity_precision,
-        footprint.overall_fitness,
-        footprint.overall_precision
+        footprint_log_suffix(footprint.as_ref())
     );
 
-    Json(conformance_payload(fitness, precision, Some(&footprint))).into_response()
+    Json(conformance_payload(fitness, precision, footprint.as_ref())).into_response()
 }
 
 /// GET /v1/conformance/extended_ocpt/{extended_ocpt_id}/ocel/{ocel_id}
@@ -190,26 +239,21 @@ pub async fn get_conformance_extended_ocpt_ocel(
     let locel: IndexLinkedOCEL = IndexLinkedOCEL::from_ocel(ocel_struct);
     let model_abs = OCLanguageAbstraction::create_from_oc_process_tree(&extended_ocpt);
     let log_abs = OCLanguageAbstraction::create_from_ocel(&locel);
-    let (fitness, precision) = compute_fitness_precision(&log_abs, &model_abs);
-    let footprint = compute_footprint_conformance(&locel, &extended_ocpt);
+    let footprint = maybe_compute_footprint(&log_abs, &model_abs, || {
+        compute_footprint_conformance(&locel, &extended_ocpt)
+    });
+    let (fitness, precision) = select_top_level_scores(&log_abs, &model_abs, footprint.as_ref());
 
     println!(
-        "[conformance extended_ocpt_ocel] extended_ocpt_id={} ocel_id={} fitness={} precision={} footprint={{control_fitness={} control_precision={} multiplicity_fitness={} multiplicity_precision={} identity_fitness={} identity_precision={} overall_fitness={} overall_precision={}}}",
+        "[conformance extended_ocpt_ocel] extended_ocpt_id={} ocel_id={} fitness={} precision={}{}",
         extended_ocpt_id,
         ocel_id,
         fitness,
         precision,
-        footprint.control_fitness,
-        footprint.control_precision,
-        footprint.multiplicity_fitness,
-        footprint.multiplicity_precision,
-        footprint.identity_fitness,
-        footprint.identity_precision,
-        footprint.overall_fitness,
-        footprint.overall_precision
+        footprint_log_suffix(footprint.as_ref())
     );
 
-    Json(conformance_payload(fitness, precision, Some(&footprint))).into_response()
+    Json(conformance_payload(fitness, precision, footprint.as_ref())).into_response()
 }
 
 /// GET /v1/conformance/extended_ocpt_1/{extended_ocpt_id_1}/extended_ocpt_2/{extended_ocpt_id_2}
@@ -228,24 +272,19 @@ pub async fn get_conformance_extended_ocpt_extended_ocpt(
 
     let a_abs = OCLanguageAbstraction::create_from_oc_process_tree(&extended_ocpt_1);
     let b_abs = OCLanguageAbstraction::create_from_oc_process_tree(&extended_ocpt_2);
-    let (fitness, precision) = compute_fitness_precision(&a_abs, &b_abs);
-    let footprint = compute_footprint_conformance_ocpt_vs_ocpt(&extended_ocpt_1, &extended_ocpt_2);
+    let footprint = maybe_compute_footprint(&a_abs, &b_abs, || {
+        compute_footprint_conformance_ocpt_vs_ocpt(&extended_ocpt_1, &extended_ocpt_2)
+    });
+    let (fitness, precision) = select_top_level_scores(&a_abs, &b_abs, footprint.as_ref());
 
     println!(
-        "[conformance extended_ocpt_extended_ocpt] extended_ocpt_id_1={} extended_ocpt_id_2={} fitness={} precision={} footprint={{control_fitness={} control_precision={} multiplicity_fitness={} multiplicity_precision={} identity_fitness={} identity_precision={} overall_fitness={} overall_precision={}}}",
+        "[conformance extended_ocpt_extended_ocpt] extended_ocpt_id_1={} extended_ocpt_id_2={} fitness={} precision={}{}",
         extended_ocpt_id_1,
         extended_ocpt_id_2,
         fitness,
         precision,
-        footprint.control_fitness,
-        footprint.control_precision,
-        footprint.multiplicity_fitness,
-        footprint.multiplicity_precision,
-        footprint.identity_fitness,
-        footprint.identity_precision,
-        footprint.overall_fitness,
-        footprint.overall_precision
+        footprint_log_suffix(footprint.as_ref())
     );
 
-    Json(conformance_payload(fitness, precision, Some(&footprint))).into_response()
+    Json(conformance_payload(fitness, precision, footprint.as_ref())).into_response()
 }
