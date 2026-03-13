@@ -6,6 +6,7 @@ pub mod extended_ocpt;
 pub mod log_graphs;
 pub mod objects;
 pub mod ocim;
+pub mod ocpn;
 pub mod upload;
 use axum::Router;
 
@@ -20,6 +21,7 @@ pub fn router() -> Router {
         )
         .nest("/case_notion", case_notion::router())
         .nest("/log_graphs", log_graphs::router())
+        .nest("/ocpn", ocpn::router())
         .nest("/ocpt", df2::router())
         .nest("/ocpt", ocim::router())
         .nest("/ocpt", extended_ocpt::router())
