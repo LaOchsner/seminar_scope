@@ -1,60 +1,33 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { NodeProps } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
-import { handleMinerOutput } from '~/lib/explore/flowActions';
+import { useInputAsset, useMinerOutput } from '~/hooks/explore/useMinerAssets';
 import { useExtendOcptWithIdentity } from '~/services/queries';
 import { MinerNode } from '~/types/explore/nodes';
 
 const ExtendWithIdentityNode = memo<NodeProps<MinerNode>>((node) => {
     const queryClient = useQueryClient();
-    const [ocptFileId, setOcptFileId] = useState<string | null>(null);
-    const [ocelFileId, setOcelFileId] = useState<string | null>(null);
-    const [inputFileName, setInputFileName] = useState<string>('');
 
     const hasMinedAsset = useMemo(() => {
         return node.data.assets.some((asset) => asset.io === 'output');
     }, [node.data.assets]);
 
-    const ocelAsset = useMemo(
-        () => node.data.assets.find((a) => a.io === 'input' && (a.type === 'ocelAsset' || a.type === 'ocelFile')),
-        [node.data.assets]
-    );
-
-    useEffect(() => {
-        const ocptAsset = node.data.assets.find(
-            (a) => a.io === 'input' && (a.type === 'ocptAsset' || a.type === 'ocptFile')
-        );
-
-        setOcptFileId(ocptAsset?.id ?? null);
-        setOcelFileId(ocelAsset?.id ?? null);
-        setInputFileName(ocptAsset?.name ?? ocelAsset?.name ?? '');
-    }, [node.data.assets, ocelAsset]);
+    const ocptAsset = useInputAsset(node.data.assets, 'ocptAsset', 'ocptFile');
+    const ocelAsset = useInputAsset(node.data.assets, 'ocelAsset', 'ocelFile');
+    const inputFileName = ocptAsset?.name ?? ocelAsset?.name ?? '';
 
     const { isLoading, isFetching, data } = useExtendOcptWithIdentity(
         node.id,
-        ocptFileId,
-        ocelFileId,
+        ocptAsset?.id ?? null,
+        ocelAsset?.id ?? null,
         !hasMinedAsset
     );
 
-    useEffect(() => {
-        if (!data?.file_id || !inputFileName) return;
-
-        handleMinerOutput({
-            nodeId: node.id,
-            outputAssetId: data.file_id,
-            outputAssetType: 'identityOcptAsset',
-            outputNodeType: 'ocptFileNode',
-            inputFileName,
-        });
-    }, [data?.file_id, inputFileName, node.id]);
+    useMinerOutput(node.id, data?.file_id, inputFileName, 'identityOcptAsset', 'ocptFileNode');
 
     const handleReset = () => {
-        setOcptFileId(null);
-        setOcelFileId(null);
-        setInputFileName('');
         queryClient.removeQueries({ queryKey: ['extendOcptWithIdentity', node.id] });
     };
 

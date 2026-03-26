@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useMineOcpt } from '~/services/queries';
-import { handleMinerOutput } from '~/lib/explore/flowActions';
+import { useInputAsset, useMinerOutput } from '~/hooks/explore/useMinerAssets';
 import {
     BaseExploreNodeDropdownActionType,
     BaseExploreNodeDropdownOption,
@@ -17,35 +17,19 @@ import { MinerNode } from '~/types/explore/nodes';
 const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const queryClient = useQueryClient();
     const { updateNodeData } = useExploreFlowStore();
-    const [fileId, setFileId] = useState<null | string>(null);
-    const [fileName, setFileName] = useState<string>('');
     const [algorithm, setAlgorithm] = useState<string>(node.data.algorithm ?? 'DF2');
 
     const hasMinedAsset = useMemo(() => {
         return node.data.assets.some((asset) => asset.io === 'output');
     }, [node.data.assets]);
 
+    const inputAsset = useInputAsset(node.data.assets);
+    const fileId = inputAsset?.id ?? null;
+    const fileName = inputAsset?.name ?? '';
+
     const { isLoading, isFetching, data } = useMineOcpt(node.id, fileId, algorithm, !hasMinedAsset);
 
-    useEffect(() => {
-        const inputAsset = node.data.assets.find((asset) => asset.io === 'input');
-        if (!inputAsset) return;
-
-        setFileId(inputAsset.id);
-        setFileName(inputAsset.name);
-    }, [node.data.assets]);
-
-    useEffect(() => {
-        if (!data?.file_id || !fileName) return;
-
-        handleMinerOutput({
-            nodeId: node.id,
-            outputAssetId: data.file_id,
-            outputAssetType: 'ocptAsset',
-            outputNodeType: 'ocptFileNode',
-            inputFileName: fileName,
-        });
-    }, [data?.file_id, fileName, node.id]);
+    useMinerOutput(node.id, data?.file_id, fileName, 'ocptAsset', 'ocptFileNode');
 
     useEffect(() => {
         if (algorithm === node.data.algorithm) return;
@@ -114,8 +98,6 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
     );
 
     const handleReset = () => {
-        setFileId(null);
-        setFileName('');
         queryClient.removeQueries({ queryKey: ['mineOcpt', node.id] });
     };
 
