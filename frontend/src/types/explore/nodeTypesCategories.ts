@@ -14,6 +14,7 @@ export const minerNodeTypes = [
     'objectEventGraphMinerNode',
     'histogramMinerNode',
     'caseNotionMinerNode',
+    'identityExtendMinerNode',
 ] as const;
 export type ExploreMinerNodeType = (typeof minerNodeTypes)[number];
 

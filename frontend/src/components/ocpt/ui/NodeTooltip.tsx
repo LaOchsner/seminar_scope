@@ -195,7 +195,7 @@ const XYPopper = ({ x, y, children }: any) => {
             />
             <div ref={setPopperElement} className="xy-popper" style={styles.popper} {...attributes.popper}>
                 <div ref={setArrowElement} style={styles.arrow} {...attributes.arrow} className="xy-popper-arrow" />
-                <div className="xy-popper-content w-44">{children}</div>
+                <div className="xy-popper-content w-64">{children}</div>
             </div>
         </>
     );

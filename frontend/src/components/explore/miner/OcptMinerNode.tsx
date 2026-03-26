@@ -4,10 +4,9 @@ import type { NodeProps } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import { Pickaxe } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
-import { Button } from '~/components/ui/button';
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
 import { useExploreFlowStore } from '~/stores/exploreStore';
-import { useMineIdentityOcpt, useMineOcpt } from '~/services/queries';
+import { useMineOcpt } from '~/services/queries';
 import { handleMinerOutput } from '~/lib/explore/flowActions';
 import {
     BaseExploreNodeDropdownActionType,
@@ -21,22 +20,12 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const [fileId, setFileId] = useState<null | string>(null);
     const [fileName, setFileName] = useState<string>('');
     const [algorithm, setAlgorithm] = useState<string>(node.data.algorithm ?? 'DF2');
-    const [withIdentity, setWithIdentity] = useState<boolean>(node.data.withIdentity ?? false);
 
     const hasMinedAsset = useMemo(() => {
         return node.data.assets.some((asset) => asset.io === 'output');
     }, [node.data.assets]);
 
-    const { isLoading: regularLoading, isFetching: regularFetching, data: regularData } = useMineOcpt(
-        node.id, fileId, algorithm, !hasMinedAsset && !withIdentity
-    );
-    const { isLoading: identityLoading, isFetching: identityFetching, data: identityData } = useMineIdentityOcpt(
-        node.id, fileId, algorithm, !hasMinedAsset && withIdentity
-    );
-
-    const isLoading = regularLoading || identityLoading;
-    const isFetching = regularFetching || identityFetching;
-    const data = withIdentity ? identityData : regularData;
+    const { isLoading, isFetching, data } = useMineOcpt(node.id, fileId, algorithm, !hasMinedAsset);
 
     useEffect(() => {
         const inputAsset = node.data.assets.find((asset) => asset.io === 'input');
@@ -52,11 +41,11 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
         handleMinerOutput({
             nodeId: node.id,
             outputAssetId: data.file_id,
-            outputAssetType: withIdentity ? 'identityOcptAsset' : 'ocptAsset',
+            outputAssetType: 'ocptAsset',
             outputNodeType: 'ocptFileNode',
             inputFileName: fileName,
         });
-    }, [data?.file_id, fileName, node.id, withIdentity]);
+    }, [data?.file_id, fileName, node.id]);
 
     useEffect(() => {
         if (algorithm === node.data.algorithm) return;
@@ -69,18 +58,6 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
             };
         });
     }, [algorithm, node.data.algorithm, node.id, updateNodeData]);
-
-    useEffect(() => {
-        if (withIdentity === node.data.withIdentity) return;
-
-        updateNodeData(node.id, (prev) => {
-            const newAssets = prev.assets.filter((asset) => asset.io !== 'output');
-            return {
-                assets: newAssets,
-                withIdentity: withIdentity,
-            };
-        });
-    }, [withIdentity, node.data.withIdentity, node.id, updateNodeData]);
 
     const handleExportJson = () => {
         if (!data) {
@@ -133,15 +110,6 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
                     </SelectItem>
                 </SelectContent>
             </Select>
-            <Button
-                variant="outline"
-                size="sm"
-                className={`h-6 px-2 text-xs font-semibold rounded-md ${withIdentity ? 'bg-amber-100 text-amber-700 border-amber-400' : 'bg-gray-100 text-gray-500 border-gray-200'}`}
-                onClick={() => setWithIdentity((prev) => !prev)}
-                title="Toggle identity relations"
-            >
-                Identity
-            </Button>
         </div>
     );
 
@@ -149,7 +117,6 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
         setFileId(null);
         setFileName('');
         queryClient.removeQueries({ queryKey: ['mineOcpt', node.id] });
-        queryClient.removeQueries({ queryKey: ['mineIdentityOcpt', node.id] });
     };
 
     return (
