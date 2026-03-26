@@ -8,7 +8,7 @@ export type BaseExploreNodeDropdownActionType =
     | 'exportJson'
     | 'viewObjectEventGraph';
 
-export type HandleId = 'target' | 'source' | 'conformanceTarget';
+export type HandleId = 'target' | 'source' | 'conformanceTarget' | 'ocptTarget' | 'ocelTarget';
 
 export interface BaseExploreNodeHandleOption {
     id: HandleId;

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
+    extendOcptWithIdentity,
     getAdvancedCN,
     getCaseNotions,
     getConformanceOcptOcel,
@@ -122,6 +123,20 @@ export const useGetLogGraphs = (ocelFileId: string) => {
         queryKey: ['getLogGraphs', ocelFileId],
         queryFn: () => getLogGraphs(ocelFileId),
         enabled: ocelFileId.length > 0,
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useExtendOcptWithIdentity = (
+    nodeId: string,
+    ocptFileId: string | null,
+    ocelFileId: string | null,
+    shouldFetch: boolean
+) => {
+    return useQuery({
+        queryKey: ['extendOcptWithIdentity', nodeId, ocptFileId, ocelFileId],
+        queryFn: () => extendOcptWithIdentity(ocptFileId!, ocelFileId!),
+        enabled: Boolean(ocptFileId) && Boolean(ocelFileId) && shouldFetch,
         refetchOnWindowFocus: false,
     });
 };

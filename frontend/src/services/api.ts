@@ -55,6 +55,11 @@ export const mineIdentityOcpt = async (ocelFileId: string, baseAlgorithm: string
     return { file_id: extendedResponse.data.file_id, ocpt: extendedResponse.data.extended_ocpt };
 };
 
+export const extendOcptWithIdentity = async (ocptFileId: string, ocelFileId: string): Promise<GetOcptResponse> => {
+    const response = await api.get(`v1/ocpt/extend/${ocptFileId}?ocel_id=${ocelFileId}`);
+    return { file_id: response.data.file_id, ocpt: response.data.extended_ocpt };
+};
+
 export const getOcel = async (fileId: string) => {
     const response = await api.get(`/v1/objects/ocel/${fileId}`);
     return response.data;
