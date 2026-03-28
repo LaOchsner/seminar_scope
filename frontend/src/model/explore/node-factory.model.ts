@@ -1,27 +1,53 @@
 import type { XYPosition } from '@xyflow/react';
-import { ExploreNode } from '~/types/explore/nodes';
-import {
+import { nodeRegistry } from '~/lib/explore/nodeRegistry';
+import type { FileExploreNodeData } from '~/types/explore/nodeData/fileNodeData';
+import type { MinerExploreNodeData } from '~/types/explore/nodeData/minerNodeData';
+import type { ExploreNode } from '~/types/explore/nodes';
+import type {
     ExploreFileNodeType,
     ExploreMinerNodeType,
     ExploreNodeType,
-    ExploreVisualizationNodeType,
-    getNodeCategory,
+    NodeId,
 } from '~/types/explore/nodeTypesCategories';
-import { FileExploreNode } from '~/model/explore/file-node.model';
-import { MinerExploreNode } from '~/model/explore/miner-node.model';
-import { VisualizationExploreNode } from '~/model/explore/visualization-node.model';
+import { assetTypes } from '~/types/files.types';
 
-export class NodeFactory {
-    static createNode(position: XYPosition, nodeType: ExploreNodeType, isDownStream: boolean = false): ExploreNode {
-        const nodeCategory = getNodeCategory[nodeType];
+let idCounter = 0;
+const generateId = (nodeType: ExploreNodeType): NodeId => `${nodeType}_${idCounter++}`;
 
-        switch (nodeCategory) {
-            case 'file':
-                return new FileExploreNode(position, nodeType as ExploreFileNodeType, isDownStream);
-            case 'visualization':
-                return new VisualizationExploreNode(position, nodeType as ExploreVisualizationNodeType);
-            case 'miner':
-                return new MinerExploreNode(position, nodeType as ExploreMinerNodeType);
-        }
+export const createNode = (
+    position: XYPosition,
+    nodeType: ExploreNodeType,
+    isDownstream: boolean = false
+): ExploreNode => {
+    const entry = nodeRegistry[nodeType as keyof typeof nodeRegistry];
+    const category = entry?.category ?? 'miner';
+    const allowedAssetTypes = entry?.allowedAssetTypes ?? assetTypes;
+    const id = generateId(nodeType);
+    const base = { id, type: nodeType, position };
+
+    if (category === 'file') {
+        const data: FileExploreNodeData & { nodeType: ExploreFileNodeType; nodeCategory: 'file' } = {
+            nodeType: nodeType as ExploreFileNodeType,
+            nodeCategory: 'file',
+            assets: [],
+            allowedAssetTypes,
+            isDownstream,
+            colorMap: () => '',
+        };
+        return { ...base, data };
     }
+
+    const data: MinerExploreNodeData & { nodeType: ExploreMinerNodeType; nodeCategory: 'miner' } = {
+        nodeType: nodeType as ExploreMinerNodeType,
+        nodeCategory: 'miner',
+        assets: [],
+        allowedAssetTypes,
+        colorMap: () => '',
+    };
+    return { ...base, data };
+};
+
+/** @deprecated use createNode directly */
+export class NodeFactory {
+    static createNode = createNode;
 }
