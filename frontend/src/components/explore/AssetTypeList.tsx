@@ -15,9 +15,9 @@ const AssetTypeList = ({ types }: AssetTypeListProps) => {
     return (
         <>
             {uniqueVisuals.map(({ label, icon: Icon, color }) => (
-                <div key={label} className="flex items-center gap-1.5">
+                <div key={label} className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-dashed border-gray-300">
                     <Icon className={`h-3 w-3 ${color}`} />
-                    <span className="text-xs text-gray-600">{label}</span>
+                    <span className="text-xs text-gray-500">{label}</span>
                 </div>
             ))}
         </>
