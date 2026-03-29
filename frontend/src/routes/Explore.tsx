@@ -1,4 +1,4 @@
-import { DragEvent, useCallback, useMemo } from 'react';
+import { DragEvent, useCallback } from 'react';
 import { Background, Controls, NodeProps, ReactFlow, ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
@@ -20,6 +20,7 @@ import { useNodeOperations } from '~/hooks/explore/useNodeOperations';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore } from '~/stores/store';
 import { nodeRegistry } from '~/lib/explore/nodeRegistry';
+import { logger } from '~/lib/logger';
 
 const nodeTypes = {
     ocptFileNode: OcptFileNode,
@@ -43,10 +44,7 @@ const Explore: React.FC = () => {
 
     const handleDrop = useCallback((event: DragEvent<HTMLElement>) => onDrop(event, type), [onDrop, type]);
 
-    useMemo(() => {
-        console.log(nodes);
-        console.log(nodes);
-    }, [nodes]);
+    logger.debug('nodes updated', nodes);
 
     return (
         <>
