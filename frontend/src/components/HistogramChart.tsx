@@ -261,8 +261,17 @@ export const HistogramChart: React.FC<Props> = ({
         </svg>
     );
     const SelectionDisplay = (
-        <div className="hv-selection" style={{ marginTop: 6, fontSize: expanded ? 12 : 13 }}>
-            Selected: [
+        <div
+            className="hv-selection"
+            style={{
+                marginTop: 6,
+                fontSize: expanded ? 12 : 13,
+                display: 'flex', // Use flexbox
+                flexWrap: 'wrap', // Allow wrapping to new lines
+                gap: 2, // Add spacing between items for better readability
+            }}
+        >
+            <span>Selected: [</span>
             {selectedIdx.map((i, idx) => (
                 <span
                     key={i}
@@ -271,13 +280,14 @@ export const HistogramChart: React.FC<Props> = ({
                         cursor: disabled ? 'not-allowed' : 'pointer',
                         color: disabled ? '#6b7280' : selectedBinColor,
                         fontWeight: 500,
+                        marginRight: idx !== selectedIdx.length - 1 ? '4px' : '0', // Add spacing after each bin
                     }}
                 >
                     {bins[i]?.x ?? '?'}
-                    {idx !== selectedIdx.length - 1 && ', '}
+                    {idx !== selectedIdx.length - 1 && ','}
                 </span>
             ))}
-            ]
+            <span>]</span>
         </div>
     );
     return (

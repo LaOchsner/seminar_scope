@@ -35,8 +35,92 @@ export function generateColorMap(keys: string[]): Record<string, string> {
     });
     return map;
 }
+
 /**
- * Copies a color map to all DOWNSTREAM nodes recursively (following outgoing edges).
+ * Called after a node initializes or updates its colorMap.
+ * Scans ALL other nodes in the store — for every overlapping object type key,
+ * picks the color from the source node and writes it to the other node
+ * (and vice-versa: pulls colors the source doesn't have yet).
+ *
+ * This is name-based matching. If OCEL has {order: red, item: blue}
+ * and OCPT has {order: green, item: yellow}, after sync both will have
+ * the source node's colors for the overlapping keys.
+ */
+export const syncMatchingColorsGlobally = (sourceNodeId: string) => {
+    const { nodes, updateNodeData } = useExploreFlowStore.getState();
+
+    const sourceNode = nodes.find((n) => n.id === sourceNodeId);
+    if (!sourceNode) return;
+
+    const sourceMap = (sourceNode.data as any)?.colorMap as Record<string, string> | undefined;
+    if (!sourceMap || typeof sourceMap !== 'object' || typeof sourceMap === 'function') return;
+
+    const sourceKeys = Object.keys(sourceMap);
+    if (sourceKeys.length === 0) return;
+
+    // Collect colors we should pull FROM other nodes (keys they have that we also have)
+    const colorsToAdopt: Record<string, string> = {};
+    let needsAdoption = false;
+
+    nodes.forEach((otherNode) => {
+        if (otherNode.id === sourceNodeId) return;
+
+        const otherMap = (otherNode.data as any)?.colorMap as Record<string, string> | undefined;
+        if (!otherMap || typeof otherMap !== 'object' || typeof otherMap === 'function') return;
+
+        const otherKeys = Object.keys(otherMap);
+        if (otherKeys.length === 0) return;
+
+        // Find overlapping keys
+        const overlapping = sourceKeys.filter((k) => k in otherMap);
+        if (overlapping.length === 0) return;
+
+        // Strategy: the node that already existed (the other node) wins —
+        // the newly initialized node adopts the existing colors.
+        // This means: pull from otherNode into sourceNode.
+        overlapping.forEach((key) => {
+            if (sourceMap[key] !== otherMap[key]) {
+                colorsToAdopt[key] = otherMap[key];
+                needsAdoption = true;
+            }
+        });
+
+        console.log(
+            `[ColorSync] Found ${overlapping.length} matching keys between ${sourceNodeId} and ${otherNode.id}:`,
+            overlapping
+        );
+    });
+
+    // Update the source node with adopted colors
+    if (needsAdoption) {
+        console.log(`[ColorSync] Node ${sourceNodeId} adopting colors:`, colorsToAdopt);
+        updateNodeData(sourceNodeId, (prev: any) => ({
+            colorMap: { ...(prev.colorMap || {}), ...colorsToAdopt },
+        }));
+    }
+};
+
+/**
+ * Updates a single color key on EVERY node in the store that has that key
+ * in its colorMap. Name-based matching — no edge traversal needed.
+ */
+export const updateNodeColorAndPropagate = (nodeId: string, key: string, color: string) => {
+    const { nodes, updateNodeData } = useExploreFlowStore.getState();
+    nodes.forEach((node) => {
+        const nodeColorMap = (node.data as any)?.colorMap;
+        if (nodeColorMap && typeof nodeColorMap === 'object' && typeof nodeColorMap !== 'function') {
+            if (key in nodeColorMap) {
+                console.log(`[Color Sync] Updating "${key}" on node ${node.id}`);
+                updateNodeData(node.id, (prev: any) => ({
+                    colorMap: { ...(prev.colorMap || {}), [key]: color },
+                }));
+            }
+        }
+    });
+};
+
+/**
+ * Copies a color map to all DOWNSTREAM nodes recursively.
  */
 export const propagateMapDownstream = (sourceNodeId: string, newMap: Record<string, string>) => {
     const state = useExploreFlowStore.getState();
@@ -61,8 +145,9 @@ export const propagateMapDownstream = (sourceNodeId: string, newMap: Record<stri
     };
     propagate(sourceNodeId);
 };
+
 /**
- * Copies a color map to all UPSTREAM nodes recursively (following incoming edges).
+ * Copies a color map UPSTREAM recursively.
  */
 export const propagateMapUpstream = (sourceNodeId: string, newMap: Record<string, string>) => {
     const state = useExploreFlowStore.getState();
@@ -87,20 +172,7 @@ export const propagateMapUpstream = (sourceNodeId: string, newMap: Record<string
     };
     propagate(sourceNodeId);
 };
-/**
- * Updates a single color on a node and propagates BOTH upstream and downstream.
- * This ensures that changing a color on the filtered OCEL updates the original
- * OCEL, the miner nodes, and everything else in the pipeline.
- */
-export const updateNodeColorAndPropagate = (nodeId: string, key: string, color: string) => {
-    const { updateNodeData } = useExploreFlowStore.getState();
-    updateNodeData(nodeId, (prev: any) => ({
-        colorMap: { ...(prev.colorMap || {}), [key]: color },
-    }));
-    const delta = { [key]: color };
-    propagateMapDownstream(nodeId, delta);
-    propagateMapUpstream(nodeId, delta);
-};
+
 export const handleConnect = (connection: Connection) => {
     const { source, target } = connection;
     const { updateNodeData, onConnect, getNode } = useExploreFlowStore.getState();
@@ -134,6 +206,7 @@ export const handleConnect = (connection: Connection) => {
         });
     }
 };
+
 export const spawnDownstreamNode = (sourceNodeId: string, nodeType: ExploreNodeType) => {
     const { nodes, addNode } = useExploreFlowStore.getState();
     const sourceNode = nodes.find((n) => n.id === sourceNodeId);
@@ -143,6 +216,7 @@ export const spawnDownstreamNode = (sourceNodeId: string, nodeType: ExploreNodeT
     addNode(newNode);
     handleConnect({ source: sourceNode.id, target: newNode.id, sourceHandle: 'source', targetHandle: 'target' });
 };
+
 export interface HandleMinerOutputParams {
     nodeId: string;
     outputAssetId: string | null | undefined;
@@ -150,6 +224,7 @@ export interface HandleMinerOutputParams {
     outputNodeType: ExploreNodeType;
     inputFileName: string;
 }
+
 export const handleMinerOutput = ({
     nodeId,
     outputAssetId,
@@ -158,9 +233,11 @@ export const handleMinerOutput = ({
     inputFileName,
 }: HandleMinerOutputParams) => {
     if (!outputAssetId || !inputFileName) return;
-    const { updateNodeData, getNode, edges, nodes } = useExploreFlowStore.getState();
+
+    const { updateNodeData, getNode } = useExploreFlowStore.getState();
     const node = getNode(nodeId);
     if (!node) return;
+
     const newAsset: BaseExploreNodeAsset = {
         id: outputAssetId,
         io: 'output',
@@ -168,17 +245,22 @@ export const handleMinerOutput = ({
         type: outputAssetType,
         name: inputFileName,
     };
+
     updateNodeData(nodeId, (prev) => {
         const currentAssets = prev.assets.filter((a) => a.io !== 'output');
         return { assets: [...currentAssets, newAsset] };
     });
-    const existingEdge = edges.find((edge) => edge.source === nodeId);
+
+    const { edges: freshEdges, nodes: freshNodes } = useExploreFlowStore.getState();
+    const freshNode = freshNodes.find((n) => n.id === nodeId);
+
+    const existingEdge = freshEdges.find((edge) => edge.source === nodeId);
     if (existingEdge) {
-        const targetNode = nodes.find((n) => n.id === existingEdge.target);
+        const targetNode = freshNodes.find((n) => n.id === existingEdge.target);
         if (targetNode && targetNode.type === outputNodeType) {
             updateNodeData(targetNode.id, (prev: any) => {
                 const otherAssets = prev.assets.filter((a: any) => a.io !== 'output');
-                const sourceColorMap = (node.data as any).colorMap;
+                const sourceColorMap = (freshNode?.data as any)?.colorMap;
                 const existingColorMap = prev.colorMap || {};
                 const nextColorMap = sourceColorMap ? { ...existingColorMap, ...sourceColorMap } : existingColorMap;
                 return {
@@ -186,14 +268,16 @@ export const handleMinerOutput = ({
                     colorMap: nextColorMap,
                 };
             });
-            if ((node.data as any).colorMap) {
-                propagateMapDownstream(nodeId, (node.data as any).colorMap);
+            if ((freshNode?.data as any)?.colorMap) {
+                propagateMapDownstream(nodeId, (freshNode!.data as any).colorMap);
             }
             return;
         }
     }
+
     spawnDownstreamNode(nodeId, outputNodeType);
 };
+
 export const pullUpstreamData = (targetNodeId: string) => {
     const { edges, getNode, updateNodeData } = useExploreFlowStore.getState();
     const targetNode = getNode(targetNodeId);

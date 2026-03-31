@@ -8,7 +8,7 @@ import BaseFileNode from '~/components/explore/file/BaseFileNode';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useGetOcelObjectTypes } from '~/services/queries';
 import { generateColorMap } from '~/lib/colors';
-import { propagateMapDownstream } from '~/lib/explore/flowActions';
+import { propagateMapDownstream, syncMatchingColorsGlobally } from '~/lib/explore/flowActions';
 import { FileExploreNodeData } from '~/types/explore/nodeData/fileNodeData';
 import { FileNode } from '~/types/explore/nodes';
 
@@ -18,16 +18,13 @@ const OcelFileNode = memo<NodeProps<FileNode>>((props) => {
     const hasFile = nodeData.assets.length > 0;
     const { updateNodeData } = useExploreFlowStore();
 
-    // Get the OCEL file id from the output asset
     const ocelFileId = useMemo(() => {
         const ocelAsset = nodeData.assets.find((a) => a.io === 'output' && a.type === 'ocelFile');
         return ocelAsset?.id ?? null;
     }, [nodeData.assets]);
 
-    // Fetch object types from the API as soon as a file is selected
     const { data: objectTypesData } = useGetOcelObjectTypes(ocelFileId);
 
-    // Read the current colorMap reactively
     const colorMap = useExploreFlowStore((s) => {
         const node = s.nodes.find((n) => n.id === id);
         const raw = (node?.data as FileExploreNodeData)?.colorMap;
@@ -37,17 +34,18 @@ const OcelFileNode = memo<NodeProps<FileNode>>((props) => {
         return undefined;
     });
 
-    // When object types arrive from API and no valid colorMap exists yet, generate one
+    // Initialize colorMap when object types arrive from API
     useEffect(() => {
         if (objectTypesData && objectTypesData.object_types && objectTypesData.object_types.length > 0) {
             if (!colorMap) {
-                // object_types is ObjectType[] where each has a .name property
                 const typeNames = objectTypesData.object_types.map((ot) => ot.name);
                 const newColorMap = generateColorMap(typeNames);
                 updateNodeData(id, { colorMap: newColorMap });
 
-                // Also propagate downstream immediately
+                // After writing our colorMap, sync with any other node that
+                // shares the same object type names (e.g. an OCPT node)
                 setTimeout(() => {
+                    syncMatchingColorsGlobally(id);
                     propagateMapDownstream(id, newColorMap);
                 }, 10);
             }
