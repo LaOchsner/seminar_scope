@@ -1,6 +1,8 @@
+import { memo, useEffect, useMemo, useState } from 'react';
 import { scaleOrdinal } from '@visx/scale';
 import type { NodeProps } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
+import { schemeSet1 } from 'd3-scale-chromatic';
 import { ChevronDown, Loader2, ShieldCheck, TreePine } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '~/components/ui/button';
@@ -15,12 +17,12 @@ import BaseFileNode from '~/components/explore/file/BaseFileNode';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useGetConformanceOcptOcel, useGetConformanceOcptOcpt, useGetOcpt } from '~/services/queries';
 import { generateColorMap, getDeterministicColor } from '~/lib/colors';
-import { syncMatchingColorsGlobally } from '~/lib/explore/flowActions';
 import { FileExploreNodeData } from '~/types/explore/nodeData/fileNodeData';
 import { FileNode } from '~/types/explore/nodes';
 
 const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
     const [fileId, setFileId] = useState<null | string>(null);
+    const { data } = useGetOcpt(fileId, true);
     const navigate = useNavigate();
     const { updateNodeData, initializeDataState } = useExploreFlowStore();
     const { id, data: nodeData } = props;
@@ -40,6 +42,7 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
         return undefined;
     });
 
+    // The conformance input can be either an OCEL file or another OCPT file
     const ocelFileId = useMemo(() => {
         const ocelAsset = assets.find((a) => a.io === 'input' && a.type === 'ocelFile');
         return ocelAsset?.id ?? null;
@@ -64,22 +67,35 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
     const conformanceResult = conformanceOcelResult ?? conformanceOcptResult;
     const isConformanceLoading = isOcelLoading || isOcptLoading;
 
+    // Store conformance result in node data for access from OcptViewer/Sidebar
     useEffect(() => {
         if (conformanceResult) {
             updateNodeData(id, { conformanceData: conformanceResult });
         }
     }, [conformanceResult, id, updateNodeData]);
 
+    // Clear conformance data when conformance input disconnected
     useEffect(() => {
         if (!conformanceMode && conformanceData) {
             updateNodeData(id, { conformanceData: undefined });
         }
     }, [conformanceMode, conformanceData, id, updateNodeData]);
 
-    // ──────────────────────────────────────────────────────────────
-    // 1. Initialize colorMap FIRST (from deterministic colors).
-    //    Then sync with any other node sharing the same object type names.
-    // ─────────────────��────────────────────────────────────────────
+    useEffect(() => {
+        if (data && viewState.colorScale.domain.length === 0) {
+            const initialViewState = {
+                filteredObjectTypes: [],
+                colorScale: {
+                    domain: data.ocpt.ots,
+                    range: schemeSet1.slice(0, data.ocpt.ots.length),
+                },
+            };
+            updateNodeData(id, { viewState: initialViewState });
+        }
+    }, [data, viewState, id, updateNodeData]);
+
+    // Initialize colorMap when OCPT data loads, if no valid colorMap exists yet.
+    // This mirrors what FileSelectionDialog does for OCEL files on upload.
     useEffect(() => {
         if (data && data.ocpt.ots && data.ocpt.ots.length > 0) {
             const currentColorMap = nodeData.colorMap;
@@ -91,49 +107,28 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
             if (!hasValidColorMap) {
                 const newColorMap = generateColorMap(data.ocpt.ots);
                 updateNodeData(id, { colorMap: newColorMap });
-
-                setTimeout(() => {
-                    syncMatchingColorsGlobally(id);
-                }, 10);
             }
         }
     }, [data, id, updateNodeData, nodeData.colorMap]);
 
-    // ──────────────────────────────────────────────────────────────
-    // 2. Build viewState.colorScale FROM the colorMap (not schemeSet1).
-    //    This runs AFTER the colorMap effect above, so colorMap is available.
-    //    It rebuilds whenever colorMap changes, keeping colors in sync.
-    // ──────────────────────────────────────────────────────────────
-    useEffect(() => {
-        if (data && data.ocpt.ots && data.ocpt.ots.length > 0 && colorMap) {
-            const domain = data.ocpt.ots;
-            const range = domain.map((ot) => colorMap[ot] || getDeterministicColor(ot));
+    const visualize = (filter?: string) => {
+        navigate(`/data/pipeline/explore/ocpt/${id}${filter ? `?filter=${filter}` : ''}`);
+    };
 
-            // Check if the current viewState range already matches — avoid infinite loops
-            const currentRange = viewState.colorScale.range;
-            const rangeChanged = currentRange.length !== range.length || range.some((c, i) => c !== currentRange[i]);
+    const ocptAsset = useMemo(
+        () => assets.find((a) => a.io === 'output' && (a.type === 'ocptFile' || a.type === 'ocptAsset')),
+        [assets]
+    );
 
-            if (viewState.colorScale.domain.length === 0 || rangeChanged) {
-                updateNodeData(id, {
-                    viewState: {
-                        ...viewState,
-                        filteredObjectTypes: viewState.filteredObjectTypes || [],
-                        colorScale: { domain, range },
-                    },
-                });
-            }
-        }
-    }, [data, colorMap, id, updateNodeData]);
+    useMemo(() => {
+        setFileId(ocptAsset?.id ?? null);
+    }, [ocptAsset]);
 
     useEffect(() => {
         if (data) {
             updateNodeData(id, { processedData: data.ocpt });
         }
     }, [data, id, updateNodeData]);
-
-    const visualize = (filter?: string) => {
-        navigate(`/data/pipeline/explore/ocpt/${id}${filter ? `?filter=${filter}` : ''}`);
-    };
 
     const handleObjectTypeToggle = (objectType: string) => {
         if (viewState) {
@@ -144,7 +139,7 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
         }
     };
 
-    // Build colorScale from colorMap — single source of truth
+    // Build colorScale: if colorMap exists use it, otherwise fall back to viewState.colorScale.range
     const colorScale = useMemo(() => {
         if (colorMap && viewState.colorScale.domain.length > 0) {
             const domain = viewState.colorScale.domain;
