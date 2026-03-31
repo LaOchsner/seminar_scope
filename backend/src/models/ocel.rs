@@ -85,7 +85,7 @@ impl OCELUtils for OCEL {
 
         let directly_follows_graph: OCDirectlyFollowsGraph<'_> =
             OCDirectlyFollowsGraph::create_from_ocel(&locel);
-            
+
         // Sets up the result FxHashMaps
         let mut start_ev_type_per_ob_type: FxHashMap<String, FxHashSet<String>> =
             FxHashMap::default();

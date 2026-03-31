@@ -247,7 +247,7 @@ fn wrap_with_identities(mut node: OCPTNode, identities: &[IdentityRelationFE]) -
         let rel_backend = IdentityRelation {
             left: rel.left.clone(),
             right: rel.right.clone(),
-            kind: fe_identity_kind_to_backend(&rel.kind),
+            kind: fe_identity_to_backend(rel)?,
         };
         node = OCPTNode::Operator(OCPTOperator::new_identity(rel_backend, node));
     }
@@ -262,10 +262,12 @@ fn split_identity_chain(node: &OCPTNode) -> (Vec<IdentityRelationFE>, &OCPTNode)
         match current {
             OCPTNode::Operator(op) => match &op.operator_type {
                 OCPTOperatorType::IdentityRelation(rel) => {
+                    let (kind, batch_size) = backend_identity_to_fe_parts(&rel.kind);
                     identities.push(IdentityRelationFE {
                         left: rel.left.clone(),
                         right: rel.right.clone(),
-                        kind: backend_identity_kind_to_fe(&rel.kind),
+                        kind,
+                        batch_size,
                     });
                     if let Some(child) = op.children.first() {
                         current = child;
@@ -282,21 +284,43 @@ fn split_identity_chain(node: &OCPTNode) -> (Vec<IdentityRelationFE>, &OCPTNode)
     (identities, current)
 }
 
-fn fe_identity_kind_to_backend(kind: &IdentityRelationKindFE) -> IdentityRelationKind {
-    match kind {
+fn fe_identity_to_backend(rel: &IdentityRelationFE) -> Result<IdentityRelationKind> {
+    let kind = match rel.kind {
         IdentityRelationKindFE::Sync => IdentityRelationKind::Sync,
+        IdentityRelationKindFE::SubsetSync => IdentityRelationKind::SubsetSync,
+        IdentityRelationKindFE::SubsetSyncPartition => IdentityRelationKind::SubsetSyncPartition,
+        IdentityRelationKindFE::SubsetSyncOverlap => IdentityRelationKind::SubsetSyncOverlap,
         IdentityRelationKindFE::ImpConcurrent => IdentityRelationKind::ImpConcurrent,
         IdentityRelationKindFE::ImpOrdered => IdentityRelationKind::ImpOrdered,
-    }
+        IdentityRelationKindFE::ImpBatch => {
+            let k = rel
+                .batch_size
+                .ok_or_else(|| anyhow!("identity relation kind 'impBatch' requires batch_size"))?;
+            IdentityRelationKind::ImpBatch(k)
+        }
+        IdentityRelationKindFE::ObjectSplit => IdentityRelationKind::ObjectSplit,
+        IdentityRelationKindFE::ObjectMerge => IdentityRelationKind::ObjectMerge,
+    };
+    Ok(kind)
 }
 
-fn backend_identity_kind_to_fe(kind: &IdentityRelationKind) -> IdentityRelationKindFE {
+fn backend_identity_to_fe_parts(
+    kind: &IdentityRelationKind,
+) -> (IdentityRelationKindFE, Option<u32>) {
     match kind {
-        IdentityRelationKind::Sync => IdentityRelationKindFE::Sync,
-        IdentityRelationKind::ImpConcurrent => IdentityRelationKindFE::ImpConcurrent,
-        IdentityRelationKind::ImpOrdered => IdentityRelationKindFE::ImpOrdered,
-        // Legacy FE supports only three identity kinds; collapse newer BE variants.
-        _ => IdentityRelationKindFE::Sync,
+        IdentityRelationKind::Sync => (IdentityRelationKindFE::Sync, None),
+        IdentityRelationKind::SubsetSync => (IdentityRelationKindFE::SubsetSync, None),
+        IdentityRelationKind::SubsetSyncPartition => {
+            (IdentityRelationKindFE::SubsetSyncPartition, None)
+        }
+        IdentityRelationKind::SubsetSyncOverlap => {
+            (IdentityRelationKindFE::SubsetSyncOverlap, None)
+        }
+        IdentityRelationKind::ImpConcurrent => (IdentityRelationKindFE::ImpConcurrent, None),
+        IdentityRelationKind::ImpOrdered => (IdentityRelationKindFE::ImpOrdered, None),
+        IdentityRelationKind::ImpBatch(k) => (IdentityRelationKindFE::ImpBatch, Some(*k)),
+        IdentityRelationKind::ObjectSplit => (IdentityRelationKindFE::ObjectSplit, None),
+        IdentityRelationKind::ObjectMerge => (IdentityRelationKindFE::ObjectMerge, None),
     }
 }
 
@@ -425,6 +449,7 @@ mod tests {
                         left: vec!["orders".into()],
                         right: vec!["packages".into()],
                         kind: IdentityRelationKindFE::Sync,
+                        batch_size: None,
                     }]),
                 }),
                 children: vec![HierarchyNode::Activity {
@@ -472,6 +497,88 @@ mod tests {
                     value: ActivityValue {
                         isSilent: Some(false),
                         activity: "Pay".to_string(),
+                        ots: vec![],
+                    },
+                }],
+            },
+        };
+
+        assert!(frontend_to_backend(fe).is_err());
+    }
+
+    #[test]
+    fn test_identity_imp_batch_roundtrip() {
+        use crate::core::struct_converters::ocpt_frontend_backend::{
+            backend_to_frontend, frontend_to_backend,
+        };
+        use crate::models::ocpt::{
+            ActivityValue, HierarchyNode, IdentityRelationFE, IdentityRelationKindFE, OcptFE,
+            OperatorFE, OperatorValue, OperatorValueData,
+        };
+
+        let fe = OcptFE {
+            ots: vec!["orders".into(), "packages".into()],
+            hierarchy: HierarchyNode::Operator {
+                value: OperatorValue::Operator(OperatorValueData {
+                    operator: OperatorFE::Sequence,
+                    identity: Some(vec![IdentityRelationFE {
+                        left: vec!["orders".into()],
+                        right: vec!["packages".into()],
+                        kind: IdentityRelationKindFE::ImpBatch,
+                        batch_size: Some(3),
+                    }]),
+                }),
+                children: vec![HierarchyNode::Activity {
+                    value: ActivityValue {
+                        isSilent: Some(false),
+                        activity: "Pack".to_string(),
+                        ots: vec![],
+                    },
+                }],
+            },
+        };
+
+        let backend = frontend_to_backend(fe).expect("frontend->backend with impBatch failed");
+        let roundtrip = backend_to_frontend(&backend);
+
+        match roundtrip.hierarchy {
+            HierarchyNode::Operator { value, .. } => match value {
+                OperatorValue::Operator(OperatorValueData { identity, .. }) => {
+                    let list = identity.expect("identity list missing after roundtrip");
+                    assert_eq!(list.len(), 1);
+                    assert!(matches!(list[0].kind, IdentityRelationKindFE::ImpBatch));
+                    assert_eq!(list[0].batch_size, Some(3));
+                }
+                other => panic!("expected identity operator, got {:?}", other),
+            },
+            _ => panic!("expected identity operator at root"),
+        }
+    }
+
+    #[test]
+    fn test_identity_imp_batch_requires_batch_size() {
+        use crate::core::struct_converters::ocpt_frontend_backend::frontend_to_backend;
+        use crate::models::ocpt::{
+            ActivityValue, HierarchyNode, IdentityRelationFE, IdentityRelationKindFE, OcptFE,
+            OperatorFE, OperatorValue, OperatorValueData,
+        };
+
+        let fe = OcptFE {
+            ots: vec!["orders".into(), "packages".into()],
+            hierarchy: HierarchyNode::Operator {
+                value: OperatorValue::Operator(OperatorValueData {
+                    operator: OperatorFE::Sequence,
+                    identity: Some(vec![IdentityRelationFE {
+                        left: vec!["orders".into()],
+                        right: vec!["packages".into()],
+                        kind: IdentityRelationKindFE::ImpBatch,
+                        batch_size: None,
+                    }]),
+                }),
+                children: vec![HierarchyNode::Activity {
+                    value: ActivityValue {
+                        isSilent: Some(false),
+                        activity: "Pack".to_string(),
                         ots: vec![],
                     },
                 }],

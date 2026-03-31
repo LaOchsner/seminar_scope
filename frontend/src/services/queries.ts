@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
+    extendOcptWithIdentity,
     getAdvancedCN,
     getCaseNotions,
     getConformanceOcptOcel,
@@ -12,6 +13,7 @@ import {
     getOcelObjectTypes,
     getOcpt,
     getTraditionalCN,
+    mineIdentityOcpt,
     mineOcpt,
 } from '~/services/api';
 import { getOcel } from '~/services/api';
@@ -80,6 +82,24 @@ export const useMineOcpt = (nodeId: string, fileId: string | null, algorithm: st
     });
 };
 
+export const useMineIdentityOcpt = (nodeId: string, fileId: string | null, algorithm: string, shouldFetch: boolean) => {
+    return useQuery({
+        queryKey: ['mineIdentityOcpt', nodeId, fileId, algorithm],
+        queryFn: () => mineIdentityOcpt(fileId!, algorithm),
+        enabled: Boolean(fileId) && shouldFetch,
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetIdentityOcpt = (fileId: string | null, shouldFetch: boolean) => {
+    return useQuery({
+        queryKey: ['getIdentityOcpt', fileId],
+        queryFn: () => getIdentityOcpt(fileId!),
+        enabled: Boolean(fileId) && shouldFetch,
+        refetchOnWindowFocus: false,
+    });
+};
+
 export const useGetConformanceOcptOcel = (ocptFileId: string | null, ocelFileId: string | null) => {
     return useQuery({
         queryKey: ['getConformanceOcptOcel', ocptFileId, ocelFileId],
@@ -112,6 +132,20 @@ export const useGetLogGraphs = (ocelFileId: string) => {
         queryKey: ['getLogGraphs', ocelFileId],
         queryFn: () => getLogGraphs(ocelFileId),
         enabled: ocelFileId.length > 0,
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useExtendOcptWithIdentity = (
+    nodeId: string,
+    ocptFileId: string | null,
+    ocelFileId: string | null,
+    shouldFetch: boolean
+) => {
+    return useQuery({
+        queryKey: ['extendOcptWithIdentity', nodeId, ocptFileId, ocelFileId],
+        queryFn: () => extendOcptWithIdentity(ocptFileId!, ocelFileId!),
+        enabled: Boolean(ocptFileId) && Boolean(ocelFileId) && shouldFetch,
         refetchOnWindowFocus: false,
     });
 };

@@ -92,7 +92,7 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
     }
 
     const renderCustomActions = () => (
-        <div className="flex items-center">
+        <div className="flex items-center gap-1">
             <Select value={algorithm} onValueChange={setAlgorithm}>
                 <SelectTrigger
                     className="flex items-center h-6 px-2 bg-gray-100 text-amber-600 hover:bg-gray-200 rounded-md w-auto justify-between gap-1"

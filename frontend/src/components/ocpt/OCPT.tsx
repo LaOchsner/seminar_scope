@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Group } from '@visx/group';
 import { hierarchy } from '@visx/hierarchy';
 import { HierarchyNode, HierarchyPointNode } from '@visx/hierarchy/lib/types';
@@ -10,7 +10,7 @@ import { RenderTree } from '~/components/ocpt/OcptRendering';
 import NodeTooltip from '~/components/ocpt/ui/NodeTooltip';
 import ZoomButtons from '~/components/ocpt/ui/ZoomButtons';
 import { VisualizationNode } from '~/types/explore/nodes';
-import { type TreeNode } from '~/types/ocpt/ocpt.types';
+import { type Node } from '~/types/ocpt/ocpt.types';
 
 // Cast needed due to @visx/zoom + @types/react@18 incompatibility
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,9 +20,12 @@ export type OCPTProps = {
     width?: number;
     height?: number;
     margin?: { top: number; right: number; bottom: number; left: number };
-    treeData: TreeNode | null;
+    treeData: Node | null;
     colorScale: ScaleOrdinal<string, string, never>;
-    node: VisualizationNode;
+    node?: VisualizationNode;
+    filteredObjectTypes?: string[];
+    showDetails?: boolean;
+    onExportReady?: (exportFn: () => void) => void;
 };
 
 const defaultMargin = { top: 30, left: 30, right: 30, bottom: 70 };
@@ -39,11 +42,15 @@ const OCPTContent: React.FC<OCPTContentProps> = ({
     treeData,
     colorScale,
     node,
+    filteredObjectTypes: filteredObjectTypesProp,
+    showDetails,
+    onExportReady,
 }) => {
-    const [hoveredNode, setHoveredNode] = useState<HierarchyPointNode<TreeNode> | null>(null);
-    const [tree, setTree] = useState<HierarchyNode<TreeNode> | null>(null);
-    const viewState = node.data.viewState;
-    const filteredObjectTypes = viewState?.filteredObjectTypes || [];
+    const [hoveredNode, setHoveredNode] = useState<HierarchyPointNode<Node> | null>(null);
+    const [tree, setTree] = useState<HierarchyNode<Node> | null>(null);
+    const treeGroupRef = useRef<SVGGElement>(null);
+    const viewState = node?.data.viewState;
+    const filteredObjectTypes = filteredObjectTypesProp ?? viewState?.filteredObjectTypes ?? [];
 
     useEffect(() => {
         const copyTreeData = JSON.parse(JSON.stringify(treeData));
@@ -51,6 +58,52 @@ const OCPTContent: React.FC<OCPTContentProps> = ({
 
         setTree(hierarchy(copyTreeData, (d) => (d!.isExpanded ? null : d!.children)));
     }, [treeData]);
+
+    const exportSvg = useCallback(() => {
+        const treeGroup = treeGroupRef.current;
+        if (!treeGroup) return;
+
+        const svgEl = treeGroup.closest('svg');
+        if (!svgEl) return;
+
+        // getBBox() returns coords in the group's local space.
+        // The group has translate(margin.left, margin.top), so offset
+        const bbox = treeGroup.getBBox();
+        const padding = 20;
+        const x = bbox.x + margin.left;
+        const y = bbox.y + margin.top;
+
+        const cloned = svgEl.cloneNode(true) as SVGSVGElement;
+
+        // Remove the zoom transform s.t. the tree is fully in the image
+        const zoomG = cloned.querySelector('g');
+        if (zoomG) {
+            zoomG.removeAttribute('transform');
+        }
+
+        cloned.setAttribute(
+            'viewBox',
+            `${x - padding} ${y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`
+        );
+        cloned.setAttribute('width', `${bbox.width + padding * 2}`);
+        cloned.setAttribute('height', `${bbox.height + padding * 2}`);
+        cloned.style.cursor = '';
+        cloned.style.touchAction = '';
+
+        const serializer = new XMLSerializer();
+        const svgString = serializer.serializeToString(cloned);
+        const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ocpt.svg';
+        a.click();
+        URL.revokeObjectURL(url);
+    }, [margin]);
+
+    useEffect(() => {
+        onExportReady?.(exportSvg);
+    }, [exportSvg, onExportReady]);
 
     if (width === 0 || height === 0) return null;
 
@@ -103,6 +156,7 @@ const OCPTContent: React.FC<OCPTContentProps> = ({
                     ) => (
                         <div className="relative w-full h-full">
                             <svg
+                                xmlns="http://www.w3.org/2000/svg"
                                 width={width}
                                 height={height}
                                 style={{
@@ -112,7 +166,7 @@ const OCPTContent: React.FC<OCPTContentProps> = ({
                                 ref={zoom.containerRef}
                             >
                                 <g transform={zoom.toString()}>
-                                    <Group top={margin.top} left={margin.left}>
+                                    <Group top={margin.top} left={margin.left} innerRef={treeGroupRef}>
                                         <RenderTree
                                             rootNode={tree}
                                             filteredObjectTypes={filteredObjectTypes}
@@ -120,6 +174,7 @@ const OCPTContent: React.FC<OCPTContentProps> = ({
                                             colorScale={colorScale}
                                             sizeWidth={sizeWidth}
                                             sizeHeight={sizeHeight}
+                                            showDetails={showDetails}
                                         />
                                     </Group>
                                 </g>

@@ -36,7 +36,10 @@ pub fn advanced_case_notion_for_ot(
     objects: &FxHashMap<String, (String, Vec<String>)>, // object_id -> (object_type, related_events)
     given_object_type: String,
     divergence_map: &FxHashMap<String, FxHashSet<String>>, // Precomputed divergence map
-) -> (FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>, FxHashSet<(String, String)>) {
+) -> (
+    FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>,
+    FxHashSet<(String, String)>,
+) {
     let mut result = FxHashSet::default();
 
     let mut selected_arcs_type_level = FxHashSet::default();
@@ -173,7 +176,10 @@ pub fn advanced_case_notion_for_ot(
                     if o_prime.contains(obj_id) {
                         // ...then add an arch from the event to the object.
                         arches.insert((event_id.clone(), obj_id.clone()));
-                        selected_arcs_type_level.insert((e_id2etype.get(event_id).unwrap().to_string(), o_id2otype.get(obj_id).unwrap().to_string()));
+                        selected_arcs_type_level.insert((
+                            e_id2etype.get(event_id).unwrap().to_string(),
+                            o_id2otype.get(obj_id).unwrap().to_string(),
+                        ));
                     }
                 }
             }
@@ -190,7 +196,10 @@ pub fn advanced_case_notion_for_ot(
                     if e_prime.contains(event_id) {
                         // ...then add an arch from the object to the event.
                         arches.insert((event_id.clone(), obj_id.clone()));
-                        selected_arcs_type_level.insert((o_id2otype.get(obj_id).unwrap().to_string(), e_id2etype.get(event_id).unwrap().to_string()));
+                        selected_arcs_type_level.insert((
+                            o_id2otype.get(obj_id).unwrap().to_string(),
+                            e_id2etype.get(event_id).unwrap().to_string(),
+                        ));
                     }
                 }
             }
@@ -255,7 +264,6 @@ pub fn advanced_case_notion_type_level(
         object_types
             .into_iter()
             .partition(|ot| selected_node_types.contains(ot));
-
 
     // 5. Construct the final result.
     let result = LogGraphTypeLevel {
@@ -324,9 +332,8 @@ fn evaluate_advanced_case_notion_for_object_type(
         context.total_number_of_objects(),
         context.total_number_of_events(),
     );
-    Some((CaseNotionEvaluation::new(
-        Some(object_type.to_string()),
-        measures,
-        case_notion,
-    ), selected_arcs_type_level))
+    Some((
+        CaseNotionEvaluation::new(Some(object_type.to_string()), measures, case_notion),
+        selected_arcs_type_level,
+    ))
 }

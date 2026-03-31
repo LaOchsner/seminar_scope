@@ -8,6 +8,7 @@ import {
     FileSpreadsheet,
     FileStack,
     FileText,
+    Fingerprint,
     Grip,
     type LucideProps,
     Network,
@@ -21,6 +22,7 @@ import type { AssetType } from '~/types/files.types';
 export const iconMap: Record<string, ComponentType<LucideProps>> = {
     database: Database,
     fileText: FileText,
+    fingerprint: Fingerprint,
     workflow: Workflow,
     activity: Activity,
     fileSpreadsheet: FileSpreadsheet,
@@ -64,5 +66,9 @@ export const ASSET_TYPE_VISUALS: Record<AssetType, AssetTypeVisual> = {
     ocelCollectionFile: {
         icon: FileStack,
         color: 'text-green-500',
+    },
+    identityOcptAsset: {
+        icon: FileText,
+        color: 'text-amber-500',
     },
 };

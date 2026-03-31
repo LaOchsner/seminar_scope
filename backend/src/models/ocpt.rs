@@ -133,14 +133,26 @@ pub struct IdentityRelationFE {
     pub left: Vec<String>,
     pub right: Vec<String>,
     pub kind: IdentityRelationKindFE,
+    #[serde(
+        rename = "batchSize",
+        alias = "batch_size",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub batch_size: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum IdentityRelationKindFE {
     Sync,
+    SubsetSync,
+    SubsetSyncPartition,
+    SubsetSyncOverlap,
     ImpConcurrent,
     ImpOrdered,
+    ImpBatch,
+    ObjectSplit,
+    ObjectMerge,
 }
 
 ////////// sid ///////////////////////////

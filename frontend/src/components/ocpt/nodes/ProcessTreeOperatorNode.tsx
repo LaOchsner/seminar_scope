@@ -1,16 +1,19 @@
-import { useEffect, useState } from 'react';
 import { Group } from '@visx/group';
-import type { ScaleOrdinal } from 'd3-scale';
-import { Circle } from 'lucide-react';
+import { HierarchyPointNode } from '@visx/hierarchy/lib/types';
 import ProcessTreeOperatorSVG from '~/components/ocpt/nodes/ProcessTreeOperatorSVG';
-import { type ExtendedProcessTreeOperatorType, NodeProps, type ObjectType } from '~/types/ocpt/ocpt.types';
+import * as Ocpt from '~/types/ocpt/ocpt.types';
 
-interface ProcessTreeNodeProps extends NodeProps {
-    operator: ExtendedProcessTreeOperatorType;
+interface ProcessTreeNodeProps {
+    width: number;
+    height: number;
+    node: HierarchyPointNode<Ocpt.Node>;
+    operator: Ocpt.ExtendedOperatorType;
     key: number;
     opacity: number;
-    ots?: ObjectType[];
-    colorScale?: ScaleOrdinal<string, string, never>;
+    identityKinds?: Ocpt.IdentityRelationKind[];
+    onMouseEnter?: () => void;
+    onMouseMove?: () => void;
+    onMouseLeave?: () => void;
 }
 
 const ProcessTreeOperatorNode: React.FC<ProcessTreeNodeProps> = ({
@@ -20,59 +23,32 @@ const ProcessTreeOperatorNode: React.FC<ProcessTreeNodeProps> = ({
     key,
     operator,
     opacity,
-    ots,
-    colorScale,
+    identityKinds,
+    onMouseEnter,
+    onMouseMove,
+    onMouseLeave,
 }) => {
-    const [flowers, setFlowers] = useState<{ x: number; y: number; color: string }[]>([]);
-
-    const radius = Math.min(width, height) / 2;
-
-    useEffect(() => {
-        console.log(node);
-        if (!ots || ots.length === 0 || !colorScale) return;
-
-        const divergingOts = ots.filter((ot) => ot.exhibits && ot.exhibits.includes('div')).map((ot) => ot.ot);
-
-        const totalFlowers = divergingOts.length;
-        const angleStep = 360 / totalFlowers; // Equal spacing around the circle
-
-        const flowers = divergingOts.map((divOt, i) => {
-            const angle = i * angleStep;
-            return {
-                x: radius * Math.cos((angle * Math.PI) / 180) - 10,
-                y: radius * Math.sin((angle * Math.PI) / 180) - 10,
-                color: colorScale(divOt),
-            };
-        });
-
-        setFlowers(flowers);
-    }, [ots]);
-
     return (
-        <Group top={node.y} left={node.x} key={key}>
+        <Group
+            top={node.y}
+            left={node.x}
+            key={key}
+            onMouseEnter={onMouseEnter}
+            onMouseMove={onMouseMove}
+            onMouseLeave={onMouseLeave}
+        >
             <rect
                 height={height}
                 width={width}
                 y={-height / 2}
                 x={-width / 2}
                 fill="white"
-                className="stroke-black"
+                stroke="black"
                 strokeWidth={3}
                 rx={25}
                 ry={25}
                 opacity={opacity}
             />
-            {/* {flowers.map((flower, index) => (
-                <Flower
-                    key={`flower-${key}-${index}`} // Unique key for each flower
-                    x={flower.x}
-                    y={flower.y}
-                    size={20}
-                    className={` stroke-black`}
-                    opacity={opacity}
-                    fill={flower.color}
-                />
-            ))} */}
             {(() => {
                 switch (operator) {
                     case 'sequence':
@@ -158,9 +134,41 @@ const ProcessTreeOperatorNode: React.FC<ProcessTreeNodeProps> = ({
                         );
 
                     case 'skip':
-                        return <Circle size={30} x={-15} y={-15} className={`opacity-[${opacity}]`} />;
+                        return <circle r={15} fill="none" stroke="black" strokeWidth={2} opacity={opacity} />;
                 }
             })()}
+            {identityKinds?.map((kind, i) => {
+                const iconSize = 14;
+                const baseX = -width / 2 - 2;
+                const baseY = height / 2 - iconSize + 2;
+                const offsetY = i * (iconSize + 2);
+                const symbol = kind === 'sync' ? '=' : kind === 'impConcurrent' ? '⇒‖' : '⇒→';
+                const rectWidth = kind === 'sync' ? iconSize : iconSize + 10;
+                return (
+                    <g key={kind} transform={`translate(${baseX}, ${baseY - offsetY})`}>
+                        <rect
+                            width={rectWidth}
+                            height={iconSize}
+                            rx={3}
+                            ry={3}
+                            fill="white"
+                            stroke="#6366f1"
+                            strokeWidth={1.5}
+                        />
+                        <text
+                            x={rectWidth / 2}
+                            y={iconSize / 2}
+                            textAnchor="middle"
+                            dominantBaseline="central"
+                            fontSize={9}
+                            fill="#6366f1"
+                            fontFamily="sans-serif"
+                        >
+                            {symbol}
+                        </text>
+                    </g>
+                );
+            })}
         </Group>
     );
 };

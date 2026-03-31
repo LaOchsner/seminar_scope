@@ -35,12 +35,15 @@ pub async fn apply_df2(
     let ocpt_path = format!("./temp/ocpt_{}.json", generated_id);
 
     // Read the generated (frontend) OCPT.
-    let ocpt_fe: OcptFE = OcptFE::import_from_path(&generated_id).await.map_err(|(status, message)| {
-        (
-            status,
-            format!("Load generated OCPT (frontend) failed: {message}"),
-        )
-    })?;
+    let ocpt_fe: OcptFE =
+        OcptFE::import_from_path(&generated_id)
+            .await
+            .map_err(|(status, message)| {
+                (
+                    status,
+                    format!("Load generated OCPT (frontend) failed: {message}"),
+                )
+            })?;
 
     // Convert to backend format and validate.
     let ocpt_backend: OCPT = frontend_to_backend(ocpt_fe).map_err(|e| {

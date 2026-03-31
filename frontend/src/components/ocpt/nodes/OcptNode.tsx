@@ -5,27 +5,32 @@ import TextNode from '~/components/ocpt/nodes/TextNode';
 import {
     isActivity,
     isExtendedProcessTreeOperatorNode,
+    isIdentityOperatorApi,
     isProcessTreeOperator,
     isSilentActivity,
     isTrueSilentActivity,
 } from '~/lib/ocpt/ocptGuards';
-import { TreeNode } from '~/types/ocpt/ocpt.types';
+import { Node } from '~/types/ocpt/ocpt.types';
 
-const parentIsArbitraryOrSkip = (parent: HierarchyPointNode<TreeNode> | null) => {
+const parentIsArbitraryOrSkip = (parent: HierarchyPointNode<Node> | null) => {
     if (!parent) return false;
 
     const value = parent.data.value;
-    return isExtendedProcessTreeOperatorNode(value) && (value.operator === 'arbitrary' || value.operator === 'skip');
+    if (isExtendedProcessTreeOperatorNode(value)) {
+        return value.operator === 'arbitrary' || value.operator === 'skip';
+    }
+    return false;
 };
 
 interface OcptNodeProps {
-    node: HierarchyPointNode<TreeNode>;
+    node: HierarchyPointNode<Node>;
     key: number;
-    setHoveredNode: React.Dispatch<React.SetStateAction<HierarchyPointNode<TreeNode> | null>>;
+    setHoveredNode: React.Dispatch<React.SetStateAction<HierarchyPointNode<Node> | null>>;
     colorScale: ScaleOrdinal<string, string, never>;
+    showDetails?: boolean;
 }
 
-const OcptNode: React.FC<OcptNodeProps> = ({ node, key, setHoveredNode, colorScale }) => {
+const OcptNode: React.FC<OcptNodeProps> = ({ node, key, setHoveredNode, colorScale, showDetails }) => {
     const width = 50;
     const height = 50;
     const value = node.data.value;
@@ -41,6 +46,7 @@ const OcptNode: React.FC<OcptNodeProps> = ({ node, key, setHoveredNode, colorSca
                 isSilent={true}
                 opacity={opacity}
                 colorScale={colorScale}
+                showDetails={showDetails}
                 onMouseEnter={(_, node) => setHoveredNode(node)}
                 onMouseMove={(_, node) => setHoveredNode(node)}
                 onMouseLeave={() => setHoveredNode(null)}
@@ -56,6 +62,7 @@ const OcptNode: React.FC<OcptNodeProps> = ({ node, key, setHoveredNode, colorSca
                 isSilent={false}
                 opacity={opacity}
                 colorScale={colorScale}
+                showDetails={showDetails}
                 onMouseEnter={(_, node) => setHoveredNode(node)}
                 onMouseMove={(_, node) => setHoveredNode(node)}
                 onMouseLeave={() => setHoveredNode(null)}
@@ -70,9 +77,12 @@ const OcptNode: React.FC<OcptNodeProps> = ({ node, key, setHoveredNode, colorSca
                 node={node}
                 key={key}
                 opacity={opacity}
+                onMouseEnter={() => setHoveredNode(node)}
+                onMouseMove={() => setHoveredNode(node)}
+                onMouseLeave={() => setHoveredNode(null)}
             />
         );
-    } else if (isExtendedProcessTreeOperatorNode(value))
+    } else if (isExtendedProcessTreeOperatorNode(value) || isIdentityOperatorApi(value)) {
         return (
             <ProcessTreeOperatorNode
                 operator={value.operator}
@@ -81,10 +91,13 @@ const OcptNode: React.FC<OcptNodeProps> = ({ node, key, setHoveredNode, colorSca
                 node={node}
                 key={key}
                 opacity={opacity}
-                ots={value.ots}
-                colorScale={colorScale}
+                identityKinds={value.identity?.length ? [...new Set(value.identity.map((r) => r.kind))] : undefined}
+                onMouseEnter={() => setHoveredNode(node)}
+                onMouseMove={() => setHoveredNode(node)}
+                onMouseLeave={() => setHoveredNode(null)}
             />
         );
+    }
 
     console.error('Unknown node type', node);
     return null;

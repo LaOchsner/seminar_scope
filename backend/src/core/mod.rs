@@ -3,5 +3,6 @@ pub mod df2_miner;
 pub mod event_object_frequencies;
 pub mod identity_relations;
 pub mod ocim;
+pub mod ocpn_conversion;
 pub mod struct_converters;
 pub mod utils;

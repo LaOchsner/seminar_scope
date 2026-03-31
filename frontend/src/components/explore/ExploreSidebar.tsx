@@ -36,7 +36,7 @@ const ExploreSidebar: React.FC = () => {
                         <p className="ml-1">Miner</p>
                     </SidebarGroupLabel>
                     <SidebarGroupContent className="p-1">
-                        <SidebarMenu className="flex flex-row">
+                        <SidebarMenu className="flex flex-row flex-wrap">
                             <SidebarMenuItem className="ml-1">
                                 <DndCard title="OCPT Miner" Icon={iconMap.treePine} nodeType="ocptMinerNode" />
                             </SidebarMenuItem>
@@ -49,6 +49,13 @@ const ExploreSidebar: React.FC = () => {
                             </SidebarMenuItem>
                             <SidebarMenuItem className="ml-1">
                                 <DndCard title="Case Notions" Icon={iconMap.waves} nodeType="caseNotionMinerNode" />
+                            </SidebarMenuItem>
+                            <SidebarMenuItem className="ml-1">
+                                <DndCard
+                                    title="Extend Identity"
+                                    Icon={iconMap.fingerprint}
+                                    nodeType="identityExtendMinerNode"
+                                />
                             </SidebarMenuItem>
                         </SidebarMenu>
                     </SidebarGroupContent>

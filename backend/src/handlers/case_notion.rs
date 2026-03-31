@@ -330,10 +330,7 @@ pub async fn get_advanced_case_notion(
     );
 
     let graph_value = build_log_graph_type_level(&ocel);
-    let type_level_graph = advanced_case_notion_type_level(
-        &graph_value,
-        &selected_arcs_type_level,
-    );
+    let type_level_graph = advanced_case_notion_type_level(&graph_value, &selected_arcs_type_level);
 
     let cases: Vec<RawCaseNotionEntry> = evaluation.case_notion.iter().cloned().collect();
     let case_notion_file_id = match persist_case_notion(

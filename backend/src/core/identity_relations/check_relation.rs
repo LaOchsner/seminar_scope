@@ -1,3 +1,5 @@
+//legacy code for inital 3 patterns of identity relations (currently not used)
+
 use std::collections::{HashMap, HashSet};
 
 use super::Relation;

@@ -52,7 +52,7 @@ export function isExploreMinerNodeType(nodeType: ExploreNodeType): nodeType is E
 }
 
 export const assetTypeToNodeType = (assetType: AssetType): ExploreFileNodeType | null => {
-    if (assetType === 'ocptFile' || assetType === 'ocptAsset') {
+    if (assetType === 'ocptFile' || assetType === 'ocptAsset' || assetType === 'identityOcptAsset') {
         return 'ocptFileNode';
     }
     if (assetType === 'ocelFile' || assetType === 'ocelAsset') {

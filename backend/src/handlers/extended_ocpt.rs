@@ -17,6 +17,7 @@ use uuid::Uuid;
 #[derive(Debug, Deserialize)]
 pub struct ExtendOcptQuery {
     pub ocel_id: Option<String>,
+    pub noise_threshold: Option<f64>,
 }
 
 async fn load_source_ocels(ocel_id: &str) -> Result<Vec<OCEL>, (StatusCode, String)> {
@@ -65,6 +66,18 @@ pub async fn apply_extended_ocpt(
     Path(ocpt_id): Path<String>,
     Query(query): Query<ExtendOcptQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let noise_threshold = query.noise_threshold.unwrap_or(0.0);
+    if !noise_threshold.is_finite() || !(0.0..=1.0).contains(&noise_threshold) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "noise_threshold must be a finite number between 0.0 and 1.0".to_string(),
+        ));
+    }
+    // External semantics:
+    // - noise_threshold=1.0 => no noise allowed (strict)
+    // - noise_threshold=0.0 => all noise allowed
+    let violation_threshold = 1.0 - noise_threshold;
+
     let ocel_id = query.ocel_id.ok_or((
         StatusCode::BAD_REQUEST,
         "Missing required query parameter: ocel_id".to_string(),
@@ -88,7 +101,8 @@ pub async fn apply_extended_ocpt(
 
     let source_ocels = load_source_ocels(ocel_id).await?;
     let relations = build_relations_from_ocels(&source_ocels);
-    ocpt.root = extend_ocpt_with_identity_relations(ocpt.root, &relations, None);
+    ocpt.root =
+        extend_ocpt_with_identity_relations(ocpt.root, &relations, None, violation_threshold);
 
     let new_file_id = persist_extended_ocpt(&ocpt).await?;
     let payload = json!({

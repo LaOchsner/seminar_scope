@@ -21,7 +21,6 @@ import { FileNode } from '~/types/explore/nodes';
 
 const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
     const [fileId, setFileId] = useState<null | string>(null);
-    const { data } = useGetOcpt(fileId, true);
     const navigate = useNavigate();
     const { updateNodeData, initializeDataState } = useExploreFlowStore();
     const { id, data: nodeData } = props;
@@ -126,24 +125,15 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
         }
     }, [data, colorMap, id, updateNodeData]);
 
-    const visualize = (filter?: string) => {
-        navigate(`/data/pipeline/explore/ocpt/${id}${filter ? `?filter=${filter}` : ''}`);
-    };
-
-    const ocptAsset = useMemo(
-        () => assets.find((a) => a.io === 'output' && (a.type === 'ocptFile' || a.type === 'ocptAsset')),
-        [assets]
-    );
-
-    useMemo(() => {
-        setFileId(ocptAsset?.id ?? null);
-    }, [ocptAsset]);
-
     useEffect(() => {
         if (data) {
             updateNodeData(id, { processedData: data.ocpt });
         }
     }, [data, id, updateNodeData]);
+
+    const visualize = (filter?: string) => {
+        navigate(`/data/pipeline/explore/ocpt/${id}${filter ? `?filter=${filter}` : ''}`);
+    };
 
     const handleObjectTypeToggle = (objectType: string) => {
         if (viewState) {

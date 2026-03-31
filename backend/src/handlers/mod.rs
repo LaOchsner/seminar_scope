@@ -1,3 +1,4 @@
+pub mod abstractions;
 pub mod case_notion;
 pub mod collection_ocels;
 pub mod conformance;
@@ -7,4 +8,5 @@ pub mod extended_ocpt;
 pub mod log_graphs;
 pub mod ocel;
 pub mod ocim;
+pub mod ocpn;
 pub mod ocpt;
