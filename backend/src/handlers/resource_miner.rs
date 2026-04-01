@@ -70,7 +70,7 @@ pub async fn get_resource_miner(
         }
     }
 
-	// An object type is not resource if it is not divergent in any activity it is related to.
+    // An object type is non-resource if it is not divergent in at least one related activity.
     let mut object_type_not_resource: FxHashSet<String> = FxHashSet::default();
     let mut object_not_resource_arcs: Vec<ObjectNotResourceArc> = Vec::new();
 
