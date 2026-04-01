@@ -79,4 +79,13 @@ export const nodeRegistry = {
         ],
         sidebar: { label: 'Extend Identity', icon: 'fingerprint', group: 'miners' },
     },
+    flowVisualizationNode: {
+        category: 'miner',
+        allowedAssetTypes: ['ocptAsset', 'ocptFile', 'identityOcptAsset'],
+        inputs: [
+            { label: 'OCPT', types: ['ocptAsset', 'ocptFile', 'identityOcptAsset'] },
+            { label: 'OCEL', types: ['ocelAsset', 'ocelFile'] },
+        ],
+        sidebar: { label: 'Flow Visualization', icon: 'zap', group: 'miners' },
+    },
 } satisfies Record<RegistrableNodeType, NodeRegistryEntry>;

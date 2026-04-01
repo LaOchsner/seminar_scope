@@ -8,15 +8,13 @@ import {
 import { addDecisionAndEdgeNodesForActivities, createEdge } from '~/lib/flow/lbofLayout.helper';
 import { OperatorNodeSize } from '~/lib/flow/nodeOperatorSize';
 import { HorizontalOverlapResolver } from '~/lib/flow/sweepLine';
-import { Logger } from '~/lib/logger';
+import { logger } from '~/lib/logger';
 import type { AltFlowJson, EdgeData } from '~/types/flow/altFlow.types';
 import type { FlowElementInfo } from '~/types/flow/flow.types';
 
 export const visualizeFlowFromJson = (
     jsonFlows: AltFlowJson[]
 ): { nodes: Node[]; edges: Edge[]; flowElementArrays: FlowElementInfo[][] } => {
-    const logger = Logger.getInstance();
-
     const allNodes: Node[] = [];
     const allEdges: Edge<EdgeData>[] = [];
     const flowElementArrays: FlowElementInfo[][] = [];

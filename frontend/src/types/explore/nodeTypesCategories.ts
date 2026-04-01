@@ -6,6 +6,7 @@ export const minerNodeTypes = [
     'histogramMinerNode',
     'caseNotionMinerNode',
     'identityExtendMinerNode',
+    'flowVisualizationNode',
 ] as const;
 export type ExploreMinerNodeType = (typeof minerNodeTypes)[number];
 

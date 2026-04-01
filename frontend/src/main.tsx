@@ -7,6 +7,7 @@ import { Toaster } from '~/components/ui/sonner';
 import RedirectErrorBoundary from '~/components/RedirectErrorBoundary';
 import '~/index.css';
 import Explore from '~/routes/Explore';
+import FlowViewer from '~/routes/FlowViewer';
 import HistViz from '~/routes/Hist-Viz';
 import Home from '~/routes/Home';
 import OcelViewer from '~/routes/OcelViewer';
@@ -51,6 +52,14 @@ const router = createBrowserRouter([
         element: (
             <RedirectErrorBoundary>
                 <OcelViewer />
+            </RedirectErrorBoundary>
+        ),
+    },
+    {
+        path: '/data/pipeline/explore/flow/:nodeId',
+        element: (
+            <RedirectErrorBoundary>
+                <FlowViewer />
             </RedirectErrorBoundary>
         ),
     },
