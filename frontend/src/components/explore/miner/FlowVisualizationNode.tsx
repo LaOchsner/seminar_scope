@@ -1,53 +1,40 @@
-import { memo, useCallback, useMemo } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { memo, useCallback } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
+import { Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '~/components/ui/button';
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
-import { useInputAsset, useMinerOutput } from '~/hooks/explore/useMinerAssets';
-import { useExtendOcptWithIdentity } from '~/services/queries';
+import { useInputAsset } from '~/hooks/explore/useMinerAssets';
 import { ASSET_TYPE_VISUALS } from '~/lib/iconMap';
 import { MinerNode } from '~/types/explore/nodes';
 
-const ExtendWithIdentityNode = memo<NodeProps<MinerNode>>((node) => {
-    const queryClient = useQueryClient();
+const FlowVisualizationNode = memo<NodeProps<MinerNode>>((node) => {
+    const navigate = useNavigate();
 
-    const hasMinedAsset = useMemo(() => {
-        return node.data.assets.some((asset) => asset.io === 'output');
-    }, [node.data.assets]);
-
-    const ocptAsset = useInputAsset(node.data.assets, 'ocptAsset', 'ocptFile');
+    const ocptAsset = useInputAsset(node.data.assets, 'ocptAsset', 'ocptFile', 'identityOcptAsset');
     const ocelAsset = useInputAsset(node.data.assets, 'ocelAsset', 'ocelFile');
-    const inputFileName = ocptAsset?.name ?? ocelAsset?.name ?? '';
 
-    const { isLoading, isFetching, data } = useExtendOcptWithIdentity(
-        node.id,
-        ocptAsset?.id ?? null,
-        ocelAsset?.id ?? null,
-        !hasMinedAsset
-    );
-
-    useMinerOutput(node.id, data?.file_id, inputFileName, 'identityOcptAsset', 'ocptFileNode');
-
-    const handleReset = useCallback(() => {
-        queryClient.removeQueries({ queryKey: ['extendOcptWithIdentity', node.id] });
-    }, [queryClient, node.id]);
+    const handleView = useCallback(() => {
+        navigate(`/data/pipeline/explore/flow/${node.id}`);
+    }, [navigate, node.id]);
 
     return (
         <BaseMinerNode
             {...node}
-            title="Extend with Identity"
-            iconName="fingerprint"
+            title="Flow Visualization"
+            iconName="zap"
             handleOptions={[
                 { id: 'ocptTarget', position: Position.Left, type: 'target' as const },
-                { id: 'source', position: Position.Right, type: 'source' as const },
             ]}
             dropdownOptions={[]}
-            isLoading={isLoading || isFetching}
-            onReset={handleReset}
+            isLoading={false}
+            onReset={() => {}}
         >
+            {/* Secondary OCEL input handle */}
             <div className="relative mt-2 border-t pt-2">
                 <Handle id="ocelTarget" type="target" position={Position.Left} style={{ left: '-0.75rem' }} />
-                <p className="text-xs font-semibold text-gray-500 mb-2">Secondary Input</p>
+                <p className="text-xs font-semibold text-gray-500 mb-2">OCEL Input</p>
                 {ocelAsset
                     ? (() => {
                           const { label, icon: Icon, color } = ASSET_TYPE_VISUALS[ocelAsset.type];
@@ -68,8 +55,23 @@ const ExtendWithIdentityNode = memo<NodeProps<MinerNode>>((node) => {
                           );
                       })()}
             </div>
+
+            {/* View button — only shown when both inputs are connected */}
+            {ocptAsset && ocelAsset && (
+                <div className="mt-2 border-t pt-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start h-7 px-2 text-xs"
+                        onClick={handleView}
+                    >
+                        <Zap className="mr-2 h-3.5 w-3.5 text-yellow-500" />
+                        View Animated Flow
+                    </Button>
+                </div>
+            )}
         </BaseMinerNode>
     );
 });
 
-export default ExtendWithIdentityNode;
+export default FlowVisualizationNode;

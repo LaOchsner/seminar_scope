@@ -1,8 +1,8 @@
-import type { ActivityObj, ExecutionActivityObj } from '~/types/flow/flow.types';
 import type { Edge } from '@xyflow/react';
+import { ACTIVITY_NODE_WIDTH, DECISION_NODE, LANE_Y_OFFSET } from '~/components/flow/lbofConstants';
 import type { ActivityDecisionNodeType } from '~/components/flow/nodes/FlowActivityDecisionNode';
 import type { AltFlowNode, EdgeData } from '~/types/flow/altFlow.types';
-import { ACTIVITY_NODE_WIDTH, DECISION_NODE, LANE_Y_OFFSET } from '~/consts/flow/lbofConstants';
+import type { ActivityObj, ExecutionActivityObj } from '~/types/flow/flow.types';
 
 export const addDecisionAndEdgeNodesForActivities = (
     activityObject: ActivityObj | ExecutionActivityObj,

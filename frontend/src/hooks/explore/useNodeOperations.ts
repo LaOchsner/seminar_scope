@@ -1,18 +1,11 @@
 import { useCallback } from 'react';
 import { type NodeChange } from '@xyflow/react';
 import { useExploreFlowStore } from '~/stores/exploreStore';
-import { Logger } from '~/lib/logger';
+import { logger } from '~/lib/logger';
 import { ExploreNodeData } from '~/types/explore/nodes';
 
-const logger = Logger.getInstance();
-
 export const useNodeOperations = () => {
-    const {
-        onNodesChange: storeOnNodesChange,
-        updateNodeData,
-        removeNode,
-        getNode,
-    } = useExploreFlowStore();
+    const { onNodesChange: storeOnNodesChange, updateNodeData, removeNode, getNode } = useExploreFlowStore();
 
     /**
      * Handles node deletion
@@ -29,7 +22,7 @@ export const useNodeOperations = () => {
             try {
                 const node = getNode(id);
                 if (!node) throw new Error(`Could not find node for id: ${id}`);
-                
+
                 // All side effects (creating downstream nodes, etc.) are now handled
                 // internally by the store's updateNodeData action.
                 updateNodeData(id, newData);

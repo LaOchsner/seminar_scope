@@ -1,6 +1,6 @@
 import { addEdge, applyEdgeChanges, applyNodeChanges } from '@xyflow/react';
 import { StateCreator } from 'zustand';
-import { isFileNode, isVisualizationNode } from '~/lib/explore/exploreNodes.utils';
+import { isFileNode } from '~/lib/explore/exploreNodes.utils';
 import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import { ExploreNode } from '~/types/explore/nodes';
 import { ExploreFlowStore } from '~/stores/exploreStore';
@@ -52,14 +52,14 @@ export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice
         const state = get();
         const nodeToDelete = state.nodes.find((n) => n.id === nodeId);
 
-        // Smart Cleanup: If a FileNode is deleted, remove its assets from connected VisualizationNodes
+        // Smart Cleanup: If a FileNode is deleted, remove its assets from connected downstream nodes
         if (nodeToDelete && isFileNode(nodeToDelete)) {
             const outgoingEdges = state.edges.filter((edge) => edge.source === nodeId);
 
             // Prepare updates for target nodes
             const updatedNodes = state.nodes.map((node) => {
                 const incomingEdge = outgoingEdges.find((e) => e.target === node.id);
-                if (incomingEdge && isVisualizationNode(node)) {
+                if (incomingEdge) {
                     // Filter out assets that came from the deleted file node
                     const filteredAssets = node.data.assets.filter(
                         (asset) => !nodeToDelete.data.assets.some((sourceAsset) => sourceAsset.id === asset.id)

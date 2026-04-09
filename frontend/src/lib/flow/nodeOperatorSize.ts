@@ -1,4 +1,4 @@
-import { GATEWAY_NODE, START_END_EVENT_NODE } from '~/consts/flow/lbofConstants';
+import { GATEWAY_NODE, START_END_EVENT_NODE } from '~/components/flow/lbofConstants';
 import { gatewayOperators, type InterOperator } from '~/types/flow/altFlow.types';
 
 export class OperatorNodeSize {

@@ -16,7 +16,7 @@ import { useSetFilteredHistogramMutation } from '~/services/mutation';
 import { useGetHistogram } from '~/services/queries';
 import { handleMinerOutput } from '~/lib/explore/flowActions';
 import '~/styles/hist-viz.css';
-import type { HistogramEntry } from '~/types';
+import type { HistogramEntry } from '~/types/histogram.types';
 
 export default function HistViz() {
     const navigate = useNavigate();

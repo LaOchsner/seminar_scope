@@ -64,13 +64,15 @@ const BaseFileNode = memo<FileNodeProps>((props) => {
     };
 
     const renderFileContent = () => {
-        if (assets.length === 0) {
+        const outputAssets = assets.filter((a) => a.io === 'output');
+
+        if (outputAssets.length === 0) {
             return <p className="text-gray-500 text-sm">No file selected</p>;
         }
 
         return (
             <div className="flex flex-col gap-1">
-                {assets.map((asset, index) => {
+                {outputAssets.map((asset, index) => {
                     const visual = ASSET_TYPE_VISUALS[asset.type];
                     const Icon = visual.icon;
                     return (

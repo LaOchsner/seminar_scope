@@ -1,16 +1,21 @@
 import { memo, type ReactNode, useEffect, useRef } from 'react';
 import { useNodeConnections } from '@xyflow/react';
-import { Pickaxe, RefreshCw } from 'lucide-react';
+import { CheckCircle, Pickaxe, RefreshCw } from 'lucide-react';
 import { Button } from '~/components/ui/button';
+import AssetTypeList from '~/components/explore/AssetTypeList';
 import BaseExploreNode from '~/components/explore/BaseExploreNode';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { pullUpstreamData } from '~/lib/explore/flowActions';
+import { nodeRegistry, type NodeInputGroup } from '~/lib/explore/nodeRegistry';
+import { ASSET_TYPE_VISUALS } from '~/lib/iconMap';
 import {
+    BaseExploreNodeAsset,
     BaseExploreNodeDropdownActionType,
     BaseExploreNodeDropdownOption,
     BaseExploreNodeHandleOption,
 } from '~/types/explore/nodeData/baseNodeData';
 import { MinerNode } from '~/types/explore/nodes';
+import { AssetType } from '~/types/files.types';
 import '~/styles/animations.css';
 
 interface MinerNodeProps {
@@ -25,8 +30,44 @@ interface MinerNodeProps {
     onDropdownAction?: (action: BaseExploreNodeDropdownActionType) => void;
     onReset?: () => void;
     customActions?: ReactNode;
+    settings?: ReactNode;
     children?: ReactNode;
 }
+
+
+const AllowedInputsHint = ({
+    allowedAssetTypes,
+    inputs,
+}: {
+    allowedAssetTypes: readonly AssetType[];
+    inputs?: readonly NodeInputGroup[];
+}) => {
+    if (inputs) {
+        // Only the primary (first) group is shown in the body.
+        // Secondary groups are shown inline at their respective handles.
+        const primary = inputs[0];
+        return (
+            <div className="flex flex-col gap-1 py-1">
+                <p className="text-xs font-semibold text-gray-500 mb-1">{primary.label}</p>
+                <AssetTypeList types={primary.types} />
+            </div>
+        );
+    }
+
+    return <AssetTypeList types={allowedAssetTypes} />;
+};
+
+const OutputBadge = ({ asset }: { asset: BaseExploreNodeAsset }) => {
+    const visual = ASSET_TYPE_VISUALS[asset.type];
+    const Icon = visual.icon;
+    return (
+        <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-gray-50 border border-gray-200">
+            <Icon className={`h-3.5 w-3.5 shrink-0 ${visual.color}`} />
+            <span className="text-xs font-medium text-gray-700">{visual.label}</span>
+            <CheckCircle className="h-3 w-3 text-emerald-500 ml-auto shrink-0" />
+        </div>
+    );
+};
 
 const BaseMinerNode = memo<MinerNodeProps>((props) => {
     const {
@@ -41,6 +82,7 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
         onDropdownAction,
         onReset,
         customActions,
+        settings,
         children,
     } = props;
     const { assets, isStale } = data;
@@ -50,8 +92,9 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
     const hasResetStale = useRef(false);
 
     const inConnections = useNodeConnections({ handleType: 'target' });
-    const inSourceNode = inConnections[0] ? getNode(inConnections[0].source) : undefined;
-    const inSourceHasOutputAsset = inSourceNode?.data.assets.some((asset) => asset.io === 'output');
+    const inSourceHasOutputAsset = inConnections.some((conn) =>
+        getNode(conn.source)?.data.assets.some((asset) => asset.io === 'output')
+    );
 
     const hasInputAsset = assets.some((asset) => asset.io === 'input');
     const isWaitingForInput = inSourceHasOutputAsset && !hasInputAsset && isStale;
@@ -130,8 +173,6 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
             );
         }
 
-        if (assets.length === 0) return <p className="text-sm text-gray-500">Ready to mine!</p>;
-
         if (isLoading) {
             return (
                 <div className="flex flex-col items-center justify-center h-32 w-full">
@@ -149,34 +190,25 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
             );
         }
 
+        const outputAssets = assets.filter((a) => a.io === 'output');
+
         return (
-            <div>
-                <div>
-                    <p>Input Files</p>
-                    {assets.map((asset, index) => {
-                        if (asset.io === 'input') {
-                            return (
-                                <div key={index} className="text-sm text-gray-600">
-                                    {'📄'}
-                                    {asset.name}
-                                </div>
-                            );
-                        }
-                    })}
-                </div>
-                <div>
-                    <p>Output Files</p>
-                    {assets.map((asset, index) => {
-                        if (asset.io === 'output') {
-                            return (
-                                <div key={index} className="text-sm text-gray-600">
-                                    {'⛏️'}
-                                    {asset.name}
-                                </div>
-                            );
-                        }
-                    })}
-                </div>
+            <div className="flex flex-col gap-2">
+                {outputAssets.length > 0 ? (
+                    <div>
+                        <p className="text-xs font-semibold text-gray-500 mb-2">Output</p>
+                        {outputAssets.map((asset) => <OutputBadge key={asset.id} asset={asset} />)}
+                    </div>
+                ) : (
+                    <div>
+                        <p className="text-xs font-semibold text-gray-500 mb-2">Input</p>
+                        <AllowedInputsHint
+                            allowedAssetTypes={data.allowedAssetTypes}
+                            inputs={nodeRegistry[data.nodeType as keyof typeof nodeRegistry]?.inputs}
+                        />
+                    </div>
+                )}
+                {settings && <div className="border-t pt-2">{settings}</div>}
             </div>
         );
     };

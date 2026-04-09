@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { NodeProps } from '@xyflow/react';
 import { Position } from '@xyflow/react';
@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '~/components/ui/button';
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
 import { useExploreFlowStore } from '~/stores/exploreStore';
+import { useInputAsset } from '~/hooks/explore/useMinerAssets';
 import { MinerNode } from '~/types/explore/nodes';
 
 const HistogramMinerNode = memo<NodeProps<MinerNode>>((node) => {
@@ -14,13 +15,10 @@ const HistogramMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const queryClient = useQueryClient();
     const { id, data: nodeData } = node;
     const { assets } = nodeData;
-    const [inputFileId, setInputFileId] = useState<string | null>(null);
     const { clearHistogramState } = useExploreFlowStore();
 
-    useEffect(() => {
-        const inputAsset = assets.find((a) => a.io === 'input' && a.type === 'ocelFile');
-        setInputFileId(inputAsset?.id ?? null);
-    }, [assets]);
+    const inputAsset = useInputAsset(assets, 'ocelFile');
+    const inputFileId = inputAsset?.id ?? null;
 
     const hasMinedAsset = useMemo(() => {
         return assets.some((asset) => asset.io === 'output' && asset.origin === 'mined');
@@ -33,17 +31,11 @@ const HistogramMinerNode = memo<NodeProps<MinerNode>>((node) => {
     };
 
     const handleReset = useCallback(() => {
-        // 1. Clear React Query Cache
         if (inputFileId) {
             queryClient.cancelQueries({ queryKey: ['getHistogram', inputFileId] });
             queryClient.removeQueries({ queryKey: ['getHistogram', inputFileId] });
         }
-
-        // 2. Clear Store State
         clearHistogramState(id);
-
-        // 3. Reset Local State
-        setInputFileId(null);
     }, [inputFileId, queryClient, clearHistogramState, id]);
 
     const renderActions = () => {

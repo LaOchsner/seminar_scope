@@ -4,7 +4,7 @@ import { isFileNode } from '~/lib/explore/exploreNodes.utils';
 import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import { ExploreNodeType } from '~/types/explore/nodeTypesCategories';
 import { AssetType } from '~/types/files.types';
-import { NodeFactory } from '~/model/explore/node-factory.model';
+import { createNode } from '~/lib/explore/createNode';
 
 /**
  * Handles the connection of two nodes and propagates assets.
@@ -75,7 +75,7 @@ export const spawnDownstreamNode = (sourceNodeId: string, nodeType: ExploreNodeT
         y: sourceNode.position.y,
     };
 
-    const newNode = NodeFactory.createNode(newNodePosition, nodeType, true);
+    const newNode = createNode(newNodePosition, nodeType, true);
     addNode(newNode);
 
     const connection: Connection = {

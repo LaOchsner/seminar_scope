@@ -1,38 +1,8 @@
-// Logger class following the Singleton des
-export class Logger {
-    private isVerbose: boolean;
-    static instance: Logger;
+const isDev = import.meta.env.DEV;
 
-    private constructor() {
-        this.isVerbose = false;
-    }
-
-    static getInstance(): Logger {
-        if (!Logger.instance) Logger.instance = new Logger();
-        return Logger.instance;
-    }
-
-    public setVerbose(v: boolean) {
-        this.isVerbose = v;
-    }
-
-    public log(...args: any[]): void {
-        if (this.isVerbose) {
-            console.log(...args);
-        }
-    }
-
-    public debug(...args: any[]): void {
-        if (this.isVerbose) {
-            console.debug(...args);
-        }
-    }
-
-    public warn(...args: any[]): void {
-        console.warn(...args);
-    }
-
-    public error(...args: any[]): void {
-        console.error(...args);
-    }
-}
+export const logger = {
+    log:   (...args: unknown[]) => { if (isDev) console.log(...args); },
+    debug: (...args: unknown[]) => { if (isDev) console.debug(...args); },
+    warn:  (...args: unknown[]) => console.warn(...args),
+    error: (...args: unknown[]) => console.error(...args),
+};
