@@ -1,4 +1,5 @@
 import type { HierarchyPointNode } from '@visx/hierarchy/lib/types';
+import { scaleOrdinal } from '@visx/scale';
 import { create } from 'zustand';
 import { ExtendedFile } from '~/types/files.types';
 import type { FlowJson } from '~/types/flow/flow.types';
@@ -202,6 +203,17 @@ interface FileDialogStore {
     openDialog: (nodeId: string) => void;
     closeDialog: () => void;
 }
+
+interface ColorScaleStore {
+    colorScale: ReturnType<typeof scaleOrdinal<string, string>>;
+    setColorScale: (domain: string[], range: string[]) => void;
+}
+
+export const useColorScaleStore = create<ColorScaleStore>((set) => ({
+    colorScale: scaleOrdinal<string, string>({ domain: [], range: [] }),
+    setColorScale: (domain, range) =>
+        set({ colorScale: scaleOrdinal<string, string>({ domain, range }) }),
+}));
 
 export const useFileDialogStore = create<FileDialogStore>((set) => ({
     dialogNodeId: null,

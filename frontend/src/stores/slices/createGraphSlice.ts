@@ -53,7 +53,8 @@ export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice
     removeNode: (nodeId) => {
         const state = get();
         const nodeToDelete = state.nodes.find((n) => n.id === nodeId);
-        // Smart Cleanup: If a FileNode is deleted, remove its assets from connected VisualizationNodes
+
+        // Smart Cleanup: If a FileNode is deleted, remove its assets from connected downstream nodes
         if (nodeToDelete && isFileNode(nodeToDelete)) {
             const outgoingEdges = state.edges.filter((edge) => edge.source === nodeId);
             const updatedNodes = state.nodes.map((node) => {

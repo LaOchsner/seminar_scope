@@ -4,7 +4,7 @@ import { isFileNode } from '~/lib/explore/exploreNodes.utils';
 import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import { ExploreNodeType } from '~/types/explore/nodeTypesCategories';
 import { AssetType } from '~/types/files.types';
-import { NodeFactory } from '~/model/explore/node-factory.model';
+import { createNode } from '~/lib/explore/createNode';
 
 function hslToHex(h: number, s: number, l: number): string {
     s /= 100;
@@ -210,8 +210,13 @@ export const spawnDownstreamNode = (sourceNodeId: string, nodeType: ExploreNodeT
     const { nodes, addNode } = useExploreFlowStore.getState();
     const sourceNode = nodes.find((n) => n.id === sourceNodeId);
     if (!sourceNode) return;
-    const newNodePosition = { x: sourceNode.position.x + 400, y: sourceNode.position.y };
-    const newNode = NodeFactory.createNode(newNodePosition, nodeType, true);
+
+    const newNodePosition = {
+        x: sourceNode.position.x + 400,
+        y: sourceNode.position.y,
+    };
+
+    const newNode = createNode(newNodePosition, nodeType, true);
     addNode(newNode);
     handleConnect({ source: sourceNode.id, target: newNode.id, sourceHandle: 'source', targetHandle: 'target' });
 };

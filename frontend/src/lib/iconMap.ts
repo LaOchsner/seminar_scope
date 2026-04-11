@@ -44,31 +44,38 @@ export const getIconComponent = (iconName: string): ComponentType<LucideProps> =
 interface AssetTypeVisual {
     icon: ComponentType<LucideProps>;
     color: string;
+    label: string;
 }
 
 export const ASSET_TYPE_VISUALS: Record<AssetType, AssetTypeVisual> = {
     ocelFile: {
         icon: Database,
         color: 'text-blue-500',
+        label: 'OCEL',
     },
     ocptFile: {
         icon: FileText,
         color: 'text-green-500',
+        label: 'OCPT',
     },
     ocptAsset: {
         icon: FileText,
         color: 'text-green-500',
+        label: 'OCPT',
     },
     ocelAsset: {
         icon: Database,
         color: 'text-blue-500',
+        label: 'OCEL',
     },
     ocelCollectionFile: {
         icon: FileStack,
         color: 'text-green-500',
+        label: 'OCEL Collection',
     },
     identityOcptAsset: {
         icon: FileText,
         color: 'text-amber-500',
+        label: 'Identity OCPT',
     },
 };

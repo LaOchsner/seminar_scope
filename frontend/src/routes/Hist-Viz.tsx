@@ -20,7 +20,7 @@ import { getDeterministicColor } from '~/lib/colors';
 import { handleMinerOutput } from '~/lib/explore/flowActions';
 import { FileExploreNodeData } from '~/types/explore/nodeData/fileNodeData';
 import '~/styles/hist-viz.css';
-import type { HistogramEntry } from '~/types';
+import type { HistogramEntry } from '~/types/histogram.types';
 
 type Perspective = 'event' | 'object';
 export default function HistViz() {

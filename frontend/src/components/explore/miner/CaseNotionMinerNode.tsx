@@ -10,6 +10,7 @@ import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
 import { useMineCaseNotionMutation } from '~/services/mutation';
 import { useGetCaseNotions, useGetOcelObjectTypes } from '~/services/queries';
 import { handleMinerOutput } from '~/lib/explore/flowActions';
+import { useInputAsset } from '~/hooks/explore/useMinerAssets';
 import { BaseExploreNodeDropdownOption } from '~/types/explore/nodeData/baseNodeData';
 import { MinerNode } from '~/types/explore/nodes';
 
@@ -17,9 +18,9 @@ const CaseNotionMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const { assets } = node.data;
     const queryClient = useQueryClient();
 
-    // Node State
-    const [fileId, setFileId] = useState<string | null>(null);
-    const [fileName, setFileName] = useState<string>('');
+    const inputAsset = useInputAsset(assets);
+    const fileId = inputAsset?.id ?? null;
+    const fileName = inputAsset?.name ?? '';
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     // Mining Form State
@@ -42,12 +43,6 @@ const CaseNotionMinerNode = memo<NodeProps<MinerNode>>((node) => {
         reset: resetCaseNotionMutation,
     } = useMineCaseNotionMutation();
     const { data: exportData, isFetching: isExportingData } = useGetCaseNotions(currentCnFileId, makeFinalFetch);
-
-    useEffect(() => {
-        const inputAsset = assets.find((a) => a.io === 'input');
-        setFileId(inputAsset?.id ?? null);
-        setFileName(inputAsset?.name ?? '');
-    }, [assets]);
 
     // Handle Export Effect
     useEffect(() => {
@@ -75,8 +70,7 @@ const CaseNotionMinerNode = memo<NodeProps<MinerNode>>((node) => {
             queryClient.removeQueries({ queryKey: ['getCaseNotions', currentCnFileId] });
         }
 
-        setFileId(null);
-        setFileName('');
+        // 3. Reset Local Node State
         setIsDialogOpen(false);
 
         setAlgorithm('traditional');

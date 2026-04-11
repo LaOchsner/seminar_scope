@@ -1,18 +1,20 @@
 import type { Edge, Node } from '@xyflow/react';
-
-import type { FlowElementInfo } from '~/types/flow/flow.types';
-import type { AltFlowJson, EdgeData } from '~/types/flow/altFlow.types';
-import { ACTIVITY_NODE_HEIGHT, ACTIVITY_NODE_WIDTH, LANE_Y_OFFSET, NODE_X_SPACING } from '~/consts/flow/lbofConstants';
-import { OperatorNodeSize } from '~/lib/flow/nodeOperatorSize';
-import { Logger } from '~/lib/logger';
+import {
+    ACTIVITY_NODE_HEIGHT,
+    ACTIVITY_NODE_WIDTH,
+    LANE_Y_OFFSET,
+    NODE_X_SPACING,
+} from '~/components/flow/lbofConstants';
 import { addDecisionAndEdgeNodesForActivities, createEdge } from '~/lib/flow/lbofLayout.helper';
+import { OperatorNodeSize } from '~/lib/flow/nodeOperatorSize';
 import { HorizontalOverlapResolver } from '~/lib/flow/sweepLine';
+import { logger } from '~/lib/logger';
+import type { AltFlowJson, EdgeData } from '~/types/flow/altFlow.types';
+import type { FlowElementInfo } from '~/types/flow/flow.types';
 
 export const visualizeFlowFromJson = (
     jsonFlows: AltFlowJson[]
 ): { nodes: Node[]; edges: Edge[]; flowElementArrays: FlowElementInfo[][] } => {
-    const logger = Logger.getInstance();
-
     const allNodes: Node[] = [];
     const allEdges: Edge<EdgeData>[] = [];
     const flowElementArrays: FlowElementInfo[][] = [];

@@ -1,5 +1,5 @@
 import type { Node } from '@xyflow/react';
-import { Logger } from '~/lib/logger';
+import { logger } from '~/lib/logger';
 
 interface Event {
     y: number;
@@ -15,8 +15,6 @@ interface HorizontalOverlap {
 
 export class HorizontalOverlapResolver {
     detectHorizontalOverlaps(nodes: Node[]): HorizontalOverlap[] {
-        const logger = Logger.getInstance();
-
         const overlaps: HorizontalOverlap[] = [];
 
         const events: Event[] = [];
@@ -60,8 +58,6 @@ export class HorizontalOverlapResolver {
     }
 
     private checkHorizontalOverlap(node1: Node, node2: Node): HorizontalOverlap | null {
-        const logger = Logger.getInstance();
-
         if (!node1.width || !node2.width) {
             logger.error('One of these nodes has no width defined', node1, node2);
             return null;

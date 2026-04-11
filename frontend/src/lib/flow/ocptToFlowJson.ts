@@ -1,5 +1,5 @@
 import type { HierarchyPointNode } from '@visx/hierarchy/lib/types';
-import { Logger } from '~/lib/logger';
+import { logger } from '~/lib/logger';
 import {
     isActivity,
     isExtendedProcessTreeOperatorNode,
@@ -15,8 +15,6 @@ const getChildrenIds = (children: AltFlowNode[]) => {
 };
 
 export const ocptToFlowJson = (ocpt: HierarchyPointNode<TreeNode>, activitiesArray: string[], ot: string) => {
-    const logger = Logger.getInstance();
-
     const flowJson: AltFlowJson = {
         activities: activitiesArray, // Activities here
         ot: ot,
@@ -69,7 +67,7 @@ const buildFlowRecursive = (
     isArbitrarySubtree: boolean,
     parentNodeId: string, // PARENT FLOW NODE NOT PARENT OCPT NODE!!!
     ot: string,
-    logger: Logger
+    logger: { log: (...args: unknown[]) => void; debug: (...args: unknown[]) => void; error: (...args: unknown[]) => void }
 ): AltFlowNode[] => {
     const nodeValue = node.data.value;
     // 1. Base Case: Node is Activity Node / SilentActivity / TrueSilentActivity

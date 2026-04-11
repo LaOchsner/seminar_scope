@@ -13,6 +13,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
+import AssetTypeList from '~/components/explore/AssetTypeList';
 import BaseFileNode from '~/components/explore/file/BaseFileNode';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useGetConformanceOcptOcel, useGetConformanceOcptOcpt, useGetOcpt } from '~/services/queries';
@@ -240,7 +241,9 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
                         />
                         <p className="text-xs font-semibold text-gray-500 mb-2">Conformance</p>
                         {!conformanceMode ? (
-                            <p className="text-xs text-muted-foreground italic">Optional: Connect OCEL or OCPT</p>
+                            <div className="flex flex-col gap-1">
+                                <AssetTypeList types={['ocelFile', 'ocptFile']} />
+                            </div>
                         ) : isConformanceLoading ? (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <Loader2 className="h-3 w-3 animate-spin" />

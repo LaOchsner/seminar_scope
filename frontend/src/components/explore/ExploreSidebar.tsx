@@ -8,58 +8,59 @@ import {
     SidebarMenuItem,
 } from '~/components/ui/sidebar';
 import DndCard from '~/components/explore/DndCard';
-import { iconMap } from '~/lib/iconMap';
+import { nodeRegistry, type SidebarGroup as NodeSidebarGroup, sidebarGroups } from '~/lib/explore/nodeRegistry';
+import { getIconComponent } from '~/lib/iconMap';
+import type { ExploreNodeType } from '~/types/explore/nodeTypesCategories';
+
+interface SidebarEntry {
+    type: ExploreNodeType;
+    label: string;
+    icon: string;
+}
+
+function getSidebarEntriesByGroup(group: NodeSidebarGroup): SidebarEntry[] {
+    return Object.entries(nodeRegistry)
+        .filter(([, entry]) => entry.sidebar?.group === group)
+        .map(([type, entry]) => ({
+            type: type as ExploreNodeType,
+            label: entry.sidebar!.label,
+            icon: entry.sidebar!.icon,
+        }));
+}
 
 const ExploreSidebar: React.FC = () => {
     return (
         <Sidebar side="right">
             <SidebarContent>
-                <SidebarGroup>
-                    <SidebarGroupLabel>
-                        <iconMap.file />
-                        <p className="ml-1">File Input</p>
-                    </SidebarGroupLabel>
-                    <SidebarGroupContent className="p-1">
-                        <SidebarMenu className="flex flex-row">
-                            <SidebarMenuItem className="ml-1">
-                                <DndCard title="OCPT File" Icon={iconMap.fileJson} nodeType="ocptFileNode" />
-                            </SidebarMenuItem>
-                            <SidebarMenuItem className="ml-1">
-                                <DndCard title="OCEL File" Icon={iconMap.fileSpreadsheet} nodeType="ocelFileNode" />
-                            </SidebarMenuItem>
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
-                <SidebarGroup>
-                    <SidebarGroupLabel>
-                        <iconMap.pickaxe />
-                        <p className="ml-1">Miner</p>
-                    </SidebarGroupLabel>
-                    <SidebarGroupContent className="p-1">
-                        <SidebarMenu className="flex flex-row flex-wrap">
-                            <SidebarMenuItem className="ml-1">
-                                <DndCard title="OCPT Miner" Icon={iconMap.treePine} nodeType="ocptMinerNode" />
-                            </SidebarMenuItem>
-                            <SidebarMenuItem className="ml-1">
-                                <DndCard
-                                    title="Histogram Filter"
-                                    Icon={iconMap.chartBar}
-                                    nodeType="histogramMinerNode"
-                                />
-                            </SidebarMenuItem>
-                            <SidebarMenuItem className="ml-1">
-                                <DndCard title="Case Notions" Icon={iconMap.waves} nodeType="caseNotionMinerNode" />
-                            </SidebarMenuItem>
-                            <SidebarMenuItem className="ml-1">
-                                <DndCard
-                                    title="Extend Identity"
-                                    Icon={iconMap.fingerprint}
-                                    nodeType="identityExtendMinerNode"
-                                />
-                            </SidebarMenuItem>
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
+                {(Object.keys(sidebarGroups) as NodeSidebarGroup[]).map((group) => {
+                    const entries = getSidebarEntriesByGroup(group);
+                    if (entries.length === 0) return null;
+
+                    const { label, icon, menuClassName } = sidebarGroups[group];
+                    const GroupIcon = getIconComponent(icon);
+
+                    return (
+                        <SidebarGroup key={group}>
+                            <SidebarGroupLabel>
+                                <GroupIcon />
+                                <p className="ml-1">{label}</p>
+                            </SidebarGroupLabel>
+                            <SidebarGroupContent className="p-1">
+                                <SidebarMenu className={menuClassName}>
+                                    {entries.map(({ type, label: entryLabel, icon: entryIcon }) => (
+                                        <SidebarMenuItem key={type} className="ml-1">
+                                            <DndCard
+                                                title={entryLabel}
+                                                Icon={getIconComponent(entryIcon)}
+                                                nodeType={type}
+                                            />
+                                        </SidebarMenuItem>
+                                    ))}
+                                </SidebarMenu>
+                            </SidebarGroupContent>
+                        </SidebarGroup>
+                    );
+                })}
             </SidebarContent>
         </Sidebar>
     );

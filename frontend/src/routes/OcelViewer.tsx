@@ -5,7 +5,6 @@ import BreadcrumbNav from '~/components/BreadcrumbNav';
 import OcelVisualization from '~/components/graph_visualization/OcelVisualization';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { assetTypeToNodeType } from '~/lib/explore/exploreNodes.utils';
-import { VisualizationExploreNodeData } from '~/types/explore/nodeData/visualizationNodeData';
 import { ExploreFileNodeType } from '~/types/explore/nodeTypesCategories';
 
 const OcelViewer: React.FC = () => {
@@ -34,7 +33,7 @@ const OcelViewer: React.FC = () => {
             return;
         }
 
-        const nodeData = node.data as VisualizationExploreNodeData;
+        const nodeData = node.data;
 
         console.dir(node, { depth: null });
         console.log('Node found:', node);
