@@ -2,7 +2,7 @@ import { addEdge, applyEdgeChanges, applyNodeChanges } from '@xyflow/react';
 import { StateCreator } from 'zustand';
 import { ExploreFlowStore } from '~/stores/exploreStore';
 import { getDeterministicColor } from '~/lib/colors';
-import { isFileNode, isVisualizationNode } from '~/lib/explore/exploreNodes.utils';
+import { isFileNode } from '~/lib/explore/exploreNodes.utils';
 import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import { FileExploreNodeData, HistogramState } from '~/types/explore/nodeData/fileNodeData';
 import { ExploreNode } from '~/types/explore/nodes';
@@ -59,7 +59,7 @@ export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice
             const outgoingEdges = state.edges.filter((edge) => edge.source === nodeId);
             const updatedNodes = state.nodes.map((node) => {
                 const incomingEdge = outgoingEdges.find((e) => e.target === node.id);
-                if (incomingEdge && isVisualizationNode(node)) {
+                if (incomingEdge) {
                     const filteredAssets = node.data.assets.filter(
                         (asset) => !nodeToDelete.data.assets.some((sourceAsset) => sourceAsset.id === asset.id)
                     );

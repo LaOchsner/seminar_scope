@@ -54,4 +54,5 @@ export interface BaseExploreNodeData extends Record<string, unknown> {
     nodeCategory: ExploreNodeCategory;
     allowedAssetTypes: readonly AssetType[];
     isStale?: boolean;
+    colorMap: (objectType: string) => string;
 }
