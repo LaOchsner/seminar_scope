@@ -206,7 +206,6 @@ export const handleConnect = (connection: Connection) => {
         });
     }
 };
-
 export const spawnDownstreamNode = (sourceNodeId: string, nodeType: ExploreNodeType) => {
     const { nodes, addNode } = useExploreFlowStore.getState();
     const sourceNode = nodes.find((n) => n.id === sourceNodeId);

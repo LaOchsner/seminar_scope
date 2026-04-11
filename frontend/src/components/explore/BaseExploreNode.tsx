@@ -106,6 +106,7 @@ const BaseExploreNode = memo<BaseExploreNodeProps>(
                     {handleOptions.map((handleOption, index) => (
                         <Handle
                             key={`${id}-${handleOption.type}-${index}`}
+                            id={handleOption.id}
                             position={handleOption.position}
                             type={handleOption.type}
                         />

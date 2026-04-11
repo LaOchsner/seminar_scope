@@ -258,7 +258,7 @@ export default function HistViz() {
                 onSuccess: (data) => {
                     console.log('Filtered histogram created:', data);
                     const outputId = data[0];
-                    // Use handleMinerOutput — name uses the output OCEL ID
+                    // Use handleMinerOutput - name uses the output OCEL ID
                     handleMinerOutput({
                         nodeId: nodeId!,
                         outputAssetId: outputId,
