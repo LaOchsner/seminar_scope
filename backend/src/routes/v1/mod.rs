@@ -8,6 +8,7 @@ pub mod log_graphs;
 pub mod objects;
 pub mod ocim;
 pub mod ocpn;
+pub mod resource_miner;
 pub mod upload;
 use axum::Router;
 
@@ -27,4 +28,5 @@ pub fn router() -> Router {
         .nest("/ocpt", df2::router())
         .nest("/ocpt", ocim::router())
         .nest("/ocpt", extended_ocpt::router())
+        .nest("/resource_miner", resource_miner::router())
 }
