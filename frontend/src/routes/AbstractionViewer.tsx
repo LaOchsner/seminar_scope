@@ -1,5 +1,6 @@
 import { useParams } from 'react-router-dom';
 import BreadcrumbNav from '~/components/BreadcrumbNav';
+import Abstraction from '~/components/abstraction/Abstraction';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useGetAbstractionById } from '~/services/queries';
 
@@ -29,23 +30,13 @@ const AbstractionViewer: React.FC = () => {
             return <p className="text-destructive text-sm">Failed to load abstraction data.</p>;
         }
 
-        return (
-            <pre className="text-xs bg-muted rounded-md p-4 overflow-auto max-h-[70vh] whitespace-pre-wrap break-all">
-                {JSON.stringify(data.abstraction, null, 2)}
-            </pre>
-        );
+        return <Abstraction abstraction={data.abstraction} />;
     };
 
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col h-screen">
             <BreadcrumbNav />
-            <div className="flex flex-col gap-4 p-6 max-w-4xl mx-auto w-full">
-                <h1 className="text-2xl font-bold">Abstraction Viewer</h1>
-                {data && (
-                    <p className="text-sm text-muted-foreground">
-                        File ID: <span className="font-mono">{data.file_id}</span>
-                    </p>
-                )}
+            <div className="flex-1 min-h-0">
                 {renderContent()}
             </div>
         </div>
