@@ -10,6 +10,7 @@ import {
     FileText,
     Fingerprint,
     Grip,
+    Layers,
     type LucideProps,
     Network,
     Pickaxe,
@@ -35,6 +36,7 @@ export const iconMap: Record<string, ComponentType<LucideProps>> = {
     pickaxe: Pickaxe,
     chartBar: ChartBar,
     fileStack: FileStack,
+    layers: Layers,
 };
 
 export const getIconComponent = (iconName: string): ComponentType<LucideProps> => {
@@ -77,5 +79,10 @@ export const ASSET_TYPE_VISUALS: Record<AssetType, AssetTypeVisual> = {
         icon: FileText,
         color: 'text-amber-500',
         label: 'Identity OCPT',
+    },
+    abstractionAsset: {
+        icon: Layers,
+        color: 'text-purple-500',
+        label: 'Abstraction',
     },
 };

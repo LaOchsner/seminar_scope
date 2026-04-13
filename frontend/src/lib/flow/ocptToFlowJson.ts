@@ -7,7 +7,7 @@ import {
     isTrueSilentActivity,
 } from '~/lib/ocpt/ocptGuards';
 import type { AltFlowJson, AltFlowNode, BranchInfo, ExecOptionObj, InterOperator } from '~/types/flow/altFlow.types';
-import type { TreeNode } from '~/types/ocpt/ocpt.types';
+import type { Node as TreeNode } from '~/types/ocpt/ocpt.types';
 
 const getChildrenIds = (children: AltFlowNode[]) => {
     const ids = children.map((child) => child.id);
@@ -67,7 +67,11 @@ const buildFlowRecursive = (
     isArbitrarySubtree: boolean,
     parentNodeId: string, // PARENT FLOW NODE NOT PARENT OCPT NODE!!!
     ot: string,
-    logger: { log: (...args: unknown[]) => void; debug: (...args: unknown[]) => void; error: (...args: unknown[]) => void }
+    logger: {
+        log: (...args: unknown[]) => void;
+        debug: (...args: unknown[]) => void;
+        error: (...args: unknown[]) => void;
+    }
 ): AltFlowNode[] => {
     const nodeValue = node.data.value;
     // 1. Base Case: Node is Activity Node / SilentActivity / TrueSilentActivity

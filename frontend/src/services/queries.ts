@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import {
+    AbstractionSourceKind,
     extendOcptWithIdentity,
+    getAbstraction,
     getAdvancedCN,
     getCaseNotions,
     getConformanceOcptOcel,
@@ -137,6 +139,20 @@ export const useExtendOcptWithIdentity = (
         queryKey: ['extendOcptWithIdentity', nodeId, ocptFileId, ocelFileId],
         queryFn: () => extendOcptWithIdentity(ocptFileId!, ocelFileId!),
         enabled: Boolean(ocptFileId) && Boolean(ocelFileId) && shouldFetch,
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetAbstraction = (
+    nodeId: string,
+    fileId: string | null,
+    sourceKind: AbstractionSourceKind | null,
+    shouldFetch: boolean
+) => {
+    return useQuery({
+        queryKey: ['getAbstraction', nodeId, fileId, sourceKind],
+        queryFn: () => getAbstraction(fileId!, sourceKind!),
+        enabled: Boolean(fileId) && Boolean(sourceKind) && shouldFetch,
         refetchOnWindowFocus: false,
     });
 };

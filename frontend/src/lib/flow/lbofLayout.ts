@@ -8,7 +8,6 @@ import {
 import { addDecisionAndEdgeNodesForActivities, createEdge } from '~/lib/flow/lbofLayout.helper';
 import { OperatorNodeSize } from '~/lib/flow/nodeOperatorSize';
 import { HorizontalOverlapResolver } from '~/lib/flow/sweepLine';
-import { logger } from '~/lib/logger';
 import type { AltFlowJson, EdgeData } from '~/types/flow/altFlow.types';
 import type { FlowElementInfo } from '~/types/flow/flow.types';
 

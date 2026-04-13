@@ -131,6 +131,23 @@ export const getOcelObjectTypes = async (fileId: string): Promise<CaseNotionApiR
     return response.data;
 };
 
+export type AbstractionSourceKind = 'ocel' | 'ocpt' | 'extended_ocpt';
+
+export type GetAbstractionResponse = {
+    file_id: string;
+    source_file_id: string;
+    source_kind: AbstractionSourceKind;
+    abstraction: unknown;
+};
+
+export const getAbstraction = async (
+    fileId: string,
+    sourceKind: AbstractionSourceKind
+): Promise<GetAbstractionResponse> => {
+    const response = await api.get(`/v1/abstractions/${sourceKind}/${fileId}`);
+    return response.data;
+};
+
 export const mineOcpt = async (fileId: string, algorithm: string = 'DF2'): Promise<GetOcptResponse> => {
     if (algorithm === 'DF2') {
         const response = await api.get(`v1/ocpt/df2/${fileId}`);
