@@ -4,8 +4,7 @@ import { CaseOcelResponse } from '~/types/api/ocel_collection.api';
 import { CaseNotionApiResponse } from '~/types/case_notion.types';
 import { ExtendedFile } from '~/types/files.types';
 import { OcptSchemaApi } from '~/types/ocpt/ocpt.types';
-
-// Import the new type
+import type { OCLanguageAbstraction } from '~/types/abstraction.types';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_BACKEND_BASE_URL,
@@ -137,7 +136,7 @@ export type GetAbstractionResponse = {
     file_id: string;
     source_file_id: string;
     source_kind: AbstractionSourceKind;
-    abstraction: unknown;
+    abstraction: OCLanguageAbstraction;
 };
 
 export const getAbstraction = async (
@@ -150,7 +149,7 @@ export const getAbstraction = async (
 
 export type GetAbstractionByIdResponse = {
     file_id: string;
-    abstraction: unknown;
+    abstraction: OCLanguageAbstraction;
 };
 
 export const getAbstractionById = async (fileId: string): Promise<GetAbstractionByIdResponse> => {
