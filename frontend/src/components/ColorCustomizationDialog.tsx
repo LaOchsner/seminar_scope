@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { RefreshCcw } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '~/components/ui/dialog';
@@ -18,6 +18,18 @@ interface ColorCustomizationDialogProps {
 export const ColorCustomizationDialog: React.FC<ColorCustomizationDialogProps> = ({ isOpen, onClose, nodeId }) => {
     //  Reactive subscription: Updates automatically if the store changes
     const node = useExploreFlowStore((state) => state.nodes.find((n) => n.id === nodeId));
+
+    // Fix for Radix UI scroll locking bug
+    useEffect(() => {
+        if (!isOpen) {
+            const timer = setTimeout(() => {
+                document.body.style.pointerEvents = '';
+                document.body.style.overflow = '';
+                document.body.removeAttribute('data-scroll-locked');
+            }, 50);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen]);
 
     // We only need the getter from the store now. The setting is handled by the action.
     const { getColorForNode } = useExploreFlowStore();
