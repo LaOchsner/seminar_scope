@@ -23,6 +23,7 @@ interface CaseNotionDialogProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     fileId: string | null;
+    nodeId: string;
 
     // Form State
     algorithm: string;
@@ -39,7 +40,7 @@ interface CaseNotionDialogProps {
     // Status
     isMining: boolean;
     isExporting: boolean;
-    hasUnminedChanges: boolean; // If settings changed since last mine
+    hasUnminedChanges: boolean;
 
     // Actions
     onMine: () => void;
@@ -50,6 +51,7 @@ const CaseNotionDialog = ({
     isOpen,
     onOpenChange,
     fileId,
+    nodeId,
     algorithm,
     onAlgorithmChange,
     objectType,
@@ -81,6 +83,8 @@ const CaseNotionDialog = ({
                                         caseNotionGraph={caseNotionData?.type_level_graph}
                                         editable={algorithm === 'generic'}
                                         onGenericPayloadChange={onGenericPayloadChange}
+                                        // --- 3. PASS NODE ID DOWN ---
+                                        nodeId={nodeId}
                                     />
                                 ) : (
                                     <div className="flex flex-1 items-center justify-center">

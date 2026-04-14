@@ -1,6 +1,6 @@
 import { StateCreator } from 'zustand';
-import { ExploreNode } from '~/types/explore/nodes';
 import { ExploreFlowStore } from '~/stores/exploreStore';
+import { ExploreNode } from '~/types/explore/nodes';
 import { PipelineSlice, SavedPipeline } from './pipelineSlice.types';
 
 export const createPipelineSlice: StateCreator<ExploreFlowStore, [], [], PipelineSlice> = (set, get) => ({
@@ -75,7 +75,6 @@ export const createPipelineSlice: StateCreator<ExploreFlowStore, [], [], Pipelin
                 nodes: restoredNodes,
                 edges: pipeline.edges,
                 currentPipeline: { id: pipeline.id, name: pipeline.name },
-                histogramStates: {},
             });
         }
     },

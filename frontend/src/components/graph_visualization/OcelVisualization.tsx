@@ -6,14 +6,20 @@ import OcelCollectionSidebar from '~/components/OcelCollectionSidebar';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useGetOcel, useGetOcelCollection } from '~/services/queries';
 
-const MAX_CHUNK = 5;
-
 const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
     fileId,
+    nodeId,
     isFullScreen = false,
     sourceType = 'ocelFileNode',
 }) => {
-    const { getColorForObject } = useExploreFlowStore();
+    const getColorForNode = useExploreFlowStore((s) => s.getColorForNode);
+    const initializeDataState = useExploreFlowStore((s) => s.initializeDataState);
+
+    // Subscribe to the actual colorMap to re render to color map changes.
+    const colorMap = useExploreFlowStore((s) => {
+        const node = s.nodes.find((n) => n.id === nodeId);
+        return (node?.data as any)?.colorMap as Record<string, string> | undefined;
+    });
 
     const isCollection = sourceType === 'ocelCollectionNode';
     const isOcel = sourceType === 'ocelFileNode';
@@ -50,7 +56,7 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
     const [selectedType, setSelectedType] = useState<string>('__ALL__');
 
     const { contextMenu, handleCollapse, handleExpand, handleTypeChange } = useGraphInteractions(
-        fileId,
+        nodeId,
         data,
         selectedType,
         setSelectedType,
@@ -59,10 +65,34 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
         svgRef
     );
 
+    // --- Main Rendering Effect ---
     useEffect(() => {
         if (!data) return;
 
-        // Tooltip setup
+        // Ensure colors are initialized if they aren't already (Backup for direct page loads)
+        const allObjectTypes = new Set<string>();
+        if (Array.isArray(data.objectTypes)) {
+            data.objectTypes.forEach((t: any) => {
+                const name = typeof t === 'string' ? t : t.name;
+                if (name) allObjectTypes.add(name);
+            });
+        } else if (Array.isArray(data.object_types)) {
+            data.object_types.forEach((t: any) => {
+                const name = typeof t === 'string' ? t : t.name;
+                if (name) allObjectTypes.add(name);
+            });
+        } else if (data.objects) {
+            Object.values(data.objects).forEach((obj: any) => {
+                if (obj.type) allObjectTypes.add(obj.type);
+            });
+        }
+
+        if (allObjectTypes.size > 0) {
+            // Only initialize if missing (initializeDataState handles the check internally usually,
+            // but it's safe to call here to ensure consistency)
+            initializeDataState(nodeId, Array.from(allObjectTypes));
+        }
+
         const tooltip = d3
             .select('body')
             .append('div')
@@ -76,14 +106,12 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
             .style('pointer-events', 'none')
             .style('opacity', 0);
 
-        // Helper to draw histograms
         const createHistogram = (ref: SVGSVGElement, dataArr: [string, number][], colorFn: (key: string) => string) => {
             const svg = d3.select(ref);
             svg.selectAll('*').remove();
 
             const width = svg.node()?.clientWidth || 250;
             const height = svg.node()?.clientHeight || 200;
-
             const margin = { top: 20, right: 20, bottom: 80, left: 40 };
 
             const x = d3
@@ -107,14 +135,13 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
                 .attr('y', ([, v]) => y(v))
                 .attr('width', x.bandwidth())
                 .attr('height', ([, v]) => y(0) - y(v))
-                .attr('fill', ([key]) => colorFn(key))
+                .attr('fill', ([key]) => colorFn(key)) // <--- Uses the passed color function
                 .on('mouseover', (event, [, v]) => tooltip.style('opacity', 1).html(`<strong>Count:</strong> ${v}`))
                 .on('mousemove', (event) =>
                     tooltip.style('left', event.pageX + 10 + 'px').style('top', event.pageY - 20 + 'px')
                 )
                 .on('mouseout', () => tooltip.style('opacity', 0));
 
-            // X Axis with rotation
             svg.append('g')
                 .attr('transform', `translate(0,${height - margin.bottom})`)
                 .call(d3.axisBottom(x))
@@ -123,7 +150,6 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
                 .style('text-anchor', 'end')
                 .attr('font-size', 9);
 
-            // Y Axis
             svg.append('g').attr('transform', `translate(${margin.left},0)`).call(d3.axisLeft(y));
         };
 
@@ -138,23 +164,27 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
             (d: any) => d.type || 'Unknown'
         );
 
-        // Only render histograms if not in full screen and not a collection
         if (!isFullScreen && !isCollection) {
-            // Events per activity graph: Dark Grey (from V1)
             if (eventsChartRef.current) {
+                // Activities get a static gray color
                 createHistogram(eventsChartRef.current, activityCounts, () => '#b6b8bcff');
             }
 
-            // Objects per type: Colored via Store (from V1)
             if (objectsChartRef.current) {
-                createHistogram(objectsChartRef.current, typeCounts, (k) => getColorForObject(fileId, k));
+                // Objects get the dynamic color from the store
+                createHistogram(objectsChartRef.current, typeCounts, (k) => getColorForNode(nodeId, k));
             }
         }
 
-        return () => tooltip.remove();
-    }, [data, isFullScreen, isCollection, fileId, getColorForObject]);
+        return () => {
+            tooltip.remove();
+        };
 
-    // 6. Data Preparation
+        // CRITICAL: Added 'colorMap' to dependencies.
+        // This ensures that when the user changes a color in the dialog, this useEffect runs again,
+        // re-calling 'createHistogram' with the new colors.
+    }, [data, isFullScreen, isCollection, fileId, nodeId, getColorForNode, initializeDataState, colorMap]);
+
     const eventTypes: string[] = Array.isArray(data?.eventTypes)
         ? data!.eventTypes.map((t: any) => (typeof t === 'string' ? t : t.name))
         : [];
@@ -190,25 +220,12 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
                 )}
 
                 <div className={`grid ${gridLayoutClass} gap-4 p-4 flex-1 overflow-auto`}>
-                    {/* Main Graph Area */}
                     <div
                         className={`bg-white rounded-xl shadow p-3 relative flex flex-col ${isFullScreen || isCollection ? 'col-span-4' : 'col-span-3'}`}
                     >
                         <svg ref={svgRef} className="w-full flex-1 min-h-0 border rounded-lg bg-gray-50" />
-
-                        {/* {chunk * MAX_CHUNK < (data.events?.length || 0) && (
-                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-                                <button
-                                    onClick={() => setChunk((prev) => prev + 1)}
-                                    className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
-                                >
-                                    Load More Events ({chunk * MAX_CHUNK}/{data.events.length})
-                                </button>
-                            </div>
-                        )} */}
                     </div>
 
-                    {/* Side Histograms (Hidden on Fullscreen or Collection Mode) */}
                     {!isFullScreen && !isCollection && (
                         <div className="col-span-1 flex flex-col gap-4">
                             <div className="bg-white rounded-xl shadow p-3 flex-1 flex flex-col">
@@ -224,7 +241,6 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
                 </div>
             </div>
 
-            {/* Sidebar for Filtering and Collection Navigation */}
             <OcelCollectionSidebar
                 isCollection={isCollection}
                 selectedType={selectedType}

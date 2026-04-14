@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import FileShowcase from '~/components/explore/file/ui/FileShowcase';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore, useStoredFiles } from '~/stores/store';
+import { generateColorMap } from '~/lib/colors';
+import { propagateMapDownstream } from '~/lib/explore/flowActions';
 import { refocusPipeline } from '~/lib/explore/refocusPipeline';
 import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import { ExtendedFile } from '~/types/files.types';
@@ -17,10 +19,9 @@ const FileSelectionDialog: React.FC<FileSelectionDialogProps> = ({ isOpen }) => 
     const { files } = useStoredFiles();
     const { getNode, updateNodeData } = useExploreFlowStore();
 
-    // Fix for "Frozen UI" bug: Force cleanup of Radix UI body locks when dialog closes
+    // Fix for Radix UI scroll locking bug
     useEffect(() => {
         if (!isOpen) {
-            // Small timeout to ensure we override Radix's internal logic if it gets stuck
             const timer = setTimeout(() => {
                 document.body.style.pointerEvents = '';
                 document.body.style.overflow = '';
@@ -32,10 +33,8 @@ const FileSelectionDialog: React.FC<FileSelectionDialogProps> = ({ isOpen }) => 
 
     useMemo(() => {
         if (!dialogNodeId) return;
-
         const node = getNode(dialogNodeId);
         if (!node) return;
-
         const validFiles = files.filter((file) => node.data.allowedAssetTypes.includes(file.fileType));
         setFilteredFiles(validFiles);
     }, [files, dialogNodeId, getNode]);
@@ -58,11 +57,24 @@ const FileSelectionDialog: React.FC<FileSelectionDialogProps> = ({ isOpen }) => 
                     io: 'output',
                 };
 
-                // Generate colors here for the event log
-                updateNodeData(dialogNodeId, () => ({
+                // --- COLOR LOGIC ---
+                // Get object types from file metadata
+                const objectTypes: string[] = (file as any).objectTypes || (file as any).metadata?.objectTypes || [];
+
+                // Generate the color map (Now imported from colors.ts)
+                const generatedColorMap = generateColorMap(objectTypes);
+
+                // Update the Current Node (Source of Truth)
+                updateNodeData(dialogNodeId, (prev) => ({
                     assets: [newAsset],
-                    // colorMap: generatedColrMap
+                    colorMap: generatedColorMap,
                 }));
+
+                // Force Update Downstream Nodes
+                // Wait 10ms for state to settle, then propagate
+                setTimeout(() => {
+                    propagateMapDownstream(dialogNodeId, generatedColorMap);
+                }, 10);
             }
             closeDialog();
         },

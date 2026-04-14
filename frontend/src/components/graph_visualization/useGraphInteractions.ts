@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { useExploreFlowStore } from '~/stores/exploreStore';
-import { getDanglingNeighbors, getImmediateNeighbors } from './graphUtils';
+import { getDanglingNeighbors } from './graphUtils';
 import { ContextMenuState, EdgeDatum, NodeDatum } from './types';
 
 const MAX_CHUNK = 5;
@@ -9,7 +9,7 @@ const NODE_RADIUS = 20;
 const NODE_GAP = 40;
 
 export const useGraphInteractions = (
-    fileId: string,
+    nodeId: string,
     data: any,
     selectedType: string,
     setSelectedType: React.Dispatch<React.SetStateAction<string>>,
@@ -17,8 +17,13 @@ export const useGraphInteractions = (
     setChunk: React.Dispatch<React.SetStateAction<number>>,
     svgRef: React.RefObject<SVGSVGElement | null>
 ) => {
-    // Extract Store Actions
-    const { getColorForObject, initializeDataState } = useExploreFlowStore();
+    const getColorForNode = useExploreFlowStore((s) => s.getColorForNode);
+
+    // Subscribe to the actual colorMap data
+    const colorMap = useExploreFlowStore((s) => {
+        const node = s.nodes.find((n) => n.id === nodeId);
+        return (node?.data as any)?.colorMap as Record<string, string> | undefined;
+    });
 
     const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
     const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
@@ -31,8 +36,6 @@ export const useGraphInteractions = (
     const expandedNodeIdsRef = useRef<Set<string>>(new Set());
 
     // --- State Reset on Data Change ---
-    // This hook is required to clear the svg when cycling through the cases
-    // when the Graph is viewed for an OCEL Collection.
     useEffect(() => {
         nodesRef.current = [];
         edgesRef.current = [];
@@ -41,7 +44,6 @@ export const useGraphInteractions = (
         expandedNodeIdsRef.current.clear();
         setCollapsedNodes(new Set());
         setContextMenu(null);
-
         if (svgRef.current) {
             d3.select(svgRef.current).call(d3.zoom().transform as any, d3.zoomIdentity);
         }
@@ -51,12 +53,10 @@ export const useGraphInteractions = (
     const objectTypeLookup = useMemo(() => {
         const map = new Map<string, string>();
         if (!data || !data.objects) return map;
-
         const processObj = (id: string, obj: any) => {
             const type = obj.type || obj.objectType || obj.object_type || 'Unknown';
             map.set(id, type);
         };
-
         if (Array.isArray(data.objects)) {
             data.objects.forEach((obj: any) => {
                 const id = obj.id || obj.objectId || obj.object_id;
@@ -77,11 +77,9 @@ export const useGraphInteractions = (
         (nodeId: string) => {
             const node = nodesRef.current.find((n) => n.id === nodeId);
             if (!node) return;
-
             const newCollapsed = new Set(collapsedNodes);
             const danglingNeighbors = getDanglingNeighbors(nodeId, edgesRef.current);
             danglingNeighbors.forEach((n) => newCollapsed.add(n.id));
-
             setCollapsedNodes(newCollapsed);
             setContextMenu(null);
             setUpdateFlag((prev) => prev + 1);
@@ -99,22 +97,17 @@ export const useGraphInteractions = (
         (nodeId: string) => {
             const node = nodesRef.current.find((n) => n.id === nodeId);
             if (!node || !data) return;
-
             const newCollapsed = new Set(collapsedNodes);
             newCollapsed.delete(nodeId);
-
             if (node.type === 'object') {
                 const connectedEvents = (data.events || []).filter((evt: any) =>
                     (evt.relationships || []).some((rel: any) => rel.objectId?.toString() === nodeId)
                 );
-
                 const RADIUS = 70;
                 const totalEvents = Math.max(1, connectedEvents.length);
-
                 connectedEvents.forEach((evt: any, index: number) => {
                     const evtId = evt.id.toString();
                     let evtNode = nodesRef.current.find((n) => n.id === evtId);
-
                     const angle = (index / totalEvents) * 2 * Math.PI;
                     if (!evtNode) {
                         evtNode = {
@@ -127,7 +120,6 @@ export const useGraphInteractions = (
                         nodesRef.current.push(evtNode);
                         positionsRef.current.set(evtId, { x: evtNode.x!, y: evtNode.y! });
                     }
-
                     const edgeId = `${evtId}-${nodeId}`;
                     if (!edgesRef.current.find((e) => e.id === edgeId)) {
                         edgesRef.current.push({
@@ -137,25 +129,20 @@ export const useGraphInteractions = (
                             label: '',
                         });
                     }
-
                     expandedNodeIdsRef.current.add(evtId);
                     newCollapsed.delete(evtId);
                 });
             } else if (node.type === 'event') {
                 const rawEvent = (data.events || []).find((evt: any) => evt.id.toString() === nodeId);
                 if (!rawEvent) return;
-
                 const connectedRelationships = rawEvent.relationships || [];
                 const totalRelationships = Math.max(1, connectedRelationships.length);
                 const RADIUS = 70;
-
                 connectedRelationships.forEach((rel: any, index: number) => {
                     const objId = rel.objectId?.toString();
                     if (!objId) return;
-
                     let objNode = nodesRef.current.find((n) => n.id === objId);
                     const angle = (index / totalRelationships) * 2 * Math.PI;
-
                     if (!objNode) {
                         const type = objectTypeLookup.get(objId) || objId;
                         objNode = {
@@ -168,7 +155,6 @@ export const useGraphInteractions = (
                         nodesRef.current.push(objNode);
                         positionsRef.current.set(objId, { x: objNode.x!, y: objNode.y! });
                     }
-
                     const edgeId = `${nodeId}-${objId}`;
                     if (!edgesRef.current.find((e) => e.id === edgeId)) {
                         edgesRef.current.push({
@@ -178,12 +164,10 @@ export const useGraphInteractions = (
                             label: rel.qualifier || '',
                         });
                     }
-
                     expandedNodeIdsRef.current.add(objId);
                     newCollapsed.delete(objId);
                 });
             }
-
             setCollapsedNodes(newCollapsed);
             setContextMenu(null);
             setUpdateFlag((p) => p + 1);
@@ -191,39 +175,10 @@ export const useGraphInteractions = (
         [data, collapsedNodes, objectTypeLookup]
     );
 
-    // ---  Color State Initialization ---
-    useEffect(() => {
-        if (!data || !fileId) return;
-
-        const objectTypes: string[] = [];
-
-        if (Array.isArray(data.objectTypes)) {
-            data.objectTypes.forEach((t: any) => {
-                const name = typeof t === 'string' ? t : t.name;
-                if (name) objectTypes.push(name);
-            });
-        } else if (Array.isArray(data.object_types)) {
-            data.object_types.forEach((t: any) => {
-                const name = typeof t === 'string' ? t : t.name;
-                if (name) objectTypes.push(name);
-            });
-        }
-
-        if (objectTypes.length === 0 && objectTypeLookup.size > 0) {
-            const uniqueTypes = new Set(objectTypeLookup.values());
-            uniqueTypes.forEach((t) => objectTypes.push(t));
-        }
-
-        if (objectTypes.length > 0) {
-            initializeDataState(fileId, objectTypes);
-        }
-    }, [data, fileId, initializeDataState, objectTypeLookup]);
-
     // --- Main Render Effect ---
     useEffect(() => {
         if (!data || !svgRef.current) return;
 
-        // Build valid types set
         const validObjectTypes = new Set<string>();
         if (Array.isArray(data.objectTypes)) {
             data.objectTypes.forEach((t: any) => {
@@ -244,10 +199,8 @@ export const useGraphInteractions = (
         const svg = d3.select(svgRef.current);
         const width = svgRef.current.clientWidth;
         const height = svgRef.current.clientHeight;
-
         svg.selectAll('*').remove();
         const g = svg.append('g');
-
         const zoom = d3.zoom<SVGSVGElement, unknown>().on('zoom', (event) => {
             g.attr('transform', event.transform.toString());
             zoomTransformRef.current = event.transform;
@@ -259,7 +212,6 @@ export const useGraphInteractions = (
         const filteredEvents = events.filter(
             (evt: any) => selectedType === '__ALL__' || (evt.type || evt.activity) === selectedType
         );
-
         const chunkedEvents = filteredEvents.slice(0, chunk * MAX_CHUNK);
 
         const baseEventNodes: NodeDatum[] = chunkedEvents.map((evt: any) => ({
@@ -267,19 +219,13 @@ export const useGraphInteractions = (
             label: evt.type || evt.activity || 'Event',
             type: 'event',
         }));
-
         const objectIds = new Set<string>();
         chunkedEvents.forEach((evt: any) =>
             (evt.relationships || []).forEach((rel: any) => rel.objectId && objectIds.add(rel.objectId.toString()))
         );
-
         const baseObjectNodes: NodeDatum[] = Array.from(objectIds).map((objId) => {
             const type = objectTypeLookup.get(objId) || objId;
-            return {
-                id: objId,
-                label: type,
-                type: 'object',
-            };
+            return { id: objId, label: type, type: 'object' };
         });
 
         const newBaseEdges: EdgeDatum[] = [];
@@ -288,7 +234,6 @@ export const useGraphInteractions = (
                 const evtId = evt.id.toString();
                 const objId = rel.objectId?.toString();
                 if (!objId) return;
-
                 const source = { id: evtId, label: evt.type || evt.activity || 'Event', type: 'event' } as NodeDatum;
                 const type = objectTypeLookup.get(objId) || objId;
                 const target = { id: objId, label: type, type: 'object' } as NodeDatum;
@@ -299,7 +244,6 @@ export const useGraphInteractions = (
 
         const mergedNodeMap = new Map<string, NodeDatum>();
         [...baseEventNodes, ...baseObjectNodes].forEach((n) => mergedNodeMap.set(n.id, { ...n }));
-
         expandedNodeIdsRef.current.forEach((id) => {
             if (!mergedNodeMap.has(id)) {
                 const eventMatch = (data.events || []).find((evt: any) => evt.id.toString() === id);
@@ -315,7 +259,6 @@ export const useGraphInteractions = (
                 }
             }
         });
-
         nodesRef.current = Array.from(mergedNodeMap.values());
 
         const edgeMap = new Map<string, EdgeDatum>();
@@ -329,35 +272,37 @@ export const useGraphInteractions = (
                 });
             }
         });
-
         newBaseEdges.forEach((e) => {
             if (!edgeMap.has(e.id)) {
                 const source = mergedNodeMap.get(e.source.id);
                 const target = mergedNodeMap.get(e.target.id);
-                if (source && target) {
-                    edgeMap.set(e.id, { id: e.id, source, target, label: e.label });
-                }
+                if (source && target) edgeMap.set(e.id, { id: e.id, source, target, label: e.label });
             }
         });
-
         edgesRef.current = Array.from(edgeMap.values());
 
         nodesRef.current.forEach((n) => {
             if (!positionsRef.current.has(n.id)) {
                 let newX: number, newY: number, overlapping: boolean;
                 let attempts = 0;
+
+                // Keep generating random positions until we find one that doesn't overlap
+                // or we hit the attempt limit
                 do {
                     newX = width / 2 + Math.random() * 400 - 200;
                     newY = height / 2 + Math.random() * 400 - 200;
+
                     overlapping = Array.from(positionsRef.current.values()).some(
                         (p) => Math.hypot(p.x - newX, p.y - newY) < NODE_GAP
                     );
+
                     attempts++;
                     if (attempts > 100) break;
                 } while (overlapping);
+
                 n.x = newX;
                 n.y = newY;
-                positionsRef.current.set(n.id, { x: n.x!, y: n.y! });
+                positionsRef.current.set(n.id, { x: n.x, y: n.y });
             } else {
                 const pos = positionsRef.current.get(n.id)!;
                 n.x = pos.x;
@@ -369,6 +314,7 @@ export const useGraphInteractions = (
             if (!nodesRef.current.find((n) => n.id === id)) positionsRef.current.delete(id);
         });
 
+        // D3 Rendering
         g.selectAll('line')
             .data(
                 edgesRef.current.filter((d) => !collapsedNodes.has(d.source.id) && !collapsedNodes.has(d.target.id)),
@@ -383,7 +329,6 @@ export const useGraphInteractions = (
             .attr('y2', (d) => d.target.y!);
 
         const nodeData = nodesRef.current.filter((d) => !collapsedNodes.has(d.id));
-
         const nodeGroup = g
             .selectAll<SVGGElement, NodeDatum>('g.node')
             .data(nodeData, (d) => d.id)
@@ -396,22 +341,23 @@ export const useGraphInteractions = (
             .call(
                 d3
                     .drag<SVGGElement, NodeDatum>()
-                    .on('start', function (event, d) {
+                    .on('start', function (e, d) {
                         d.fx = d.x;
                         d.fy = d.y;
                     })
-                    .on('drag', function (event, d) {
-                        d.x = event.x;
-                        d.y = event.y;
+                    .on('drag', function (e, d) {
+                        d.x = e.x;
+                        d.y = e.y;
                         positionsRef.current.set(d.id, { x: d.x, y: d.y });
                         d3.select(this).attr('transform', `translate(${d.x},${d.y})`);
+                        // Update lines...
                         g.selectAll('line')
-                            .attr('x1', (edge: any) => edge.source.x!)
-                            .attr('y1', (edge: any) => edge.source.y!)
-                            .attr('x2', (edge: any) => edge.target.x!)
-                            .attr('y2', (edge: any) => edge.target.y!);
+                            .attr('x1', (l: any) => l.source.x)
+                            .attr('y1', (l: any) => l.source.y)
+                            .attr('x2', (l: any) => l.target.x)
+                            .attr('y2', (l: any) => l.target.y);
                     })
-                    .on('end', function (event, d) {
+                    .on('end', function (e, d) {
                         d.fx = null;
                         d.fy = null;
                     })
@@ -426,30 +372,22 @@ export const useGraphInteractions = (
             .attr('fill', (d) => {
                 const neighbors = getNodeEdges(d.id).map((e) => (e.source.id === d.id ? e.target : e.source));
                 const hasHiddenNeighbors = neighbors.some((n) => collapsedNodes.has(n.id));
-
                 if (hasHiddenNeighbors) return 'lightgray';
 
+                // VALIDATION:
                 const isInvalidObject = d.type === 'object' && !validObjectTypes.has(d.label);
+                if (d.type === 'event' || isInvalidObject) return 'white';
 
-                if (d.type === 'event' || isInvalidObject) {
-                    return 'white';
-                }
-
-                return getColorForObject(fileId, d.label);
+                // --- Using colors from store ---
+                return getColorForNode(nodeId, d.label);
             })
             .attr('stroke', (d) => {
                 const isInvalidObject = d.type === 'object' && !validObjectTypes.has(d.label);
-                if (d.type === 'event' || isInvalidObject) {
-                    return 'black';
-                }
-                return '#fff';
+                return d.type === 'event' || isInvalidObject ? 'black' : '#fff';
             })
             .attr('stroke-width', (d) => {
                 const isInvalidObject = d.type === 'object' && !validObjectTypes.has(d.label);
-                if (d.type === 'event' || isInvalidObject) {
-                    return 2.5;
-                }
-                return 1.5;
+                return d.type === 'event' || isInvalidObject ? 2.5 : 1.5;
             })
             .style('cursor', 'pointer')
             .on('click', (event, d) => {
@@ -458,16 +396,12 @@ export const useGraphInteractions = (
                 setContextMenu({ x, y, node: d });
             });
 
+        // (Text rendering logic...)
         nodeGroup.each(function (d) {
             const group = d3.select(this);
-
-            // If d.type is 'object' (whether valid or invalid), show the ID.
-            // If d.type is 'event', show the Label.
             const showId = d.type === 'object';
-
             const content = showId ? d.id || '' : d.label || '';
             const words = content.split(/[\s_]+|(?=[A-Z])/g);
-
             const lineHeight = 8;
             const maxLines = 3;
             const wrapped: string[] = [];
@@ -481,7 +415,6 @@ export const useGraphInteractions = (
             });
             if (line) wrapped.push(line);
             const finalLines = wrapped.length > maxLines ? [...wrapped.slice(0, maxLines - 1), '...'] : wrapped;
-
             const isInvalidObject = d.type === 'object' && !validObjectTypes.has(d.label);
             const textColor = d.type === 'event' || isInvalidObject ? 'black' : 'white';
 
@@ -503,7 +436,7 @@ export const useGraphInteractions = (
                 .attr('y', (_, i) => offset + i * lineHeight)
                 .text((t) => t);
         });
-    }, [data, chunk, selectedType, collapsedNodes, updateFlag, fileId, getColorForObject]);
+    }, [data, chunk, selectedType, collapsedNodes, updateFlag, nodeId, getColorForNode, colorMap]);
 
     return {
         collapsedNodes,
