@@ -9,8 +9,18 @@ export type AbstractionDfEdgeData = {
     loopSide?: Position;
 };
 
-const LOOP_RADIUS = 14;
+/** How far the loop bulges out from the node edge. */
+const LOOP_EXTENT = 52;
 
+/**
+ * Cubic-bezier self-loop paths. Each path exits the node on one side,
+ * curves away from the node by LOOP_EXTENT, and re-enters the same side.
+ * The path ends pointing INTO the node so the arrowhead reads naturally.
+ *
+ * ox/oy are the offsets along the edge from the node centre to the two
+ * attach points — kept proportional to node size so the loop doesn't look
+ * squashed on very wide or very narrow nodes.
+ */
 function selfLoopPath(
     px: number, py: number,
     w: number, h: number,
@@ -18,17 +28,24 @@ function selfLoopPath(
 ): string {
     const cx = px + w / 2;
     const cy = py + h / 2;
-    const r = LOOP_RADIUS;
+    const ex = LOOP_EXTENT;
+    const ox = Math.max(w * 0.28, 10);
+    const oy = Math.max(h * 0.35, 8);
+
     switch (side) {
         case Position.Left:
-            return `M ${px} ${cy + r} A ${r} ${r} 0 1 0 ${px} ${cy - r}`;
+            // exits bottom-left, loops left, re-enters top-left → arrow points right into node
+            return `M ${px} ${cy + oy} C ${px - ex} ${cy + oy} ${px - ex} ${cy - oy} ${px} ${cy - oy}`;
         case Position.Top:
-            return `M ${cx - r} ${py} A ${r} ${r} 0 1 0 ${cx + r} ${py}`;
+            // exits top-right, loops upward, re-enters top-left → arrow points down into node
+            return `M ${cx + ox} ${py} C ${cx + ox} ${py - ex} ${cx - ox} ${py - ex} ${cx - ox} ${py}`;
         case Position.Bottom:
-            return `M ${cx + r} ${py + h} A ${r} ${r} 0 1 0 ${cx - r} ${py + h}`;
+            // exits bottom-left, loops downward, re-enters bottom-right → arrow points up into node
+            return `M ${cx - ox} ${py + h} C ${cx - ox} ${py + h + ex} ${cx + ox} ${py + h + ex} ${cx + ox} ${py + h}`;
         case Position.Right:
         default:
-            return `M ${px + w} ${cy - r} A ${r} ${r} 0 1 1 ${px + w} ${cy + r}`;
+            // exits top-right, loops right, re-enters bottom-right → arrow points left into node
+            return `M ${px + w} ${cy - oy} C ${px + w + ex} ${cy - oy} ${px + w + ex} ${cy + oy} ${px + w} ${cy + oy}`;
     }
 }
 
@@ -49,7 +66,7 @@ export const AbstractionDfEdge = ({
 
     if (!sourceNode || !targetNode) return null;
 
-    // Self-loop: draw a proper arc on the least-congested side
+    // Self-loop: draw a cubic-bezier loop on the least-congested side
     if (source === target) {
         const w = sourceNode.measured?.width ?? 0;
         const h = sourceNode.measured?.height ?? 0;
@@ -57,7 +74,8 @@ export const AbstractionDfEdge = ({
         const py = sourceNode.internals.positionAbsolute.y;
         const side = data?.loopSide ?? Position.Right;
         const path = selfLoopPath(px, py, w, h, side);
-        return <BaseEdge id={id} path={path} style={edgeStyle} markerEnd="url(#df-arrow)" />;
+        const loopStyle = { ...edgeStyle, strokeWidth: 2 };
+        return <BaseEdge id={id} path={path} style={loopStyle} markerEnd="url(#df-arrow)" />;
     }
 
     const { sx, sy, tx, ty, sourcePos, targetPos } = getFloatingEdgeParams(sourceNode, targetNode);

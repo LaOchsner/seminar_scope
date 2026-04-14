@@ -14,19 +14,19 @@ const EV_NODE_HEIGHT = 36;
 
 const DAGRE_OPTS = { rankdir: 'TB', nodesep: 40, ranksep: 60, acyclicer: 'greedy', ranker: 'network-simplex' } as const;
 
-/** For a self-loop node, pick the side with fewest other connected edges using dagre positions. */
+/** For a self-loop node, pick the side with fewest other connected edges using dagre positions.
+ *  Prefers Right > Left > Top > Bottom as a tiebreaker, since OtEv edges always arrive from the left
+ *  and DF edges run top-to-bottom in a TB layout.
+ */
 function bestLoopSide(
     nodeId: string,
     dfRelations: [string, string][],
     g: InstanceType<typeof dagre.graphlib.Graph>
 ): Position {
     const node = g.node(nodeId);
-    const counts: Record<string, number> = {
-        [Position.Right]: 0,
-        [Position.Left]: 0,
-        [Position.Top]: 0,
-        [Position.Bottom]: 0,
-    };
+    // Preference order when counts are tied
+    const preference = [Position.Right, Position.Left, Position.Top, Position.Bottom];
+    const counts: Record<string, number> = Object.fromEntries(preference.map((p) => [p, 0]));
 
     for (const [from, to] of dfRelations) {
         if (from === to) continue; // skip other self-loops
@@ -42,7 +42,7 @@ function bestLoopSide(
         }
     }
 
-    return Object.entries(counts).sort(([, a], [, b]) => a - b)[0][0] as Position;
+    return preference.slice().sort((a, b) => counts[a] - counts[b])[0];
 }
 
 export const toObjectTypeGroup = (
