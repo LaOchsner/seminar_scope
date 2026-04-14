@@ -1,12 +1,24 @@
+import { useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import BreadcrumbNav from '~/components/BreadcrumbNav';
 import Abstraction from '~/components/abstraction/Abstraction';
 import { useExploreFlowStore } from '~/stores/exploreStore';
+import { getDeterministicColor } from '~/lib/colors';
 import { useGetAbstractionById } from '~/services/queries';
 
 const AbstractionViewer: React.FC = () => {
     const { nodeId } = useParams<{ nodeId: string }>();
     const getNode = useExploreFlowStore((s) => s.getNode);
+
+    const colorMap = useExploreFlowStore((s) => {
+        const node = s.nodes.find((n) => n.id === nodeId);
+        return (node?.data as any)?.colorMap as Record<string, string> | undefined;
+    });
+
+    const getObjectColor = useCallback(
+        (objectType: string) => colorMap?.[objectType] ?? getDeterministicColor(objectType),
+        [colorMap]
+    );
 
     const fileNode = nodeId ? getNode(nodeId) : undefined;
     const fileId = fileNode?.data.assets.find((a) => a.io === 'output')?.id ?? null;
@@ -30,7 +42,7 @@ const AbstractionViewer: React.FC = () => {
             return <p className="text-destructive text-sm">Failed to load abstraction data.</p>;
         }
 
-        return <Abstraction abstraction={data.abstraction} />;
+        return <Abstraction abstraction={data.abstraction} getObjectColor={getObjectColor} />;
     };
 
     return (

@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { BaseEdge, type Edge, type EdgeProps, getSmoothStepPath, useInternalNode } from '@xyflow/react';
-import { useColorScaleStore } from '~/stores/store';
 import { getFloatingEdgeParams } from '~/lib/abstraction/floatingEdge';
 
 export type AbstractionOtEvEdgeData = {
     objectType: string;
+    color: string;
     multiplicityLabel?: string;
 };
 
@@ -15,20 +15,18 @@ export const AbstractionOtEvEdge = ({
     style = {},
     data,
 }: EdgeProps<Edge<AbstractionOtEvEdgeData>>) => {
-    const { colorScale } = useColorScaleStore();
-
     const sourceNode = useInternalNode(source);
     const targetNode = useInternalNode(target);
 
     const edgeStyle = useMemo(
         () => ({
             ...style,
-            stroke: data?.objectType ? colorScale(data.objectType) : '#b1b1b7',
+            stroke: data?.color ?? '#b1b1b7',
             strokeWidth: 1,
             strokeDasharray: '5 4',
             opacity: 0.7,
         }),
-        [data?.objectType, colorScale, style]
+        [data?.color, style]
     );
 
     if (!sourceNode || !targetNode) return null;

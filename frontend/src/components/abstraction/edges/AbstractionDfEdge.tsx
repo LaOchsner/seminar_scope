@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { BaseEdge, type Edge, type EdgeProps, getBezierPath, Position, useInternalNode } from '@xyflow/react';
-import { useColorScaleStore } from '~/stores/store';
 import { getFloatingEdgeParams } from '~/lib/abstraction/floatingEdge';
 
 export type AbstractionDfEdgeData = {
     objectType: string;
+    color: string;
     identityLabel?: string;
     loopSide?: Position;
 };
@@ -39,19 +39,12 @@ export const AbstractionDfEdge = ({
     style = {},
     data,
 }: EdgeProps<Edge<AbstractionDfEdgeData>>) => {
-    const { colorScale } = useColorScaleStore();
-
     const sourceNode = useInternalNode(source);
     const targetNode = useInternalNode(target);
 
-    const edgeColor = useMemo(() => {
-        if (data?.objectType) return colorScale(data.objectType);
-        return '#b1b1b7';
-    }, [data?.objectType, colorScale]);
-
     const edgeStyle = useMemo(
-        () => ({ ...style, stroke: edgeColor, strokeWidth: 1.5 }),
-        [edgeColor, style]
+        () => ({ ...style, stroke: data?.color ?? '#b1b1b7', strokeWidth: 1.5 }),
+        [data?.color, style]
     );
 
     if (!sourceNode || !targetNode) return null;

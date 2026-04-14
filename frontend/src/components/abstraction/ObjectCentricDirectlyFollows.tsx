@@ -48,7 +48,8 @@ function bestLoopSide(
 export const toObjectTypeGroup = (
     objectType: string,
     abstraction: OCLanguageAbstraction,
-    xOffset: number
+    xOffset: number,
+    getObjectColor?: (objectType: string) => string
 ): { nodes: Node[]; edges: Edge[]; groupWidth: number } => {
     const dfRelations = abstraction.directly_follows_ev_types_per_ob_type[objectType] ?? [];
     const eventTypes = Array.from(new Set(dfRelations.flatMap(([from, to]) => [from, to]))).sort();
@@ -74,11 +75,13 @@ export const toObjectTypeGroup = (
     const otY = dagreGraphHeight / 2 - OT_NODE_SIZE / 2;
     const otNodeId = `ot-${objectType}`;
 
+    const color = getObjectColor ? getObjectColor(objectType) : '#b1b1b7';
+
     const otNode: Node = {
         id: otNodeId,
         type: 'abstractionOtNode',
         position: { x: xOffset, y: otY },
-        data: { objectType },
+        data: { objectType, color },
         width: OT_NODE_SIZE,
         height: OT_NODE_SIZE,
     };
@@ -109,6 +112,7 @@ export const toObjectTypeGroup = (
         type: 'abstractionDfEdge',
         data: {
             objectType,
+            color,
             loopSide: from === to ? bestLoopSide(from, dfRelations, g) : undefined,
         },
     }));
@@ -120,7 +124,7 @@ export const toObjectTypeGroup = (
         target: `ev-${objectType}-${eventType}`,
         targetHandle: 'otev-target',
         type: 'abstractionOtEvEdge',
-        data: { objectType },
+        data: { objectType, color },
     }));
 
     const groupWidth = OT_NODE_SIZE + OT_TO_EV_GAP + dagreGraphWidth + GROUP_GAP;

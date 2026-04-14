@@ -20,12 +20,13 @@ const edgeTypes = {
 
 interface AbstractionProps {
     abstraction: OCLanguageAbstraction;
+    getObjectColor?: (objectType: string) => string;
 }
 
-const Abstraction: React.FC<AbstractionProps> = ({ abstraction }) => {
+const Abstraction: React.FC<AbstractionProps> = ({ abstraction, getObjectColor }) => {
     const { nodes: initialNodes, edges: initialEdges } = useMemo(
-        () => toAbstractionFlow(abstraction),
-        [abstraction]
+        () => toAbstractionFlow(abstraction, getObjectColor),
+        [abstraction, getObjectColor]
     );
 
     const [nodes, , onNodesChange] = useNodesState<Node>(initialNodes);
@@ -36,7 +37,7 @@ const Abstraction: React.FC<AbstractionProps> = ({ abstraction }) => {
             <svg style={{ position: 'absolute', width: 0, height: 0 }}>
                 <defs>
                     <marker id="df-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="strokeWidth">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="#555" />
+                        <polygon points="0 0, 10 3.5, 0 7" fill="context-stroke" />
                     </marker>
                 </defs>
             </svg>
