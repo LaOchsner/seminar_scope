@@ -2,21 +2,17 @@ import { useEffect, useMemo } from 'react';
 import { Background, Controls, type Edge, type Node, ReactFlow, useEdgesState, useNodesState } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AbstractionDfEdge } from '~/components/abstraction/edges/AbstractionDfEdge';
-import { AbstractionOtEvEdge } from '~/components/abstraction/edges/AbstractionOtEvEdge';
 import AbstractionEvNode from '~/components/abstraction/nodes/AbstractionEvNode';
-import AbstractionOtNode from '~/components/abstraction/nodes/AbstractionOtNode';
 import { toAbstractionFlow } from '~/lib/abstraction/abstractionToFlow';
 import type { DfgDiff } from '~/lib/abstraction/abstractionDiff';
 import type { OCLanguageAbstraction } from '~/types/abstraction.types';
 
 const nodeTypes = {
-    abstractionOtNode: AbstractionOtNode,
     abstractionEvNode: AbstractionEvNode,
 };
 
 const edgeTypes = {
     abstractionDfEdge: AbstractionDfEdge,
-    abstractionOtEvEdge: AbstractionOtEvEdge,
 };
 
 interface AbstractionProps {

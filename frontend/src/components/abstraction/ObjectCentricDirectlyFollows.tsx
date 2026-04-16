@@ -2,12 +2,9 @@ import dagre from '@dagrejs/dagre';
 import type { Edge, Node } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import type { AbstractionDfEdgeData } from '~/components/abstraction/edges/AbstractionDfEdge';
-import type { AbstractionOtEvEdgeData } from '~/components/abstraction/edges/AbstractionOtEvEdge';
 import type { DfgDiff } from '~/lib/abstraction/abstractionDiff';
 import type { OCLanguageAbstraction } from '~/types/abstraction.types';
 
-const OT_NODE_SIZE = 80;
-const OT_TO_EV_GAP = 60;
 const GROUP_GAP = 120;
 
 const EV_NODE_WIDTH = 150;
@@ -33,9 +30,9 @@ function bestLoopSide(
         if (from === to) continue; // skip other self-loops
         const otherId = from === nodeId ? to : to === nodeId ? from : null;
         if (!otherId) continue;
-        const other = g.node(otherId);
-        const dx = other.x - node.x;
-        const dy = other.y - node.y;
+        const other = g.node(otherId) as { x: number; y: number };
+        const dx = other.x - (node as { x: number; y: number }).x;
+        const dy = other.y - (node as { x: number; y: number }).y;
         if (Math.abs(dy) >= Math.abs(dx)) {
             counts[dy >= 0 ? Position.Bottom : Position.Top]++;
         } else {
@@ -70,23 +67,8 @@ export const toObjectTypeGroup = (
     dagre.layout(g);
 
     const dagreGraphWidth = g.graph().width ?? 0;
-    const dagreGraphHeight = g.graph().height ?? 0;
-
-    // ── OtNode: placed to the left, vertically centered on the DFG ──────────
-    const evXOffset = xOffset + OT_NODE_SIZE + OT_TO_EV_GAP;
-    const otY = dagreGraphHeight / 2 - OT_NODE_SIZE / 2;
-    const otNodeId = `ot-${objectType}`;
 
     const color = getObjectColor(objectType);
-
-    const otNode: Node = {
-        id: otNodeId,
-        type: 'abstractionOtNode',
-        position: { x: xOffset, y: otY },
-        data: { objectType, color, diffStatus: diffInfo ? 'unique' : undefined },
-        width: OT_NODE_SIZE,
-        height: OT_NODE_SIZE,
-    };
 
     // ── Event nodes: dagre center → ReactFlow top-left ───────────────────────
     const evNodes: Node[] = eventTypes.map((eventType) => {
@@ -94,24 +76,34 @@ export const toObjectTypeGroup = (
         const diffStatus = diffInfo
             ? (diffInfo.uniqueEvents.has(eventType) ? 'unique' : 'shared')
             : undefined;
+        const isStartEvent = abstraction.start_ev_type_per_ob_type[objectType]?.includes(eventType) ?? false;
+        const isEndEvent = abstraction.end_ev_type_per_ob_type[objectType]?.includes(eventType) ?? false;
+        const startDiffStatus = diffInfo
+            ? (diffInfo.uniqueStartEvents.has(eventType) ? 'unique' : 'shared')
+            : undefined;
+        const endDiffStatus = diffInfo
+            ? (diffInfo.uniqueEndEvents.has(eventType) ? 'unique' : 'shared')
+            : undefined;
         return {
             id: `ev-${objectType}-${eventType}`,
             type: 'abstractionEvNode',
             position: {
-                x: evXOffset + x - EV_NODE_WIDTH / 2,
+                x: xOffset + x - EV_NODE_WIDTH / 2,
                 y: y - EV_NODE_HEIGHT / 2,
             },
             data: {
                 eventName: eventType,
                 color,
                 diffStatus,
-                isStartEvent: abstraction.start_ev_type_per_ob_type[objectType]?.includes(eventType) ?? false,
-                isEndEvent: abstraction.end_ev_type_per_ob_type[objectType]?.includes(eventType) ?? false,
+                isStartEvent,
+                isEndEvent,
+                startDiffStatus,
+                endDiffStatus,
             },
         };
     });
 
-    // ── Edges ─────────────────────────────────────────────────────────────────
+    // ── DF edges only ─────────────────────────────────────────────────────────
     const dfEdges: Edge<AbstractionDfEdgeData>[] = dfRelations.map(([from, to]) => {
         const edgeKey = `${from}|${to}`;
         const diffStatus = diffInfo
@@ -131,26 +123,11 @@ export const toObjectTypeGroup = (
         };
     });
 
-    const otEvEdges: Edge<AbstractionOtEvEdgeData>[] = eventTypes.map((eventType) => {
-        const diffStatus = diffInfo
-            ? (diffInfo.uniqueEvents.has(eventType) ? 'unique' : 'shared')
-            : undefined;
-        return {
-            id: `otev-${objectType}-${eventType}`,
-            source: otNodeId,
-            sourceHandle: `${otNodeId}-out`,
-            target: `ev-${objectType}-${eventType}`,
-            targetHandle: 'otev-target',
-            type: 'abstractionOtEvEdge',
-            data: { objectType, color, diffStatus },
-        };
-    });
-
-    const groupWidth = OT_NODE_SIZE + OT_TO_EV_GAP + dagreGraphWidth + GROUP_GAP;
+    const groupWidth = dagreGraphWidth + GROUP_GAP;
 
     return {
-        nodes: [otNode, ...evNodes],
-        edges: [...dfEdges, ...otEvEdges],
+        nodes: evNodes,
+        edges: dfEdges,
         groupWidth,
     };
 };

@@ -5,6 +5,10 @@ export interface DfgDiff {
     sharedEvents: Set<string>;
     uniqueEdges: Set<string>;
     sharedEdges: Set<string>;
+    /** Start events in THIS OT that are not start events in the other OT. */
+    uniqueStartEvents: Set<string>;
+    /** End events in THIS OT that are not end events in the other OT. */
+    uniqueEndEvents: Set<string>;
 }
 
 function eventsForOt(abstraction: OCLanguageAbstraction, ot: string): Set<string> {
@@ -50,5 +54,13 @@ export function computeDfgDiff(
         else uniqueEdges.add(edge);
     }
 
-    return { uniqueEvents, sharedEvents, uniqueEdges, sharedEdges };
+    const thisStarts = new Set(abstraction.start_ev_type_per_ob_type[thisOt] ?? []);
+    const otherStarts = new Set(abstraction.start_ev_type_per_ob_type[otherOt] ?? []);
+    const uniqueStartEvents = new Set([...thisStarts].filter((e) => !otherStarts.has(e)));
+
+    const thisEnds = new Set(abstraction.end_ev_type_per_ob_type[thisOt] ?? []);
+    const otherEnds = new Set(abstraction.end_ev_type_per_ob_type[otherOt] ?? []);
+    const uniqueEndEvents = new Set([...thisEnds].filter((e) => !otherEnds.has(e)));
+
+    return { uniqueEvents, sharedEvents, uniqueEdges, sharedEdges, uniqueStartEvents, uniqueEndEvents };
 }
