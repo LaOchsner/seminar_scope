@@ -1,12 +1,16 @@
 use crate::handlers::conformance::{
-    get_conformance_extended_ocpt_abstraction, get_conformance_extended_ocpt_extended_ocpt,
-    get_conformance_extended_ocpt_ocel, get_conformance_ocpt_abstraction,
-    get_conformance_ocpt_ocel, get_conformance_ocpt_ocpt,
+    get_conformance_abstraction_abstraction, get_conformance_extended_ocpt_abstraction,
+    get_conformance_extended_ocpt_extended_ocpt, get_conformance_extended_ocpt_ocel,
+    get_conformance_ocpt_abstraction, get_conformance_ocpt_ocel, get_conformance_ocpt_ocpt,
 };
 use axum::{Router, routing::get};
 
 pub fn router() -> Router {
     Router::new()
+        .route(
+            "/abstraction_1/{abstraction_id_1}/abstraction_2/{abstraction_id_2}",
+            get(get_conformance_abstraction_abstraction),
+        )
         .route(
             "/ocpt/{ocpt_id}/abstraction/{abstraction_id}",
             get(get_conformance_ocpt_abstraction),
