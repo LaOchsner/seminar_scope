@@ -4,6 +4,7 @@ import { Position } from '@xyflow/react';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
 import {
+    useGetConformanceAbstractionAbstraction,
     useGetConformanceExtendedOcptAbstraction,
     useGetConformanceExtendedOcptExtendedOcpt,
     useGetConformanceExtendedOcptOcel,
@@ -31,7 +32,8 @@ type ConformanceMode =
     | 'ocpt-ocpt'
     | 'extended-ocel'
     | 'extended-abstraction'
-    | 'extended-extended';
+    | 'extended-extended'
+    | 'abstraction-abstraction';
 
 interface ConformanceInputs {
     mode: ConformanceMode;
@@ -63,6 +65,10 @@ function detectConformance(
         if (lk === 'abstraction') return { mode: 'extended-abstraction', a: model, b: log };
         if (lk === 'extended_ocpt') return { mode: 'extended-extended', a: model, b: log };
     }
+
+    // Both abstractions — order doesn't matter
+    if (k1 === 'abstraction' && k2 === 'abstraction')
+        return { mode: 'abstraction-abstraction', a: asset1, b: asset2 };
 
     return null;
 }
@@ -107,9 +113,13 @@ const ConformanceMinerNode = memo<NodeProps<MinerNode>>((node) => {
         detected?.mode === 'extended-extended' ? detected.a.id : null,
         detected?.mode === 'extended-extended' ? detected.b.id : null
     );
+    const { data: absAbsResult, isLoading: l7 } = useGetConformanceAbstractionAbstraction(
+        detected?.mode === 'abstraction-abstraction' ? detected.a.id : null,
+        detected?.mode === 'abstraction-abstraction' ? detected.b.id : null
+    );
 
-    const result = ocptOcelResult ?? ocptAbsResult ?? ocptOcptResult ?? extOcelResult ?? extAbsResult ?? extExtResult;
-    const isLoading = l1 || l2 || l3 || l4 || l5 || l6;
+    const result = ocptOcelResult ?? ocptAbsResult ?? ocptOcptResult ?? extOcelResult ?? extAbsResult ?? extExtResult ?? absAbsResult;
+    const isLoading = l1 || l2 || l3 || l4 || l5 || l6 || l7;
 
     return (
         <BaseMinerNode

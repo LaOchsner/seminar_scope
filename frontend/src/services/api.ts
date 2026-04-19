@@ -164,6 +164,14 @@ export const getConformanceExtendedOcptExtendedOcpt = async (
     return response.data;
 };
 
+export const getConformanceAbstractionAbstraction = async (
+    abstractionId1: string,
+    abstractionId2: string
+): Promise<{ fitness: number; precision: number }> => {
+    const response = await api.get(`/v1/conformance/abstraction_1/${abstractionId1}/abstraction_2/${abstractionId2}`);
+    return response.data;
+};
+
 export const getOcelObjectTypes = async (fileId: string): Promise<CaseNotionApiResponse> => {
     const response = await api.get(`v1/objects/ocel/types/${fileId}`);
     return response.data;

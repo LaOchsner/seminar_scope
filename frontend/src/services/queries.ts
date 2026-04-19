@@ -6,6 +6,7 @@ import {
     getAbstractionById,
     getAdvancedCN,
     getCaseNotions,
+    getConformanceAbstractionAbstraction,
     getConformanceExtendedOcptAbstraction,
     getConformanceExtendedOcptExtendedOcpt,
     getConformanceExtendedOcptOcel,
@@ -157,6 +158,15 @@ export const useGetConformanceExtendedOcptExtendedOcpt = (extendedOcptId1: strin
         queryKey: ['getConformanceExtendedOcptExtendedOcpt', extendedOcptId1, extendedOcptId2],
         queryFn: () => getConformanceExtendedOcptExtendedOcpt(extendedOcptId1!, extendedOcptId2!),
         enabled: Boolean(extendedOcptId1) && Boolean(extendedOcptId2),
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetConformanceAbstractionAbstraction = (abstractionId1: string | null, abstractionId2: string | null) => {
+    return useQuery({
+        queryKey: ['getConformanceAbstractionAbstraction', abstractionId1, abstractionId2],
+        queryFn: () => getConformanceAbstractionAbstraction(abstractionId1!, abstractionId2!),
+        enabled: Boolean(abstractionId1) && Boolean(abstractionId2),
         refetchOnWindowFocus: false,
     });
 };
