@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { Position } from '@xyflow/react';
-import { Loader2, ShieldCheck } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
 import {
     useGetConformanceAbstractionAbstraction,
@@ -125,7 +125,7 @@ const ConformanceMinerNode = memo<NodeProps<MinerNode>>((node) => {
         <BaseMinerNode
             {...node}
             title="Conformance"
-            iconName="shieldCheck"
+            iconName="radar"
             handleOptions={[
                 { id: 'target', position: Position.Left, type: 'target' as const },
                 { id: 'source', position: Position.Right, type: 'source' as const },
@@ -149,14 +149,8 @@ const ConformanceMinerNode = memo<NodeProps<MinerNode>>((node) => {
                         </div>
                     ) : result ? (
                         <div className="flex flex-col gap-1 text-xs">
-                            <div className="flex items-center gap-2">
-                                <ShieldCheck className="h-3.5 w-3.5 text-blue-600" />
-                                <span className="font-medium">Fitness: {(result.fitness * 100).toFixed(1)}%</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <ShieldCheck className="h-3.5 w-3.5 text-orange-600" />
-                                <span className="font-medium">Precision: {(result.precision * 100).toFixed(1)}%</span>
-                            </div>
+                            <span className="font-medium">Fitness: {(result.fitness * 100).toFixed(1)}%</span>
+                            <span className="font-medium">Precision: {(result.precision * 100).toFixed(1)}%</span>
                         </div>
                     ) : null}
                 </div>

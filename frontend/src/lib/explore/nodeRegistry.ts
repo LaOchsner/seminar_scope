@@ -105,6 +105,6 @@ export const nodeRegistry = {
             { label: 'Input A', types: ['ocptAsset', 'ocptFile', 'identityOcptAsset', 'ocelFile', 'ocelAsset', 'abstractionAsset'] },
             { label: 'Input B', types: ['ocptAsset', 'ocptFile', 'identityOcptAsset', 'ocelFile', 'ocelAsset', 'abstractionAsset'] },
         ],
-        sidebar: { label: 'Conformance', icon: 'shieldCheck', group: 'miners' },
+        sidebar: { label: 'Conformance', icon: 'radar', group: 'miners' },
     },
 } satisfies Record<RegistrableNodeType, NodeRegistryEntry>;
