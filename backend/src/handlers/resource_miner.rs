@@ -15,6 +15,7 @@ pub struct ObjectNotResourceArc {
 pub struct ResourceMinerResponse {
     pub object_type_not_resource: Vec<String>,
     pub object_resource: Vec<String>,
+    pub all_event_types: Vec<String>,
     pub event_types_without_object_resource: Vec<String>,
     pub object_not_resource_arcs: Vec<ObjectNotResourceArc>,
     pub special_activity: Vec<String>,
@@ -133,8 +134,10 @@ pub async fn get_resource_miner(
     // Converting sets to arrays for JSON response
     let mut object_resource: Vec<String> = object_resource.into_iter().collect();
     let mut object_type_not_resource: Vec<String> = object_type_not_resource.into_iter().collect();
+    let mut all_event_types = all_activities;
 
     // Sorting arrays for deterministic JSON response
+    all_event_types.sort();
     object_resource.sort();
     object_type_not_resource.sort();
     special_activity.sort();
@@ -149,6 +152,7 @@ pub async fn get_resource_miner(
     let response = ResourceMinerResponse {
         object_type_not_resource,
         object_resource,
+        all_event_types,
         event_types_without_object_resource,
         object_not_resource_arcs,
         special_activity,
