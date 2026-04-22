@@ -18,6 +18,7 @@ import {
     getTraditionalCN,
     mineIdentityOcpt,
     mineOcpt,
+    getActivityResource,
 } from '~/services/api';
 import { getOcel } from '~/services/api';
 import { CaseNotionApiResponse } from '~/types/case_notion.types';
@@ -44,6 +45,19 @@ export const useGetOcel = (fileId: string | null) => {
     return useQuery({
         queryKey: ['getOcel', fileId],
         queryFn: () => getOcel(fileId!),
+        refetchOnWindowFocus: false,
+        enabled: Boolean(fileId),
+    });
+};
+
+
+export const useGetActivityResource = (fileId: string | null) => {
+    console.log('query');
+        console.log(fileId);
+
+    return useQuery({
+        queryKey: ['getActivityResource', fileId],
+        queryFn: () => getActivityResource(fileId!),
         refetchOnWindowFocus: false,
         enabled: Boolean(fileId),
     });

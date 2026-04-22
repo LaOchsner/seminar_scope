@@ -16,6 +16,14 @@ const ResourceMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const { assets } = nodeData;
     const [inputFileId, setInputFileId] = useState<string | null>(null);
     const { clearHistogramState } = useExploreFlowStore();
+    console.log('node data');
+    console.log(id);
+    console.log(nodeData);
+    
+
+const fileId = assets?.[0]?.id;
+
+console.log(fileId);
 
     useEffect(() => {
         const inputAsset = assets.find((a) => a.io === 'input' && a.type === 'ocelFile');
@@ -28,7 +36,11 @@ const ResourceMinerNode = memo<NodeProps<MinerNode>>((node) => {
 
     const openResourceInterface = () => {
         if (inputFileId) {
-            navigate(`/data/pipeline/explore/resource_graph/${id}`);
+            navigate(`/data/pipeline/explore/resource_graph/${id}`,
+                {
+                state: { fileId: inputFileId }
+            }
+            );
         }
     };
 
@@ -65,7 +77,7 @@ const ResourceMinerNode = memo<NodeProps<MinerNode>>((node) => {
     return (
         <BaseMinerNode
             {...node}
-            title="Resource Miner"
+            title="Activity Miner"
             iconName="chartBar"
             handleOptions={[
                 { id: 'target', position: Position.Left, type: 'target' as const },

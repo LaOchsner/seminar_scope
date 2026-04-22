@@ -64,6 +64,15 @@ export const getOcel = async (fileId: string) => {
     return response.data;
 };
 
+export const getActivityResource = async (fileId: string) => {
+    console.log('api foile id');
+    console.log(fileId);
+    const response = await api.get(`/v1/resource_miner/${fileId}`);
+    console.log('activity api response');
+    console.log(response.data);
+    return response.data;
+};
+
 export const getHistogramEventPersp = async (fileId: string) => {
     //const response = await api.get(`/v1/event_object_frequencies/histogram/${fileId}`);
     const response = await api.get(`/v1/event_object_frequencies/event_perspective_histogram/${fileId}`);
