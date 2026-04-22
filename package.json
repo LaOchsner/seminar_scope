@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "@dagrejs/dagre": "^3.0.0"
+    "@dagrejs/dagre": "^3.0.0",
+    "@visx/zoom": "^3.12.0"
   }
 }
