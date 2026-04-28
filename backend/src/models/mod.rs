@@ -7,3 +7,4 @@ pub mod ocel_collection;
 pub mod ocel_sid_df2_miner;
 pub mod ocpn;
 pub mod ocpt;
+pub mod resource_miner;
