@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { AlignEndHorizontalIcon, Compass, Eye, File, House, Network, Route } from 'lucide-react';
+import { AlignEndHorizontalIcon, Compass, Eye, File, House, Layers, Network, Route } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BreadcrumbItem, BreadcrumbPage, BreadcrumbSeparator } from '~/components/ui/breadcrumb';
 
@@ -36,6 +36,8 @@ const BreadCrumbPath: React.FC<BreadCrumbPathProps> = ({ pathnames }) => {
                 return <Route className={className} />;
             case 'hist-viz':
                 return <AlignEndHorizontalIcon className={className} />;
+            case 'abstraction':
+                return <Layers className={className} />;
         }
     };
 

@@ -6,8 +6,8 @@ use crate::models::ocel::{IndexLinkedOCEL, OCEL};
 use crate::models::ocpt::OCPT as BackendOCPT;
 use crate::traits::import_export::ImportableFromPath;
 use process_mining::conformance::object_centric::footprint_based_ocpt::{
-    FootprintConformance, compute_footprint_conformance, compute_footprint_conformance_abstractions,
-    compute_footprint_conformance_ocpt_vs_ocpt,
+    FootprintConformance, compute_footprint_conformance,
+    compute_footprint_conformance_abstractions, compute_footprint_conformance_ocpt_vs_ocpt,
 };
 use process_mining::conformance::object_centric::object_centric_language_abstraction::compute_fitness_precision;
 
@@ -107,7 +107,8 @@ pub async fn get_conformance_ocpt_abstraction(
     let footprint = maybe_compute_footprint(&abstraction, &model_abs, || {
         compute_footprint_conformance_abstractions(&abstraction, &model_abs)
     });
-    let (fitness, precision) = select_top_level_scores(&abstraction, &model_abs, footprint.as_ref());
+    let (fitness, precision) =
+        select_top_level_scores(&abstraction, &model_abs, footprint.as_ref());
 
     println!(
         "[conformance ocpt_abstraction] ocpt_id={} abstraction_id={} fitness={} precision={}{}",
@@ -139,12 +140,45 @@ pub async fn get_conformance_extended_ocpt_abstraction(
     let footprint = maybe_compute_footprint(&abstraction, &model_abs, || {
         compute_footprint_conformance_abstractions(&abstraction, &model_abs)
     });
-    let (fitness, precision) = select_top_level_scores(&abstraction, &model_abs, footprint.as_ref());
+    let (fitness, precision) =
+        select_top_level_scores(&abstraction, &model_abs, footprint.as_ref());
 
     println!(
         "[conformance extended_ocpt_abstraction] extended_ocpt_id={} abstraction_id={} fitness={} precision={}{}",
         extended_ocpt_id,
         abstraction_id,
+        fitness,
+        precision,
+        footprint_log_suffix(footprint.as_ref())
+    );
+
+    Json(conformance_payload(fitness, precision, footprint.as_ref())).into_response()
+}
+
+/// GET /v1/conformance/abstraction_1/{abstraction_id_1}/abstraction_2/{abstraction_id_2}
+/// -> loads ./temp/abstraction_{abstraction_id_1}.json and ./temp/abstraction_{abstraction_id_2}.json
+pub async fn get_conformance_abstraction_abstraction(
+    AxumPath((abstraction_id_1, abstraction_id_2)): AxumPath<(String, String)>,
+) -> impl IntoResponse {
+    let abstraction_1 = match OCLanguageAbstraction::import_from_path(&abstraction_id_1).await {
+        Ok(abstraction) => abstraction,
+        Err((status, message)) => return (status, message).into_response(),
+    };
+    let abstraction_2 = match OCLanguageAbstraction::import_from_path(&abstraction_id_2).await {
+        Ok(abstraction) => abstraction,
+        Err((status, message)) => return (status, message).into_response(),
+    };
+
+    let footprint = maybe_compute_footprint(&abstraction_1, &abstraction_2, || {
+        compute_footprint_conformance_abstractions(&abstraction_1, &abstraction_2)
+    });
+    let (fitness, precision) =
+        select_top_level_scores(&abstraction_1, &abstraction_2, footprint.as_ref());
+
+    println!(
+        "[conformance abstraction_abstraction] abstraction_id_1={} abstraction_id_2={} fitness={} precision={}{}",
+        abstraction_id_1,
+        abstraction_id_2,
         fitness,
         precision,
         footprint_log_suffix(footprint.as_ref())

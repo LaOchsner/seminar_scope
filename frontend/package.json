@@ -16,6 +16,7 @@
         "build-storybook": "storybook build"
     },
     "dependencies": {
+        "@dagrejs/dagre": "^3.0.0",
         "@gsap/react": "^2.1.2",
         "@popperjs/core": "^2.11.8",
         "@radix-ui/react-checkbox": "^1.1.2",

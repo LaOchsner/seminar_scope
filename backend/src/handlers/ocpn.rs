@@ -1,7 +1,5 @@
+use crate::core::ocpn_conversion::{ConvertOcptToOcpnError, convert_ocpt_to_ocpn};
 use crate::handlers::ocpt::ensure_temp_dir;
-use crate::core::ocpn_conversion::{
-    convert_ocpt_to_ocpn, ConvertOcptToOcpnError,
-};
 use crate::models::ocpn::OCPN;
 use crate::models::ocpt::OCPT;
 use crate::traits::import_export::{ExportableToPath, ImportableFromPath};

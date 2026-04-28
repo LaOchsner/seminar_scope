@@ -10,6 +10,7 @@ pub struct ObjectNotResourceArc {
 pub struct ResourceMinerResponse {
     pub object_type_not_resource: Vec<String>,
     pub object_resource: Vec<String>,
+    pub non_special_event_types: Vec<String>,
     pub event_types_without_object_resource: Vec<String>,
     pub object_not_resource_arcs: Vec<ObjectNotResourceArc>,
     pub special_activity: Vec<String>,

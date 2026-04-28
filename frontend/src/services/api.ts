@@ -4,8 +4,7 @@ import { CaseOcelResponse } from '~/types/api/ocel_collection.api';
 import { CaseNotionApiResponse } from '~/types/case_notion.types';
 import { ExtendedFile } from '~/types/files.types';
 import { OcptSchemaApi } from '~/types/ocpt/ocpt.types';
-
-// Import the new type
+import type { OCLanguageAbstraction } from '~/types/abstraction.types';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_BACKEND_BASE_URL,
@@ -135,6 +134,33 @@ export const getConformanceOcptOcpt = async (
 
 export const getOcelObjectTypes = async (fileId: string): Promise<CaseNotionApiResponse> => {
     const response = await api.get(`v1/objects/ocel/types/${fileId}`);
+    return response.data;
+};
+
+export type AbstractionSourceKind = 'ocel' | 'ocpt' | 'extended_ocpt';
+
+export type GetAbstractionResponse = {
+    file_id: string;
+    source_file_id: string;
+    source_kind: AbstractionSourceKind;
+    abstraction: OCLanguageAbstraction;
+};
+
+export const getAbstraction = async (
+    fileId: string,
+    sourceKind: AbstractionSourceKind
+): Promise<GetAbstractionResponse> => {
+    const response = await api.get(`/v1/abstractions/${sourceKind}/${fileId}`);
+    return response.data;
+};
+
+export type GetAbstractionByIdResponse = {
+    file_id: string;
+    abstraction: OCLanguageAbstraction;
+};
+
+export const getAbstractionById = async (fileId: string): Promise<GetAbstractionByIdResponse> => {
+    const response = await api.get(`/v1/objects/abstraction/${fileId}`);
     return response.data;
 };
 

@@ -10,7 +10,8 @@ use uuid::Uuid;
 pub type OCPNProperties = BTreeMap<String, Value>;
 
 pub use process_mining::PetriNet;
-#[allow(unused_imports)] // Re-exported for downstream API consumers; not referenced in this module yet.
+#[allow(unused_imports)]
+// Re-exported for downstream API consumers; not referenced in this module yet.
 pub use process_mining::core::process_models::case_centric::petri_net::{
     Arc, ArcType, Marking, Place, PlaceID, Transition, TransitionID,
 };
@@ -140,7 +141,8 @@ impl OCPN {
     }
 
     pub fn is_valid(&self) -> bool {
-        let place_ids: BTreeSet<String> = self.places.iter().map(|place| place.id.clone()).collect();
+        let place_ids: BTreeSet<String> =
+            self.places.iter().map(|place| place.id.clone()).collect();
         if place_ids.len() != self.places.len() {
             return false;
         }
@@ -182,7 +184,9 @@ impl OCPN {
         }
 
         let object_types: BTreeSet<String> = self.object_types().into_iter().collect();
-        self.nets.keys().all(|object_type| object_types.contains(object_type))
+        self.nets
+            .keys()
+            .all(|object_type| object_types.contains(object_type))
             && self.nets.values().all(OCPNPetriNet::is_valid)
     }
 }

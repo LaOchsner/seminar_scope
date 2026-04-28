@@ -101,9 +101,16 @@ pub fn build_resource_miner_response(
         .cloned()
         .collect();
 
+    let special_activity_set: FxHashSet<&String> = special_activity.iter().collect();
+    let mut non_special_event_types: Vec<String> = all_activities
+        .into_iter()
+        .filter(|activity| !special_activity_set.contains(activity))
+        .collect();
+
     let mut object_resource: Vec<String> = object_resource.into_iter().collect();
     let mut object_type_not_resource: Vec<String> = object_type_not_resource.into_iter().collect();
 
+    non_special_event_types.sort();
     object_resource.sort();
     object_type_not_resource.sort();
     special_activity.sort();
@@ -117,6 +124,7 @@ pub fn build_resource_miner_response(
     Ok(ResourceMinerResponse {
         object_type_not_resource,
         object_resource,
+        non_special_event_types,
         event_types_without_object_resource,
         object_not_resource_arcs,
         special_activity,

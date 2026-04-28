@@ -53,6 +53,11 @@ export const nodeRegistry = {
         allowedAssetTypes: ['ocelCollectionFile'],
         sidebar: null,
     },
+    abstractionFileNode: {
+        category: 'file',
+        allowedAssetTypes: ['abstractionAsset'],
+        sidebar: null,
+    },
 
     // ── Miner nodes ────────────────────────────────────────────────────────────
     ocptMinerNode: {
@@ -87,5 +92,10 @@ export const nodeRegistry = {
             { label: 'OCEL', types: ['ocelAsset', 'ocelFile'] },
         ],
         sidebar: { label: 'Flow Visualization', icon: 'zap', group: 'miners' },
+    },
+    abstractionMinerNode: {
+        category: 'miner',
+        allowedAssetTypes: ['ocelFile', 'ocelAsset', 'ocptFile', 'ocptAsset', 'identityOcptAsset'],
+        sidebar: { label: 'Abstraction', icon: 'layers', group: 'miners' },
     },
 } satisfies Record<RegistrableNodeType, NodeRegistryEntry>;

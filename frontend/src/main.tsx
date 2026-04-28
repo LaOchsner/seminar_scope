@@ -6,6 +6,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Toaster } from '~/components/ui/sonner';
 import RedirectErrorBoundary from '~/components/RedirectErrorBoundary';
 import '~/index.css';
+import AbstractionViewer from '~/routes/AbstractionViewer';
 import Explore from '~/routes/Explore';
 import FlowViewer from '~/routes/FlowViewer';
 import HistViz from '~/routes/Hist-Viz';
@@ -52,6 +53,14 @@ const router = createBrowserRouter([
         element: (
             <RedirectErrorBoundary>
                 <OcelViewer />
+            </RedirectErrorBoundary>
+        ),
+    },
+    {
+        path: '/data/pipeline/explore/abstraction/:nodeId',
+        element: (
+            <RedirectErrorBoundary>
+                <AbstractionViewer />
             </RedirectErrorBoundary>
         ),
     },
