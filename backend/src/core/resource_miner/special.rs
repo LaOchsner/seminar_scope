@@ -135,6 +135,25 @@ pub async fn fix_multiple_special_activities(
     let mut no_combination_found: Vec<String> = Vec::new();
     let mut registry = SilentObjectRegistry::new();
 
+    // Snapshot ALL special activities in the original OCEL before any fixes are applied.
+    // We intentionally collect from the full `related` map (not just the request list) so
+    // that activities like "pick item" — which were special but not requested — are still
+    // captured and can appear in `resolved_by_cascade` if a fix resolves them indirectly.
+    let initially_special: FxHashSet<String> = {
+        let (divergence, _convergence, related, _deficiency) =
+            catch_unwind(AssertUnwindSafe(|| ocel.get_interaction_patterns())).map_err(|_| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Failed to compute interaction patterns".to_string(),
+                )
+            })?;
+        related
+            .keys()
+            .filter(|a| is_special_activity(&divergence, &related, a))
+            .cloned()
+            .collect()
+    };
+
     for activity in activities {
         // Recompute each iteration: fixing a previous activity modifies the OCEL,
         // which can change divergence patterns for subsequent activities.
@@ -150,7 +169,10 @@ pub async fn fix_multiple_special_activities(
             related.get(activity.as_str()).cloned().unwrap_or_default();
 
         if related_types_set.is_empty() || !is_special_activity(&divergence, &related, activity) {
-            skipped_not_special.push(activity.clone());
+            if !initially_special.contains(activity.as_str()) {
+                skipped_not_special.push(activity.clone());
+            }
+            // If it was originally special, it will be captured in resolved_by_cascade below.
             continue;
         }
 
@@ -211,12 +233,35 @@ pub async fn fix_multiple_special_activities(
         });
     }
 
+    // After all fixes, recompute patterns on the final OCEL.
+    // Any activity that was originally special but is no longer special now — and was not
+    // explicitly fixed — was resolved as a side-effect of another fix (cascade).
+    // This covers both activities that were in the request list and those that were not.
+    let (final_divergence, _final_convergence, final_related, _final_deficiency) =
+        catch_unwind(AssertUnwindSafe(|| ocel.get_interaction_patterns())).map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to compute final interaction patterns".to_string(),
+            )
+        })?;
+    let fixed_set: FxHashSet<&str> = fixed.iter().map(|f| f.activity.as_str()).collect();
+    let mut resolved_by_cascade: Vec<String> = initially_special
+        .iter()
+        .filter(|a| {
+            !fixed_set.contains(a.as_str())
+                && !is_special_activity(&final_divergence, &final_related, a)
+        })
+        .cloned()
+        .collect();
+    resolved_by_cascade.sort();
+
     let new_file_id = ocel.export_to_path().await?;
     Ok(FixMultipleSpecialActivitiesResponse {
         source_file_id: source_file_id.to_string(),
         new_file_id,
         fixed,
         skipped_not_special,
+        resolved_by_cascade,
         no_combination_found,
     })
 }
@@ -337,8 +382,13 @@ fn generate_type_combinations_of_size(types: &[String], size: usize) -> Vec<Vec<
     combinations
 }
 
-// Builds a snake_case silent type name from the combination's type names only (no activity).
-// Example: ["employees", "products"] -> "silent_employees_products"
+// Builds a silent type name from the combination's type names only (no activity).
+// Each type name is reduced to a compact alphanumeric token (spaces and punctuation stripped),
+// then the tokens are joined with "_".
+// Examples:
+//   ["employees", "products"]      -> "silent_employees_products"
+//   ["Customer", "Order", "Item"]  -> "silent_customer_order_item"
+//   ["Customer", "Order Item"]     -> "silent_customer_orderitem"   (no collision with above)
 fn build_silent_object_type_name(combination: &[String]) -> String {
     let normalized_combo = combination
         .iter()
@@ -348,24 +398,17 @@ fn build_silent_object_type_name(combination: &[String]) -> String {
     format!("silent_{}", normalized_combo)
 }
 
-// Converts a string to a compact lowercase snake_case segment.
-// Non-alphanumeric characters become underscores; consecutive underscores are collapsed.
+// Converts a type name to a compact lowercase token by keeping only ASCII alphanumeric
+// characters and dropping everything else (spaces, hyphens, etc.).
+// This ensures multi-word type names like "Order Item" become "orderitem" rather than
+// "order_item", which would be indistinguishable from separate types "Order" + "Item"
+// once the per-part tokens are joined with "_" in build_silent_object_type_name.
 fn normalize_identifier_part(input: &str) -> String {
-    let normalized = input
+    let compact: String = input
         .chars()
-        .map(|ch| {
-            if ch.is_ascii_alphanumeric() {
-                ch.to_ascii_lowercase()
-            } else {
-                '_'
-            }
-        })
-        .collect::<String>();
-    let compact = normalized
-        .split('_')
-        .filter(|part| !part.is_empty())
-        .collect::<Vec<_>>()
-        .join("_");
+        .filter(|ch| ch.is_ascii_alphanumeric())
+        .map(|ch| ch.to_ascii_lowercase())
+        .collect();
     if compact.is_empty() {
         "value".to_string()
     } else {
