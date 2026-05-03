@@ -127,6 +127,6 @@ pub fn build_resource_miner_response(
         non_special_event_types,
         event_types_without_object_resource,
         object_not_resource_arcs,
-        special_activity,
+        special_activities: special_activity,
     })
 }

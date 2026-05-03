@@ -47,7 +47,8 @@ pub async fn get_special_activity_non_diverging_combinations(
 // Fixes multiple special activities in a single pass, exporting one new OCEL file.
 // Accepts a JSON body: { "activities": ["pick item", "reorder item"] }
 // Activities are processed in order. If fixing one makes another no longer special,
-// the latter is skipped and reported in `skipped_not_special`.
+// the latter is reported in `resolved_by_cascade`. Activities that were never
+// special in the original OCEL are reported in `skipped_not_special`.
 pub async fn post_fix_multiple_special_activities(
     Path(file_id): Path<String>,
     Json(body): Json<FixMultipleActivitiesRequest>,
