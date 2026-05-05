@@ -2,6 +2,8 @@ pub mod case_notion;
 pub mod df2_miner;
 pub mod event_object_frequencies;
 pub mod identity_relations;
+pub mod ocgraphconf_case_compare;
+pub mod ocgraphconf_model_case_conformance;
 pub mod ocim;
 pub mod ocpn_conversion;
 pub mod resource_miner;

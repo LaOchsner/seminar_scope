@@ -1,5 +1,5 @@
 use crate::models::ocpn::{
-    OCPN, OCPNArc, OCPNNodeRef, OCPNPetriNet, OCPNPlace, OCPNProperties, OCPNTransition,
+    OCPN, OCPNArc, OCPNId, OCPNNodeRef, OCPNPetriNet, OCPNPlace, OCPNProperties, OCPNTransition,
 };
 use crate::models::ocpt::{OCPT, OCPTLeafLabel, OCPTNode, OCPTOperatorType};
 use process_mining::core::process_models::case_centric::petri_net::{
@@ -80,6 +80,21 @@ impl LeafMetadataIndex {
     }
 }
 
+#[derive(Debug, Default)]
+struct OcpnIdAllocator {
+    next: OCPNId,
+}
+
+impl OcpnIdAllocator {
+    fn next(&mut self) -> OCPNId {
+        self.next = self
+            .next
+            .checked_add(1)
+            .expect("OCPN ID allocator overflowed");
+        self.next
+    }
+}
+
 pub fn convert_ocpt_to_ocpn(ocpt: &OCPT) -> Result<OCPN, ConvertOcptToOcpnError> {
     if !ocpt.is_valid() {
         return Err(ConvertOcptToOcpnError::InvalidOcpt);
@@ -95,7 +110,8 @@ pub fn convert_ocpt_to_ocpn(ocpt: &OCPT) -> Result<OCPN, ConvertOcptToOcpnError>
         nets: BTreeMap::new(),
     };
 
-    let mut visible_transition_ids: BTreeMap<String, String> = BTreeMap::new();
+    let mut id_allocator = OcpnIdAllocator::default();
+    let mut visible_transition_ids: BTreeMap<String, OCPNId> = BTreeMap::new();
 
     for object_type in &metadata.all_object_types {
         let projected = project_ocpt_for_object_type(&ocpt.root, object_type, &metadata)?;
@@ -113,6 +129,7 @@ pub fn convert_ocpt_to_ocpn(ocpt: &OCPT) -> Result<OCPN, ConvertOcptToOcpnError>
             &petri_net,
             &bundle,
             &convergent_activities,
+            &mut id_allocator,
             &mut visible_transition_ids,
         );
         merged.nets.insert(object_type.clone(), bundle);
@@ -885,7 +902,8 @@ fn merge_bundle_into_ocpn(
     net: &PetriNet,
     bundle: &OCPNPetriNet,
     convergent_activities: &BTreeSet<String>,
-    visible_transition_ids: &mut BTreeMap<String, String>,
+    id_allocator: &mut OcpnIdAllocator,
+    visible_transition_ids: &mut BTreeMap<String, OCPNId>,
 ) {
     let initial_marking = bundle.initial_marking.as_ref();
     let final_marking = bundle.final_marking.as_ref();
@@ -894,14 +912,14 @@ fn merge_bundle_into_ocpn(
     let mut sorted_places: Vec<_> = net.places.keys().copied().collect();
     sorted_places.sort_by_key(|uuid| uuid.to_string());
     for (index, place_uuid) in sorted_places.iter().enumerate() {
-        let place_id = format!("p_{}", Uuid::new_v4().simple());
+        let place_id = id_allocator.next();
         let place_name = format!("{object_type}{}", index + 1);
         let initial =
             initial_marking.is_some_and(|marking| marking.contains_key(&PlaceID(*place_uuid)));
         let final_place =
             final_marking.is_some_and(|marking| marking.contains_key(&PlaceID(*place_uuid)));
         ocpn.places.push(OCPNPlace {
-            id: place_id.clone(),
+            id: place_id,
             name: place_name,
             object_type: object_type.to_string(),
             initial,
@@ -921,12 +939,15 @@ fn merge_bundle_into_ocpn(
     });
     for (transition_uuid, transition) in sorted_transitions {
         let transition_id = if let Some(label) = &transition.label {
-            visible_transition_ids
-                .entry(label.clone())
-                .or_insert_with(|| format!("t_{}", Uuid::new_v4().simple()))
-                .clone()
+            if let Some(existing) = visible_transition_ids.get(label) {
+                *existing
+            } else {
+                let new_id = id_allocator.next();
+                visible_transition_ids.insert(label.clone(), new_id);
+                new_id
+            }
         } else {
-            format!("t_{}", Uuid::new_v4().simple())
+            id_allocator.next()
         };
 
         if !ocpn
@@ -936,10 +957,10 @@ fn merge_bundle_into_ocpn(
         {
             let (name, label, silent) = match &transition.label {
                 Some(label) => (label.clone(), Some(label.clone()), false),
-                None => (transition_id.clone(), None, true),
+                None => (format!("tau_{transition_id}"), None, true),
             };
             ocpn.transitions.push(OCPNTransition {
-                id: transition_id.clone(),
+                id: transition_id,
                 name,
                 label,
                 silent,
@@ -961,8 +982,8 @@ fn merge_bundle_into_ocpn(
                 let variable =
                     transition_label.is_some_and(|label| convergent_activities.contains(label));
                 (
-                    OCPNNodeRef::Place(place_ids[&place_uuid].clone()),
-                    OCPNNodeRef::Transition(transition_ids[&transition_uuid].clone()),
+                    OCPNNodeRef::Place(place_ids[&place_uuid]),
+                    OCPNNodeRef::Transition(transition_ids[&transition_uuid]),
                     variable,
                 )
             }
@@ -974,16 +995,15 @@ fn merge_bundle_into_ocpn(
                 let variable =
                     transition_label.is_some_and(|label| convergent_activities.contains(label));
                 (
-                    OCPNNodeRef::Transition(transition_ids[&transition_uuid].clone()),
-                    OCPNNodeRef::Place(place_ids[&place_uuid].clone()),
+                    OCPNNodeRef::Transition(transition_ids[&transition_uuid]),
+                    OCPNNodeRef::Place(place_ids[&place_uuid]),
                     variable,
                 )
             }
         };
 
-        let arc_id = format!("a_{}", Uuid::new_v4().simple());
         ocpn.arcs.push(OCPNArc {
-            id: arc_id,
+            id: id_allocator.next(),
             source,
             target,
             variable,
@@ -1266,13 +1286,13 @@ mod tests {
                     }
                     _ => continue,
                 };
-                let Some(place) = ocpn.place(place_id) else {
+                let Some(place) = ocpn.place(*place_id) else {
                     continue;
                 };
                 if place.object_type != *object_type {
                     continue;
                 }
-                let Some(transition) = ocpn.transition(transition_id) else {
+                let Some(transition) = ocpn.transition(*transition_id) else {
                     continue;
                 };
                 let Some(label) = &transition.label else {
@@ -1382,7 +1402,7 @@ mod tests {
             .filter(|arc| arc.variable)
             .filter(|arc| match (&arc.source, &arc.target) {
                 (OCPNNodeRef::Place(place_id), _) | (_, OCPNNodeRef::Place(place_id)) => ocpn
-                    .place(place_id)
+                    .place(*place_id)
                     .is_some_and(|place| place.object_type == "i"),
                 _ => false,
             })

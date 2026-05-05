@@ -8,6 +8,7 @@ use tokio::fs;
 use uuid::Uuid;
 
 pub type OCPNProperties = BTreeMap<String, Value>;
+pub type OCPNId = u64;
 
 pub use process_mining::PetriNet;
 #[allow(unused_imports)]
@@ -54,11 +55,11 @@ impl OCPN {
             .collect()
     }
 
-    pub fn place(&self, place_id: &str) -> Option<&OCPNPlace> {
+    pub fn place(&self, place_id: OCPNId) -> Option<&OCPNPlace> {
         self.places.iter().find(|place| place.id == place_id)
     }
 
-    pub fn transition(&self, transition_id: &str) -> Option<&OCPNTransition> {
+    pub fn transition(&self, transition_id: OCPNId) -> Option<&OCPNTransition> {
         self.transitions
             .iter()
             .find(|transition| transition.id == transition_id)
@@ -76,12 +77,12 @@ impl OCPN {
             .find(|arc| &arc.source == source && &arc.target == target)
     }
 
-    pub fn preset_place_ids_of_transition(&self, transition_id: &str) -> BTreeSet<String> {
+    pub fn preset_place_ids_of_transition(&self, transition_id: OCPNId) -> BTreeSet<OCPNId> {
         self.arcs
             .iter()
             .filter_map(|arc| match (&arc.source, &arc.target) {
                 (OCPNNodeRef::Place(place_id), OCPNNodeRef::Transition(target_id))
-                    if target_id == transition_id =>
+                    if *target_id == transition_id =>
                 {
                     Some(place_id.clone())
                 }
@@ -90,12 +91,12 @@ impl OCPN {
             .collect()
     }
 
-    pub fn postset_place_ids_of_transition(&self, transition_id: &str) -> BTreeSet<String> {
+    pub fn postset_place_ids_of_transition(&self, transition_id: OCPNId) -> BTreeSet<OCPNId> {
         self.arcs
             .iter()
             .filter_map(|arc| match (&arc.source, &arc.target) {
                 (OCPNNodeRef::Transition(source_id), OCPNNodeRef::Place(place_id))
-                    if source_id == transition_id =>
+                    if *source_id == transition_id =>
                 {
                     Some(place_id.clone())
                 }
@@ -104,12 +105,12 @@ impl OCPN {
             .collect()
     }
 
-    pub fn preset_transition_ids_of_place(&self, place_id: &str) -> BTreeSet<String> {
+    pub fn preset_transition_ids_of_place(&self, place_id: OCPNId) -> BTreeSet<OCPNId> {
         self.arcs
             .iter()
             .filter_map(|arc| match (&arc.source, &arc.target) {
                 (OCPNNodeRef::Transition(transition_id), OCPNNodeRef::Place(target_id))
-                    if target_id == place_id =>
+                    if *target_id == place_id =>
                 {
                     Some(transition_id.clone())
                 }
@@ -118,12 +119,12 @@ impl OCPN {
             .collect()
     }
 
-    pub fn postset_transition_ids_of_place(&self, place_id: &str) -> BTreeSet<String> {
+    pub fn postset_transition_ids_of_place(&self, place_id: OCPNId) -> BTreeSet<OCPNId> {
         self.arcs
             .iter()
             .filter_map(|arc| match (&arc.source, &arc.target) {
                 (OCPNNodeRef::Place(source_id), OCPNNodeRef::Transition(transition_id))
-                    if source_id == place_id =>
+                    if *source_id == place_id =>
                 {
                     Some(transition_id.clone())
                 }
@@ -132,22 +133,22 @@ impl OCPN {
             .collect()
     }
 
-    pub fn adjacent_object_types_of_transition(&self, transition_id: &str) -> BTreeSet<String> {
+    pub fn adjacent_object_types_of_transition(&self, transition_id: OCPNId) -> BTreeSet<String> {
         self.preset_place_ids_of_transition(transition_id)
             .into_iter()
             .chain(self.postset_place_ids_of_transition(transition_id))
-            .filter_map(|place_id| self.place(&place_id).map(|place| place.object_type.clone()))
+            .filter_map(|place_id| self.place(place_id).map(|place| place.object_type.clone()))
             .collect()
     }
 
     pub fn is_valid(&self) -> bool {
-        let place_ids: BTreeSet<String> =
+        let place_ids: BTreeSet<OCPNId> =
             self.places.iter().map(|place| place.id.clone()).collect();
         if place_ids.len() != self.places.len() {
             return false;
         }
 
-        let transition_ids: BTreeSet<String> = self
+        let transition_ids: BTreeSet<OCPNId> = self
             .transitions
             .iter()
             .map(|transition| transition.id.clone())
@@ -156,7 +157,7 @@ impl OCPN {
             return false;
         }
 
-        let arc_ids: BTreeSet<String> = self.arcs.iter().map(|arc| arc.id.clone()).collect();
+        let arc_ids: BTreeSet<OCPNId> = self.arcs.iter().map(|arc| arc.id.clone()).collect();
         if arc_ids.len() != self.arcs.len() {
             return false;
         }
@@ -280,7 +281,7 @@ impl OCPNPetriNet {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OCPNPlace {
-    pub id: String,
+    pub id: OCPNId,
     pub name: String,
     pub object_type: String,
     #[serde(default)]
@@ -293,7 +294,7 @@ pub struct OCPNPlace {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OCPNTransition {
-    pub id: String,
+    pub id: OCPNId,
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
@@ -306,8 +307,8 @@ pub struct OCPNTransition {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(tag = "kind", content = "id", rename_all = "lowercase")]
 pub enum OCPNNodeRef {
-    Place(String),
-    Transition(String),
+    Place(OCPNId),
+    Transition(OCPNId),
 }
 
 fn default_arc_weight() -> u32 {
@@ -316,7 +317,7 @@ fn default_arc_weight() -> u32 {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OCPNArc {
-    pub id: String,
+    pub id: OCPNId,
     pub source: OCPNNodeRef,
     pub target: OCPNNodeRef,
     #[serde(default)]
@@ -329,7 +330,7 @@ pub struct OCPNArc {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct OCPNToken {
-    pub place_id: String,
+    pub place_id: OCPNId,
     pub object_id: String,
 }
 
@@ -340,8 +341,7 @@ pub struct OCPNMarking {
 }
 
 impl OCPNMarking {
-    pub fn add_token(&mut self, place_id: impl Into<String>, object_id: impl Into<String>) {
-        let place_id = place_id.into();
+    pub fn add_token(&mut self, place_id: OCPNId, object_id: impl Into<String>) {
         let object_id = object_id.into();
         self.tokens.retain(|token| token.object_id != object_id);
         self.tokens.insert(OCPNToken {
@@ -358,7 +358,7 @@ pub struct OCPNSubprocess {
     #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
     pub activities: BTreeSet<String>,
     #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
-    pub transition_ids: BTreeSet<String>,
+    pub transition_ids: BTreeSet<OCPNId>,
     #[serde(default)]
     pub sound: bool,
 }
@@ -374,21 +374,21 @@ impl OCPNSubprocess {
         }
 
         let activities = activities.unwrap_or_default();
-        let transition_ids: BTreeSet<String> = if activities.is_empty() {
+        let transition_ids: BTreeSet<OCPNId> = if activities.is_empty() {
             ocpn.transitions
                 .iter()
                 .filter(|transition| {
                     !ocpn
-                        .adjacent_object_types_of_transition(&transition.id)
+                        .adjacent_object_types_of_transition(transition.id)
                         .is_disjoint(&object_types)
                 })
-                .map(|transition| transition.id.clone())
+                .map(|transition| transition.id)
                 .collect()
         } else {
             activities
                 .iter()
                 .filter_map(|activity| ocpn.find_transition(activity))
-                .map(|transition| transition.id.clone())
+                .map(|transition| transition.id)
                 .collect()
         };
 
@@ -397,7 +397,7 @@ impl OCPNSubprocess {
         } else {
             transition_ids.iter().all(|transition_id| {
                 !ocpn
-                    .adjacent_object_types_of_transition(transition_id)
+                    .adjacent_object_types_of_transition(*transition_id)
                     .is_disjoint(&object_types)
             })
         };
@@ -489,7 +489,7 @@ mod tests {
             name: "local-ocpa".to_string(),
             places: vec![
                 OCPNPlace {
-                    id: "p_order_start".to_string(),
+                    id: 1,
                     name: "order1".to_string(),
                     object_type: "order".to_string(),
                     initial: true,
@@ -497,7 +497,7 @@ mod tests {
                     properties: BTreeMap::new(),
                 },
                 OCPNPlace {
-                    id: "p_order_end".to_string(),
+                    id: 2,
                     name: "order2".to_string(),
                     object_type: "order".to_string(),
                     initial: false,
@@ -506,7 +506,7 @@ mod tests {
                 },
             ],
             transitions: vec![OCPNTransition {
-                id: "t_register".to_string(),
+                id: 3,
                 name: "register".to_string(),
                 label: Some("register".to_string()),
                 silent: false,
@@ -514,17 +514,17 @@ mod tests {
             }],
             arcs: vec![
                 OCPNArc {
-                    id: "a1".to_string(),
-                    source: OCPNNodeRef::Place("p_order_start".to_string()),
-                    target: OCPNNodeRef::Transition("t_register".to_string()),
+                    id: 4,
+                    source: OCPNNodeRef::Place(1),
+                    target: OCPNNodeRef::Transition(3),
                     variable: false,
                     weight: 1,
                     properties: BTreeMap::new(),
                 },
                 OCPNArc {
-                    id: "a2".to_string(),
-                    source: OCPNNodeRef::Transition("t_register".to_string()),
-                    target: OCPNNodeRef::Place("p_order_end".to_string()),
+                    id: 5,
+                    source: OCPNNodeRef::Transition(3),
+                    target: OCPNNodeRef::Place(2),
                     variable: true,
                     weight: 1,
                     properties: BTreeMap::new(),
@@ -547,12 +547,12 @@ mod tests {
     #[test]
     fn ocpn_marking_moves_object_token() {
         let mut marking = OCPNMarking::default();
-        marking.add_token("p_order_start", "order-1");
-        marking.add_token("p_order_end", "order-1");
+        marking.add_token(1, "order-1");
+        marking.add_token(2, "order-1");
 
         assert_eq!(marking.tokens.len(), 1);
         assert!(marking.tokens.contains(&OCPNToken {
-            place_id: "p_order_end".to_string(),
+            place_id: 2,
             object_id: "order-1".to_string(),
         }));
     }
@@ -567,7 +567,7 @@ mod tests {
         );
 
         assert!(subprocess.sound);
-        assert!(subprocess.transition_ids.contains("t_register"));
+        assert!(subprocess.transition_ids.contains(&3));
     }
 
     #[tokio::test]

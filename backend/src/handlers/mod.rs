@@ -2,6 +2,7 @@ pub mod abstractions;
 pub mod case_notion;
 pub mod collection_ocels;
 pub mod conformance;
+pub mod conformance_ocgraphconf;
 pub mod df2;
 pub mod event_object_frequencies;
 pub mod extended_ocpt;
