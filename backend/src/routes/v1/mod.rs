@@ -1,5 +1,6 @@
 pub mod abstractions;
 pub mod case_notion;
+pub mod clustering;
 pub mod conformance;
 pub mod df2;
 pub mod event_object_frequencies;
@@ -23,6 +24,7 @@ pub fn router() -> Router {
             event_object_frequencies::router(),
         )
         .nest("/case_notion", case_notion::router())
+        .nest("/clustering", clustering::router())
         .nest("/log_graphs", log_graphs::router())
         .nest("/ocpn", ocpn::router())
         .nest("/ocpt", df2::router())
