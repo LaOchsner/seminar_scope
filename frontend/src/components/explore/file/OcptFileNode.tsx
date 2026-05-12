@@ -55,20 +55,6 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
         return ocptAsset?.id ?? null;
     }, [assets]);
 
-    const ocptAsset = useMemo(
-        () => assets.find((a) => a.io === 'output' && (a.type === 'ocptFile' || a.type === 'ocptAsset' || a.type === 'identityOcptAsset')),
-        [assets]
-    );
-    const isIdentityAsset = ocptAsset?.type === 'identityOcptAsset';
-
-    useMemo(() => {
-        setFileId(ocptAsset?.id ?? null);
-    }, [ocptAsset]);
-
-    const { data: regularOcptData } = useGetOcpt(isIdentityAsset ? null : fileId, true);
-    const { data: identityOcptData } = useGetIdentityOcpt(isIdentityAsset ? fileId : null, true);
-    const data = isIdentityAsset ? identityOcptData : regularOcptData;
-
     const conformanceMode = ocelFileId ? 'ocpt-ocel' : ocptInputFileId ? 'ocpt-ocpt' : null;
     const { data: conformanceOcelResult, isLoading: isOcelLoading } = useGetConformanceOcptOcel(
         conformanceMode === 'ocpt-ocel' ? fileId : null,
@@ -133,6 +119,20 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
         navigate(`/data/pipeline/explore/ocpt/${id}${filter ? `?filter=${filter}` : ''}`);
     };
 
+    const ocptAsset = useMemo(
+        () => assets.find((a) => a.io === 'output' && (a.type === 'ocptFile' || a.type === 'ocptAsset' || a.type === 'identityOcptAsset')),
+        [assets]
+    );
+    const isIdentityAsset = ocptAsset?.type === 'identityOcptAsset';
+
+    useMemo(() => {
+        setFileId(ocptAsset?.id ?? null);
+    }, [ocptAsset]);
+
+    const { data: regularOcptData } = useGetOcpt(isIdentityAsset ? null : fileId, true);
+    const { data: identityOcptData } = useGetIdentityOcpt(isIdentityAsset ? fileId : null, true);
+    const data = isIdentityAsset ? identityOcptData : regularOcptData;
+    
     useEffect(() => {
         if (data) {
             updateNodeData(id, { processedData: data.ocpt });
