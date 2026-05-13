@@ -189,3 +189,13 @@ export const getOcelCollection = async (ocelCollectionFileId: string): Promise<C
     const response = await api.get(`v1/objects/ocel_collection/${ocelCollectionFileId}`);
     return response.data;
 };
+
+export type GetOcpnResponse = {
+    file_id: string;
+    ocpn: any;
+};
+
+export const getOcpnFromOcpt = async (ocptId: string): Promise<GetOcpnResponse> => {
+    const response = await api.get(`/v1/ocpn/from_ocpt/${ocptId}`);
+    return response.data;
+};

@@ -14,6 +14,7 @@ import {
     getLogGraphs,
     getOcelCollection,
     getOcelObjectTypes,
+    getOcpnFromOcpt,
     getOcpt,
     getTraditionalCN,
     mineIdentityOcpt,
@@ -172,6 +173,14 @@ export const useGetAbstraction = (
         queryKey: ['getAbstraction', nodeId, fileId, sourceKind],
         queryFn: () => getAbstraction(fileId!, sourceKind!),
         enabled: Boolean(fileId) && Boolean(sourceKind) && shouldFetch,
+    });
+};
+
+export const useGetOcpnFromOcpt = (ocptId: string | null) => {
+    return useQuery({
+        queryKey: ['getOcpnFromOcpt', ocptId],
+        queryFn: () => getOcpnFromOcpt(ocptId!),
+        enabled: Boolean(ocptId),
         refetchOnWindowFocus: false,
     });
 };

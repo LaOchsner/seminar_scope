@@ -5,16 +5,17 @@ import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import BreadcrumbNav from '~/components/BreadcrumbNav';
 import { DnDProvider, useDnD } from '~/components/explore/DndContext';
 import ExploreSidebar from '~/components/explore/ExploreSidebar';
+import AbstractionFileNode from '~/components/explore/file/AbstractionFileNode';
 import OcelCollectionNode from '~/components/explore/file/OcelCollectionNode';
 import OcelFileNode from '~/components/explore/file/OcelFileNode';
 import OcptFileNode from '~/components/explore/file/OcptFileNode';
 import FileSelectionDialog from '~/components/explore/file/ui/FileSelectionDialog';
-import AbstractionFileNode from '~/components/explore/file/AbstractionFileNode';
 import AbstractionMinerNode from '~/components/explore/miner/AbstractionMinerNode';
 import CaseNotionMinerNode from '~/components/explore/miner/CaseNotionMinerNode';
 import ExtendWithIdentityNode from '~/components/explore/miner/ExtendWithIdentityNode';
 import FlowVisualizationNode from '~/components/explore/miner/FlowVisualizationNode';
 import HistogramMinerNode from '~/components/explore/miner/HistogramMinerNode';
+import OcpnMinerNode from '~/components/explore/miner/OcpnMinerNode';
 import OcptMinerNode from '~/components/explore/miner/OcptMinerNode';
 import { RefocusProgressPanel } from '~/components/explore/RefocusProgressPanel';
 import { useConnections } from '~/hooks/explore/useConnections';
@@ -30,6 +31,7 @@ const nodeTypes = {
     ocelFileNode: OcelFileNode,
     ocelCollectionNode: OcelCollectionNode,
     ocptMinerNode: OcptMinerNode,
+    ocpnMinerNode: OcpnMinerNode,
     histogramMinerNode: HistogramMinerNode,
     caseNotionMinerNode: CaseNotionMinerNode,
     identityExtendMinerNode: ExtendWithIdentityNode,

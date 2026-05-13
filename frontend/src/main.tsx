@@ -15,6 +15,7 @@ import OcelViewer from '~/routes/OcelViewer';
 import OcptViewer from '~/routes/OcptViewer';
 import Pipeline from '~/routes/Pipeline';
 import Upload from '~/routes/Upload';
+import OcpnViewer from './routes/OcpnViewer';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -77,6 +78,14 @@ const router = createBrowserRouter([
         element: (
             <RedirectErrorBoundary>
                 <HistViz />
+            </RedirectErrorBoundary>
+        ),
+    },
+    {
+        path: '/data/pipeline/explore/ocpn/:nodeId',
+        element: (
+            <RedirectErrorBoundary>
+                <OcpnViewer />
             </RedirectErrorBoundary>
         ),
     },

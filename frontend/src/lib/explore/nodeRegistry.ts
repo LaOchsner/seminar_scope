@@ -98,4 +98,9 @@ export const nodeRegistry = {
         allowedAssetTypes: ['ocelFile', 'ocelAsset', 'ocptFile', 'ocptAsset', 'identityOcptAsset'],
         sidebar: { label: 'Abstraction', icon: 'layers', group: 'miners' },
     },
+    ocpnMinerNode: {
+        category: 'miner',
+        allowedAssetTypes: ['ocptFile', 'ocptAsset'],
+        sidebar: { label: 'OCPN Miner', icon: 'waypoints', group: 'miners' },
+    },
 } satisfies Record<RegistrableNodeType, NodeRegistryEntry>;

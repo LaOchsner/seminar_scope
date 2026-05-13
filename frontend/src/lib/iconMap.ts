@@ -16,6 +16,7 @@ import {
     Pickaxe,
     TreePine,
     Waves,
+    Waypoints,
     Workflow,
 } from 'lucide-react';
 import type { AssetType } from '~/types/files.types';
@@ -37,6 +38,7 @@ export const iconMap: Record<string, ComponentType<LucideProps>> = {
     chartBar: ChartBar,
     fileStack: FileStack,
     layers: Layers,
+    waypoints: Waypoints,
 };
 
 export const getIconComponent = (iconName: string): ComponentType<LucideProps> => {
