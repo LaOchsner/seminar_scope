@@ -13,6 +13,7 @@ import FlowViewer from '~/routes/FlowViewer';
 import HistViz from '~/routes/Hist-Viz';
 import Home from '~/routes/Home';
 import OcelViewer from '~/routes/OcelViewer';
+import ResourceViewer from '~/routes/ResourceViewer';
 import OcptViewer from '~/routes/OcptViewer';
 import Pipeline from '~/routes/Pipeline';
 import Upload from '~/routes/Upload';
@@ -86,6 +87,14 @@ const router = createBrowserRouter([
         element: (
             <RedirectErrorBoundary>
                 <HistViz />
+            </RedirectErrorBoundary>
+        ),
+    },
+    {
+        path: '/data/pipeline/explore/resource_graph/:nodeId',
+        element: (
+             <RedirectErrorBoundary>
+                <ResourceViewer />
             </RedirectErrorBoundary>
         ),
     },

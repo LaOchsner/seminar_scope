@@ -17,6 +17,7 @@ import CaseNotionMinerNode from '~/components/explore/miner/CaseNotionMinerNode'
 import ExtendWithIdentityNode from '~/components/explore/miner/ExtendWithIdentityNode';
 import FlowVisualizationNode from '~/components/explore/miner/FlowVisualizationNode';
 import HistogramMinerNode from '~/components/explore/miner/HistogramMinerNode';
+import ResourceMinerNode from '~/components/explore/miner/ResourceMinerNode';
 import OcptMinerNode from '~/components/explore/miner/OcptMinerNode';
 import { RefocusProgressPanel } from '~/components/explore/RefocusProgressPanel';
 import { useConnections } from '~/hooks/explore/useConnections';
@@ -39,6 +40,7 @@ const nodeTypes = {
     abstractionMinerNode: AbstractionMinerNode,
     conformanceMinerNode: ConformanceMinerNode,
     abstractionFileNode: AbstractionFileNode,
+    resourceMinerNode: ResourceMinerNode,
     conformanceFileNode: ConformanceFileNode,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } satisfies Record<keyof typeof nodeRegistry, React.ComponentType<NodeProps<any>>>;
