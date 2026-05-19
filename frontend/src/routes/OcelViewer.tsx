@@ -28,8 +28,6 @@ const OcelViewer: React.FC = () => {
         if (!nodeId) return;
 
         const node = getNode(nodeId);
-        console.log('node dhhdhd');
-         console.log(node);
 
         if (!node) {
             console.warn(` Node with ID ${nodeId} not found.`);
