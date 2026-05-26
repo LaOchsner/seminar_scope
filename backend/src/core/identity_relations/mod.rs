@@ -1,6 +1,7 @@
 mod check_relation;
 mod noise_resistant_check_relations;
 mod ocpt_extender;
+mod candidate_trees;
 
 #[allow(unused_imports)]
 pub use check_relation::check_relation;
