@@ -7,6 +7,7 @@ import { Zoom } from '@visx/zoom';
 import type { ProvidedZoom, TransformMatrix } from '@visx/zoom/lib/types';
 import { ScaleOrdinal } from 'd3';
 import { RenderTree } from '~/components/ocpt/OcptRendering';
+import IdentityRelationViewer from '~/components/ocpt/ui/IdentityRelationViewer';
 import NodeTooltip from '~/components/ocpt/ui/NodeTooltip';
 import ZoomButtons from '~/components/ocpt/ui/ZoomButtons';
 import { VisualizationNode } from '~/types/explore/nodes';
@@ -47,6 +48,7 @@ const OCPTContent: React.FC<OCPTContentProps> = ({
     onExportReady,
 }) => {
     const [hoveredNode, setHoveredNode] = useState<HierarchyPointNode<Node> | null>(null);
+    const [clickedNode, setClickedNode] = useState<HierarchyPointNode<Node> | null>(null);
     const [tree, setTree] = useState<HierarchyNode<Node> | null>(null);
     const treeGroupRef = useRef<SVGGElement>(null);
     const viewState = node?.data.viewState;
@@ -175,11 +177,18 @@ const OCPTContent: React.FC<OCPTContentProps> = ({
                                             sizeWidth={sizeWidth}
                                             sizeHeight={sizeHeight}
                                             showDetails={showDetails}
+                                            onOperatorClick={setClickedNode}
                                         />
                                     </Group>
                                 </g>
                             </svg>
                             <ZoomButtons zoom={zoom} />
+                            <IdentityRelationViewer
+                                open={clickedNode !== null}
+                                onOpenChange={(open) => { if (!open) setClickedNode(null); }}
+                                node={clickedNode}
+                                colorScale={colorScale}
+                            />
                             <NodeTooltip
                                 hoverPoint={
                                     hoveredNode && {
