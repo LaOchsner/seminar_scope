@@ -41,6 +41,21 @@ const ProcessTreeOperatorNode: React.FC<ProcessTreeNodeProps> = ({
             onClick={onClick}
             style={{ cursor: onClick ? 'pointer' : undefined }}
         >
+            {onClick && (
+                <rect
+                    height={height + 8}
+                    width={width + 8}
+                    y={-(height + 8) / 2}
+                    x={-(width + 8) / 2}
+                    fill="none"
+                    stroke="#6366f1"
+                    strokeWidth={1.5}
+                    strokeDasharray="4 3"
+                    rx={28}
+                    ry={28}
+                    opacity={opacity}
+                />
+            )}
             <rect
                 height={height}
                 width={width}

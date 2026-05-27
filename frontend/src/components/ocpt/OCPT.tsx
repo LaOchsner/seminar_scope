@@ -26,6 +26,7 @@ export type OCPTProps = {
     node?: VisualizationNode;
     filteredObjectTypes?: string[];
     showDetails?: boolean;
+    isIdentityOcpt?: boolean;
     onExportReady?: (exportFn: () => void) => void;
 };
 
@@ -45,6 +46,7 @@ const OCPTContent: React.FC<OCPTContentProps> = ({
     node,
     filteredObjectTypes: filteredObjectTypesProp,
     showDetails,
+    isIdentityOcpt,
     onExportReady,
 }) => {
     const [hoveredNode, setHoveredNode] = useState<HierarchyPointNode<Node> | null>(null);
@@ -177,7 +179,7 @@ const OCPTContent: React.FC<OCPTContentProps> = ({
                                             sizeWidth={sizeWidth}
                                             sizeHeight={sizeHeight}
                                             showDetails={showDetails}
-                                            onOperatorClick={setClickedNode}
+                                            onOperatorClick={isIdentityOcpt ? setClickedNode : undefined}
                                         />
                                     </Group>
                                 </g>

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { ScaleOrdinal } from 'd3';
 import { HierarchyPointNode } from '@visx/hierarchy/lib/types';
+import { Clock } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { isExtendedProcessTreeOperatorNode, isIdentityOperatorApi } from '~/lib/ocpt/ocptGuards';
 import * as Ocpt from '~/types/ocpt/ocpt.types';
@@ -59,10 +60,12 @@ function ellipseBoundaryDist(nx: number, ny: number) {
     return 1 / Math.sqrt((nx / NODE_RX) ** 2 + (ny / NODE_RY) ** 2);
 }
 
+const CLOCK_BADGE_R = 9;
+
 interface RelationEdgeProps {
     p1: { x: number; y: number };
     p2: { x: number; y: number };
-    kind: 'sync' | 'impConcurrent';
+    kind: Ocpt.IdentityRelationKind;
     // Whether the endpoints are OT node centers (true) or free-floating centroids (false)
     p1IsNode?: boolean;
     p2IsNode?: boolean;
@@ -74,32 +77,66 @@ const RelationEdge: React.FC<RelationEdgeProps> = ({ p1, p2, kind, p1IsNode = tr
     const len = Math.sqrt(dx * dx + dy * dy);
     if (len < 1) return null;
 
-    const nx = dx / len; // unit vector p1→p2
+    const nx = dx / len;
     const ny = dy / len;
     const px = -ny; // perpendicular (left of direction)
     const py = nx;
 
-    // Adjust start/end to sit on ellipse boundary (or leave as-is for centroids)
     const startOffset = p1IsNode ? ellipseBoundaryDist(nx, ny) : 0;
     const endOffset = p2IsNode ? ellipseBoundaryDist(nx, ny) : 0;
 
-    // Base edge endpoints (before accounting for arrowheads)
     const sx = p1.x + nx * startOffset;
     const sy = p1.y + ny * startOffset;
     const ex = p2.x - nx * endOffset;
     const ey = p2.y - ny * endOffset;
 
-    // For impConcurrent: arrow at end only. For sync: arrows at both ends.
     const arrowAtEnd = true;
     const arrowAtStart = kind === 'sync';
 
-    // Line endpoints — pulled back from arrowhead bases
     const lsx = sx + (arrowAtStart ? nx * ARROW_LEN : 0);
     const lsy = sy + (arrowAtStart ? ny * ARROW_LEN : 0);
-    const lex = ex - (arrowAtEnd ? nx * ARROW_LEN : 0);
-    const ley = ey - (arrowAtEnd ? ny * ARROW_LEN : 0);
+    const lex = ex - nx * ARROW_LEN;
+    const ley = ey - ny * ARROW_LEN;
 
-    // The two parallel line paths (offset ±LINE_OFFSET perpendicular)
+    const makeArrow = (tipX: number, tipY: number, dirX: number, dirY: number) => {
+        const b1x = tipX - dirX * ARROW_LEN + px * ARROW_HALF;
+        const b1y = tipY - dirY * ARROW_LEN + py * ARROW_HALF;
+        const b2x = tipX - dirX * ARROW_LEN - px * ARROW_HALF;
+        const b2y = tipY - dirY * ARROW_LEN - py * ARROW_HALF;
+        return `${tipX},${tipY} ${b1x},${b1y} ${b2x},${b2y}`;
+    };
+
+    if (kind === 'tempImp') {
+        const midX = (sx + ex) / 2;
+        const midY = (sy + ey) / 2;
+        return (
+            <g>
+                <line
+                    x1={lsx}
+                    y1={lsy}
+                    x2={lex}
+                    y2={ley}
+                    stroke={EDGE_COLOR}
+                    strokeWidth={1.5}
+                    strokeDasharray="6 4"
+                />
+                <polygon points={makeArrow(ex, ey, nx, ny)} fill={EDGE_COLOR} />
+                {/* Clock badge at midpoint */}
+                <circle cx={midX} cy={midY} r={CLOCK_BADGE_R} fill="white" stroke="#d1d5db" strokeWidth={1} />
+                <foreignObject
+                    x={midX - CLOCK_BADGE_R + 2}
+                    y={midY - CLOCK_BADGE_R + 2}
+                    width={CLOCK_BADGE_R * 2 - 4}
+                    height={CLOCK_BADGE_R * 2 - 4}
+                    style={{ overflow: 'visible' }}
+                >
+                    <Clock size={CLOCK_BADGE_R * 2 - 4} color="#6b7280" />
+                </foreignObject>
+            </g>
+        );
+    }
+
+    // sync / impConcurrent — double line
     const lines = ([-1, 1] as const).map((sign) => {
         const ox = px * LINE_OFFSET * sign;
         const oy = py * LINE_OFFSET * sign;
@@ -116,24 +153,11 @@ const RelationEdge: React.FC<RelationEdgeProps> = ({ p1, p2, kind, p1IsNode = tr
         );
     });
 
-    // Arrowhead polygon points: tip at `tip`, base at tip - nx*ARROW_LEN ± px*ARROW_HALF
-    const makeArrow = (tipX: number, tipY: number, dirX: number, dirY: number) => {
-        const b1x = tipX - dirX * ARROW_LEN + px * ARROW_HALF;
-        const b1y = tipY - dirY * ARROW_LEN + py * ARROW_HALF;
-        const b2x = tipX - dirX * ARROW_LEN - px * ARROW_HALF;
-        const b2y = tipY - dirY * ARROW_LEN - py * ARROW_HALF;
-        return `${tipX},${tipY} ${b1x},${b1y} ${b2x},${b2y}`;
-    };
-
     return (
         <g>
             {lines}
-            {arrowAtEnd && (
-                <polygon points={makeArrow(ex, ey, nx, ny)} fill={EDGE_COLOR} />
-            )}
-            {arrowAtStart && (
-                <polygon points={makeArrow(sx, sy, -nx, -ny)} fill={EDGE_COLOR} />
-            )}
+            {arrowAtEnd && <polygon points={makeArrow(ex, ey, nx, ny)} fill={EDGE_COLOR} />}
+            {arrowAtStart && <polygon points={makeArrow(sx, sy, -nx, -ny)} fill={EDGE_COLOR} />}
         </g>
     );
 };
@@ -193,8 +217,7 @@ const IdentityRelationViewer: React.FC<IdentityRelationViewerProps> = ({ open, o
     }, [otNodes]);
 
     const visibleRelations = identityRelations.filter(
-        (r): r is Ocpt.IdentityRelation & { kind: 'sync' | 'impConcurrent' } =>
-            r.kind === 'sync' || r.kind === 'impConcurrent'
+        (r): r is Ocpt.IdentityRelation => r.kind !== null
     );
 
     return (
