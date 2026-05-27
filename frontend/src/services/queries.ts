@@ -14,10 +14,12 @@ import {
     getLogGraphs,
     getOcelCollection,
     getOcelObjectTypes,
+    getOcpn,
     getOcpnFromOcpt,
     getOcpt,
     getTraditionalCN,
     mineIdentityOcpt,
+    mineOcpn,
     mineOcpt,
 } from '~/services/api';
 import { getOcel } from '~/services/api';
@@ -182,5 +184,21 @@ export const useGetOcpnFromOcpt = (ocptId: string | null) => {
         queryFn: () => getOcpnFromOcpt(ocptId!),
         enabled: Boolean(ocptId),
         refetchOnWindowFocus: false,
+    });
+};
+export const useMineOcpn = (nodeId: string, fileId: string | null, shouldFetch: boolean) => {
+    return useQuery({
+        queryKey: ['mineOcpn', nodeId, fileId],
+        queryFn: () => mineOcpn(fileId!),
+        enabled: Boolean(fileId) && shouldFetch,
+        refetchOnWindowFocus: false,
+    });
+};
+export const useGetOcpn = (fileId: string | null, enabled: boolean = true) => {
+    return useQuery({
+        queryKey: ['getOcpn', fileId],
+        queryFn: () => getOcpn(fileId as string),
+        // This ensures it only runs if the fileId actually exists AND the component says it's okay to run
+        enabled: !!fileId && enabled,
     });
 };

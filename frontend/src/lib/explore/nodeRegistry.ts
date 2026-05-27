@@ -48,6 +48,11 @@ export const nodeRegistry = {
         allowedAssetTypes: ['ocelFile'],
         sidebar: { label: 'OCEL File', icon: 'fileSpreadsheet', group: 'files' },
     },
+    ocpnFileNode: {
+        category: 'file',
+        allowedAssetTypes: ['ocpnFile'],
+        sidebar: { label: 'OCPN File', icon: 'fileTree', group: 'files' },
+    },
     ocelCollectionNode: {
         category: 'file',
         allowedAssetTypes: ['ocelCollectionFile'],
