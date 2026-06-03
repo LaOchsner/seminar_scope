@@ -1,7 +1,16 @@
-use crate::core::clustering::k_medoids::{
-    DistanceMetric, RunResult, cluster_ocels_with_metric_seeded, ensure_parent_dir_exists,
-    run_k_sweep_save_jsonl,
+use crate::core::clustering::agglomerative::{
+    LinkageMethod, condense_distance_matrix, condensed_distance, cut_linkage_assignments,
+    run_agglomerative_clustering_with_cut, validate_condensed_distances,
 };
+use crate::core::clustering::embedding::{
+    Point2D, compute_embedding_stress, compute_embedding_stress_with_distance, embed_distances_2d,
+};
+use crate::core::clustering::k_medoids::{
+    DistanceMetric, RunResult, cluster_ocels_with_metric_seeded,
+    cluster_ocels_with_metric_seeded_and_distances, ensure_parent_dir_exists,
+    run_k_sweep_save_jsonl, summarize_cluster_assignments_with_distance,
+};
+use crate::models::clustering::{CaseClusterPoint, EmbeddingStress, LinkageRow};
 use crate::models::ocel_collection::OCELCollection;
 use crate::traits::import_export::ImportableFromPath;
 use axum::{
@@ -16,6 +25,7 @@ use serde_json::{Map, Value, json};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs::OpenOptions;
 use std::io::{BufWriter, Write};
+use std::time::Instant;
 use tokio::fs;
 use uuid::Uuid;
 
@@ -30,12 +40,27 @@ pub struct ClusterParams {
     pub base_seed: Option<u64>,
 }
 
+#[derive(Deserialize)]
+pub struct AgglomerativeClusterParams {
+    pub k: Option<usize>,
+    pub metric: Option<String>,
+    pub linkage: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct AgglomerativeCutParams {
+    pub k: usize,
+}
+
 #[derive(Serialize)]
 pub struct ClusteringResult {
     pub file_id: String,
     pub case_assignments: Vec<(String, usize)>,
+    pub case_points: Vec<CaseClusterPoint>,
     pub run: RunResult,
     pub metric: String,
+    pub embedding_method: String,
+    pub embedding_stress: EmbeddingStress,
 }
 
 #[derive(Serialize)]
@@ -56,6 +81,43 @@ pub struct SampleSweepResultResponse {
     pub sample_sizes: Vec<usize>,
     pub sample_repetitions: usize,
     pub source_num_cases: usize,
+}
+
+#[derive(Serialize)]
+pub struct AgglomerativeClusteringResponse {
+    pub file_id: String,
+    pub source_case_ocels_file_id: String,
+    pub metric: String,
+    pub linkage_method: String,
+    pub case_count: usize,
+    pub case_ids: Vec<String>,
+    pub linkage: Vec<LinkageRow>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub case_assignments: Option<Vec<(String, usize)>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub case_points: Option<Vec<CaseClusterPoint>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub run: Option<RunResult>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub embedding_method: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub embedding_stress: Option<EmbeddingStress>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct AgglomerativeClusteringArtifact {
+    pub file_id: String,
+    pub source_case_ocels_file_id: String,
+    pub metric: String,
+    pub linkage_method: String,
+    pub case_count: usize,
+    pub case_ids: Vec<String>,
+    pub linkage: Vec<LinkageRow>,
+    pub condensed_distances: Vec<f64>,
+    pub embedding_points: Vec<Point2D>,
+    pub embedding_method: String,
+    #[serde(default)]
+    pub embedding_stress: Option<EmbeddingStress>,
 }
 
 #[derive(Deserialize)]
@@ -137,6 +199,10 @@ fn clustering_path(kind: &str, file_id: &str, extension: &str) -> String {
     format!("./temp/clustering_{}_{}.{}", kind, file_id, extension)
 }
 
+fn agglomerative_clustering_path(file_id: &str) -> String {
+    format!("./temp/agglomerative_clustering_{}.json", file_id)
+}
+
 fn clustered_cases_path(file_id: &str) -> String {
     format!("./temp/clustered_cases_{}.json", file_id)
 }
@@ -147,6 +213,108 @@ fn case_id_or_index(case_ocel: &serde_json::Value, idx: usize) -> String {
         .and_then(|value| value.as_str())
         .map(|value| value.to_string())
         .unwrap_or_else(|| idx.to_string())
+}
+
+fn agglomerative_case_assignments(
+    case_ids: &[String],
+    assignments: &[usize],
+) -> Vec<(String, usize)> {
+    case_ids
+        .iter()
+        .enumerate()
+        .map(|(idx, case_id)| (case_id.clone(), assignments[idx]))
+        .collect()
+}
+
+fn agglomerative_case_points(
+    case_ids: &[String],
+    assignments: &[usize],
+    points: &[Point2D],
+) -> Vec<CaseClusterPoint> {
+    case_ids
+        .iter()
+        .enumerate()
+        .map(|(idx, case_id)| {
+            let point = points.get(idx).copied().unwrap_or_default();
+            CaseClusterPoint {
+                case_id: case_id.clone(),
+                case_index: idx,
+                cluster_id: assignments[idx],
+                x: point.x,
+                y: point.y,
+                x_norm: point.x_norm,
+                y_norm: point.y_norm,
+            }
+        })
+        .collect()
+}
+
+fn agglomerative_response(
+    artifact: &AgglomerativeClusteringArtifact,
+    assignments: Option<Vec<usize>>,
+    run: Option<RunResult>,
+) -> AgglomerativeClusteringResponse {
+    let has_cut = assignments.is_some();
+    let (case_assignments, case_points) = match assignments {
+        Some(assignments) => (
+            Some(agglomerative_case_assignments(
+                &artifact.case_ids,
+                &assignments,
+            )),
+            Some(agglomerative_case_points(
+                &artifact.case_ids,
+                &assignments,
+                &artifact.embedding_points,
+            )),
+        ),
+        None => (None, None),
+    };
+
+    AgglomerativeClusteringResponse {
+        file_id: artifact.file_id.clone(),
+        source_case_ocels_file_id: artifact.source_case_ocels_file_id.clone(),
+        metric: artifact.metric.clone(),
+        linkage_method: artifact.linkage_method.clone(),
+        case_count: artifact.case_count,
+        case_ids: artifact.case_ids.clone(),
+        linkage: artifact.linkage.clone(),
+        case_assignments,
+        case_points,
+        run,
+        embedding_method: if has_cut {
+            Some(artifact.embedding_method.clone())
+        } else {
+            None
+        },
+        embedding_stress: if has_cut {
+            artifact.embedding_stress
+        } else {
+            None
+        },
+    }
+}
+
+async fn load_agglomerative_artifact(
+    file_id: &str,
+) -> Result<AgglomerativeClusteringArtifact, (StatusCode, String)> {
+    let path = agglomerative_clustering_path(file_id);
+    let content = fs::read_to_string(&path).await.map_err(|err| {
+        if err.kind() == std::io::ErrorKind::NotFound {
+            (StatusCode::NOT_FOUND, format!("File not found: {path}"))
+        } else {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to read agglomerative clustering artifact: {err}"),
+            )
+        }
+    })?;
+
+    serde_json::from_str::<AgglomerativeClusteringArtifact>(&content).map_err(|err| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to parse agglomerative clustering artifact: {err}"),
+        )
+    })
 }
 
 fn sample_case_ocels(
@@ -478,6 +646,262 @@ pub async fn get_materialized_clustered_cases(
     }
 }
 
+pub async fn agglomerative_cluster_case_ocels(
+    Path(case_ocels_file_id): Path<String>,
+    Query(params): Query<AgglomerativeClusterParams>,
+) -> impl IntoResponse {
+    if case_ocels_file_id.trim().is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            "file_id cannot be empty".to_string(),
+        )
+            .into_response();
+    }
+
+    let collection = match OCELCollection::import_from_path(&case_ocels_file_id).await {
+        Ok(collection) => collection,
+        Err(response) => return response.into_response(),
+    };
+
+    let case_ocels = match collection_to_values(collection) {
+        Ok(case_ocels) => case_ocels,
+        Err(response) => return response.into_response(),
+    };
+
+    if case_ocels.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            "Case OCEL collection cannot be empty".to_string(),
+        )
+            .into_response();
+    }
+
+    let (metric_str, metric) = match parse_metric(params.metric.as_deref()) {
+        Ok(parsed) => parsed,
+        Err(message) => return (StatusCode::BAD_REQUEST, message).into_response(),
+    };
+    let linkage_method = match LinkageMethod::parse(params.linkage.as_deref()) {
+        Ok(linkage_method) => linkage_method,
+        Err(message) => return (StatusCode::BAD_REQUEST, message).into_response(),
+    };
+
+    let case_ids = case_ocels
+        .iter()
+        .enumerate()
+        .map(|(idx, case_ocel)| case_id_or_index(case_ocel, idx))
+        .collect::<Vec<_>>();
+    let case_count = case_ocels.len();
+    let cut_k = match params.k {
+        Some(k) if k >= 1 && k <= case_count => Some(k),
+        Some(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                format!("k must be between 1 and the number of cases ({case_count})."),
+            )
+                .into_response();
+        }
+        None => None,
+    };
+
+    let blocking_case_ocels = case_ocels.clone();
+    let blocking_result = tokio::task::spawn_blocking(move || {
+        run_agglomerative_clustering_with_cut(&blocking_case_ocels, metric, linkage_method, cut_k)
+    })
+    .await;
+
+    let agglomerative_run = match blocking_result {
+        Ok(Ok(result)) => result,
+        Ok(Err(message)) => return (StatusCode::INTERNAL_SERVER_ERROR, message).into_response(),
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Agglomerative clustering task failed: {err}"),
+            )
+                .into_response();
+        }
+    };
+
+    let condensed_distances = condense_distance_matrix(&agglomerative_run.distances);
+    let (embedding_points, embedding_method) = embed_distances_2d(&agglomerative_run.distances);
+    let embedding_stress =
+        compute_embedding_stress(&agglomerative_run.distances, &embedding_points);
+
+    let file_id = Uuid::new_v4().to_string();
+    let artifact = AgglomerativeClusteringArtifact {
+        file_id: file_id.clone(),
+        source_case_ocels_file_id: case_ocels_file_id.clone(),
+        metric: metric_str.to_string(),
+        linkage_method: linkage_method.as_str().to_string(),
+        case_count,
+        case_ids,
+        linkage: agglomerative_run.linkage,
+        condensed_distances,
+        embedding_points,
+        embedding_method: embedding_method.to_string(),
+        embedding_stress: Some(embedding_stress),
+    };
+    let (cut_assignments, run) = match agglomerative_run.cut {
+        Some(cut) => (Some(cut.assignments), Some(cut.run)),
+        None => (None, None),
+    };
+    let result = agglomerative_response(&artifact, cut_assignments, run);
+    let result_path = agglomerative_clustering_path(&file_id);
+
+    if let Err(err) = ensure_parent_dir_exists(&result_path) {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to create agglomerative clustering output directory: {err}"),
+        )
+            .into_response();
+    }
+
+    match serde_json::to_string_pretty(&artifact) {
+        Ok(json) => {
+            if let Err(err) = fs::write(&result_path, json).await {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to store agglomerative clustering result: {err}"),
+                )
+                    .into_response();
+            }
+        }
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to serialize agglomerative clustering result: {err}"),
+            )
+                .into_response();
+        }
+    }
+
+    println!(
+        "[clustering agglomerative] source_case_ocels_file_id={} file_id={} metric={} linkage={} case_count={} linkage_rows={}",
+        case_ocels_file_id,
+        file_id,
+        metric_str,
+        linkage_method.as_str(),
+        case_count,
+        result.linkage.len()
+    );
+
+    (StatusCode::OK, Json(result)).into_response()
+}
+
+pub async fn cut_agglomerative_clustering(
+    Path(agglomerative_file_id): Path<String>,
+    Query(params): Query<AgglomerativeCutParams>,
+) -> impl IntoResponse {
+    if agglomerative_file_id.trim().is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            "agglomerative_file_id cannot be empty".to_string(),
+        )
+            .into_response();
+    }
+
+    let mut artifact = match load_agglomerative_artifact(&agglomerative_file_id).await {
+        Ok(artifact) => artifact,
+        Err(response) => return response.into_response(),
+    };
+
+    let k = params.k;
+    if k == 0 || k > artifact.case_count {
+        return (
+            StatusCode::BAD_REQUEST,
+            format!(
+                "k must be between 1 and the number of cases ({}).",
+                artifact.case_count
+            ),
+        )
+            .into_response();
+    }
+
+    if let Err(message) =
+        validate_condensed_distances(artifact.case_count, &artifact.condensed_distances)
+    {
+        return (StatusCode::INTERNAL_SERVER_ERROR, message).into_response();
+    }
+
+    if artifact.case_ids.len() != artifact.case_count
+        || artifact.embedding_points.len() != artifact.case_count
+    {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Stored agglomerative artifact has inconsistent case metadata.".to_string(),
+        )
+            .into_response();
+    }
+
+    if artifact.embedding_stress.is_none() {
+        artifact.embedding_stress = Some(compute_embedding_stress_with_distance(
+            artifact.case_count,
+            &artifact.embedding_points,
+            |left, right| {
+                condensed_distance(
+                    artifact.case_count,
+                    &artifact.condensed_distances,
+                    left,
+                    right,
+                )
+            },
+        ));
+    }
+
+    let collection =
+        match OCELCollection::import_from_path(&artifact.source_case_ocels_file_id).await {
+            Ok(collection) => collection,
+            Err(response) => return response.into_response(),
+        };
+
+    let case_ocels = match collection_to_values(collection) {
+        Ok(case_ocels) => case_ocels,
+        Err(response) => return response.into_response(),
+    };
+
+    if case_ocels.len() != artifact.case_count {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!(
+                "Stored source case collection has {} cases, expected {}.",
+                case_ocels.len(),
+                artifact.case_count
+            ),
+        )
+            .into_response();
+    }
+
+    let cut_timer = Instant::now();
+    let assignments = match cut_linkage_assignments(artifact.case_count, &artifact.linkage, k) {
+        Ok(assignments) => assignments,
+        Err(message) => return (StatusCode::INTERNAL_SERVER_ERROR, message).into_response(),
+    };
+    let mut run = summarize_cluster_assignments_with_distance(
+        &case_ocels,
+        &assignments,
+        k,
+        0,
+        artifact.case_count.saturating_sub(k),
+        0.0,
+        |left, right| {
+            condensed_distance(
+                artifact.case_count,
+                &artifact.condensed_distances,
+                left,
+                right,
+            )
+        },
+    );
+    run.total_runtime_seconds = cut_timer.elapsed().as_secs_f64();
+    run.runtime_per_case_seconds = if run.num_cases > 0 {
+        run.total_runtime_seconds / run.num_cases as f64
+    } else {
+        0.0
+    };
+
+    let result = agglomerative_response(&artifact, Some(assignments), Some(run));
+    (StatusCode::OK, Json(result)).into_response()
+}
+
 pub async fn cluster_case_ocels(
     Path(case_ocels_file_id): Path<String>,
     Query(params): Query<ClusterParams>,
@@ -651,33 +1075,61 @@ pub async fn cluster_case_ocels(
 
     let clustering_input = case_ocels.clone();
     let blocking_result = tokio::task::spawn_blocking(move || {
-        cluster_ocels_with_metric_seeded(&clustering_input, effective_k, metric, base_seed)
+        let (assignments, run, distances) = cluster_ocels_with_metric_seeded_and_distances(
+            &clustering_input,
+            effective_k,
+            metric,
+            base_seed,
+        );
+        let (points, embedding_method) = embed_distances_2d(&distances);
+        let embedding_stress = compute_embedding_stress(&distances, &points);
+        (assignments, run, points, embedding_method, embedding_stress)
     })
     .await;
 
-    let (cluster_assignments, run) = match blocking_result {
-        Ok(result) => result,
-        Err(err) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Clustering task failed: {err}"),
-            )
-                .into_response();
-        }
-    };
+    let (cluster_assignments, run, points, embedding_method, embedding_stress) =
+        match blocking_result {
+            Ok(result) => result,
+            Err(err) => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Clustering task failed: {err}"),
+                )
+                    .into_response();
+            }
+        };
 
     let case_assignments = case_ocels
         .iter()
         .enumerate()
         .map(|(idx, case_ocel)| (case_id_or_index(case_ocel, idx), cluster_assignments[idx]))
+        .collect::<Vec<_>>();
+    let case_points = case_ocels
+        .iter()
+        .enumerate()
+        .map(|(idx, case_ocel)| {
+            let point = points.get(idx).copied().unwrap_or_default();
+            CaseClusterPoint {
+                case_id: case_id_or_index(case_ocel, idx),
+                case_index: idx,
+                cluster_id: cluster_assignments[idx],
+                x: point.x,
+                y: point.y,
+                x_norm: point.x_norm,
+                y_norm: point.y_norm,
+            }
+        })
         .collect();
 
     let file_id = Uuid::new_v4().to_string();
     let result = ClusteringResult {
         file_id: file_id.clone(),
         case_assignments,
+        case_points,
         run,
         metric: metric_str.to_string(),
+        embedding_method: embedding_method.to_string(),
+        embedding_stress,
     };
     let result_path = clustering_path("result", &file_id, "json");
 
@@ -882,6 +1334,235 @@ mod tests {
         for path in created_paths {
             fs::remove_file(path).await.unwrap();
         }
+        fs::remove_file(source_path).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn agglomerative_handler_writes_linkage_result() {
+        fs::create_dir_all("./temp").await.unwrap();
+        let source_file_id = Uuid::new_v4().to_string();
+        let source_path = format!("./temp/case_ocels_{source_file_id}.json");
+        let source_payload = json!({
+            "origin_file_id_ocel": "source-1",
+            "case_notion_type": "Traditional Case Notion (case)",
+            "object_type": "case",
+            "case_notion_file_id": "cn-1",
+            "case_ocels": [
+                sample_case("o1", &["A", "B"]),
+                sample_case("o2", &["A", "B"]),
+                sample_case("o3", &["C"])
+            ]
+        });
+        fs::write(
+            &source_path,
+            serde_json::to_string(&source_payload).unwrap(),
+        )
+        .await
+        .unwrap();
+
+        let response = agglomerative_cluster_case_ocels(
+            Path(source_file_id.clone()),
+            Query(AgglomerativeClusterParams {
+                k: None,
+                metric: Some("dfg-typ".to_string()),
+                linkage: Some("average".to_string()),
+            }),
+        )
+        .await
+        .into_response();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let payload: Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(
+            payload["source_case_ocels_file_id"].as_str(),
+            Some(source_file_id.as_str())
+        );
+        assert_eq!(payload["metric"].as_str(), Some("dfg-typ"));
+        assert_eq!(payload["linkage_method"].as_str(), Some("average"));
+        assert_eq!(payload["case_count"].as_u64(), Some(3));
+        assert_eq!(payload["case_ids"].as_array().unwrap().len(), 3);
+        assert_eq!(payload["linkage"].as_array().unwrap().len(), 2);
+        assert!(payload.get("run").is_none());
+        assert!(payload.get("condensed_distances").is_none());
+
+        let file_id = payload["file_id"].as_str().unwrap();
+        let result_path = agglomerative_clustering_path(file_id);
+        let stored: Value =
+            serde_json::from_str(&fs::read_to_string(&result_path).await.unwrap()).unwrap();
+        assert_eq!(stored["file_id"], payload["file_id"]);
+        assert_eq!(stored["linkage"], payload["linkage"]);
+        assert_eq!(stored["condensed_distances"].as_array().unwrap().len(), 3);
+        assert_eq!(stored["embedding_points"].as_array().unwrap().len(), 3);
+        assert_eq!(stored["embedding_stress"]["pair_count"].as_u64(), Some(3));
+
+        fs::remove_file(result_path).await.unwrap();
+        fs::remove_file(source_path).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn agglomerative_handler_returns_cut_measures_when_k_is_requested() {
+        fs::create_dir_all("./temp").await.unwrap();
+        let source_file_id = Uuid::new_v4().to_string();
+        let source_path = format!("./temp/case_ocels_{source_file_id}.json");
+        let source_payload = json!({
+            "origin_file_id_ocel": "source-1",
+            "case_notion_type": "Traditional Case Notion (case)",
+            "object_type": "case",
+            "case_notion_file_id": "cn-1",
+            "case_ocels": [
+                sample_case("o1", &["A", "B"]),
+                sample_case("o2", &["A", "B"]),
+                sample_case("o3", &["C"])
+            ]
+        });
+        fs::write(
+            &source_path,
+            serde_json::to_string(&source_payload).unwrap(),
+        )
+        .await
+        .unwrap();
+
+        let response = agglomerative_cluster_case_ocels(
+            Path(source_file_id.clone()),
+            Query(AgglomerativeClusterParams {
+                k: Some(2),
+                metric: Some("dfg-typ".to_string()),
+                linkage: Some("average".to_string()),
+            }),
+        )
+        .await
+        .into_response();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let payload: Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(payload["run"]["k"].as_u64(), Some(2));
+        assert_eq!(payload["run"]["num_cases"].as_u64(), Some(3));
+        assert_eq!(payload["case_assignments"].as_array().unwrap().len(), 3);
+        assert_eq!(payload["case_points"].as_array().unwrap().len(), 3);
+        assert_eq!(
+            payload["embedding_method"].as_str(),
+            Some("classical-mds+stress")
+        );
+        assert_eq!(payload["embedding_stress"]["pair_count"].as_u64(), Some(3));
+        assert!(
+            payload["embedding_stress"]["normalized_stress"]
+                .as_f64()
+                .unwrap()
+                .is_finite()
+        );
+        assert!(payload.get("condensed_distances").is_none());
+
+        let file_id = payload["file_id"].as_str().unwrap();
+        let result_path = agglomerative_clustering_path(file_id);
+        let stored: Value =
+            serde_json::from_str(&fs::read_to_string(&result_path).await.unwrap()).unwrap();
+        assert_eq!(stored["file_id"], payload["file_id"]);
+        assert_eq!(stored["linkage"], payload["linkage"]);
+        assert_eq!(stored["condensed_distances"].as_array().unwrap().len(), 3);
+        assert_eq!(stored["embedding_points"].as_array().unwrap().len(), 3);
+        assert_eq!(stored["embedding_stress"]["pair_count"].as_u64(), Some(3));
+
+        let cut_response = cut_agglomerative_clustering(
+            Path(file_id.to_string()),
+            Query(AgglomerativeCutParams { k: 1 }),
+        )
+        .await
+        .into_response();
+        assert_eq!(cut_response.status(), StatusCode::OK);
+        let cut_body = to_bytes(cut_response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let cut_payload: Value = serde_json::from_slice(&cut_body).unwrap();
+        assert_eq!(cut_payload["file_id"].as_str(), Some(file_id));
+        assert_eq!(cut_payload["run"]["k"].as_u64(), Some(1));
+        assert_eq!(cut_payload["case_assignments"].as_array().unwrap().len(), 3);
+        assert_eq!(cut_payload["case_points"].as_array().unwrap().len(), 3);
+        assert_eq!(
+            cut_payload["embedding_stress"]["pair_count"].as_u64(),
+            Some(3)
+        );
+        assert!(cut_payload.get("condensed_distances").is_none());
+
+        fs::remove_file(result_path).await.unwrap();
+        fs::remove_file(source_path).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn cluster_handler_returns_case_points_for_single_run() {
+        fs::create_dir_all("./temp").await.unwrap();
+        let source_file_id = Uuid::new_v4().to_string();
+        let source_path = format!("./temp/case_ocels_{source_file_id}.json");
+        let source_payload = json!({
+            "origin_file_id_ocel": "source-1",
+            "case_notion_type": "Traditional Case Notion (case)",
+            "object_type": "case",
+            "case_notion_file_id": "cn-1",
+            "case_ocels": [
+                sample_case("o1", &["A", "B"]),
+                sample_case("o2", &["A", "C"]),
+                sample_case("o3", &["D"])
+            ]
+        });
+        fs::write(
+            &source_path,
+            serde_json::to_string(&source_payload).unwrap(),
+        )
+        .await
+        .unwrap();
+
+        let response = cluster_case_ocels(
+            Path(source_file_id.clone()),
+            Query(ClusterParams {
+                k: Some(2),
+                k_min: None,
+                k_max: None,
+                sample_sizes: None,
+                sample_repetitions: None,
+                metric: Some("dfg-typ".to_string()),
+                base_seed: Some(53),
+            }),
+        )
+        .await
+        .into_response();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let payload: Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(
+            payload["embedding_method"].as_str(),
+            Some("classical-mds+stress")
+        );
+        assert_eq!(payload["embedding_stress"]["pair_count"].as_u64(), Some(3));
+        assert!(
+            payload["embedding_stress"]["normalized_stress"]
+                .as_f64()
+                .unwrap()
+                .is_finite()
+        );
+        assert_eq!(payload["case_assignments"].as_array().unwrap().len(), 3);
+
+        let case_points = payload["case_points"].as_array().unwrap();
+        assert_eq!(case_points.len(), 3);
+        for (idx, point) in case_points.iter().enumerate() {
+            assert_eq!(point["case_index"].as_u64(), Some(idx as u64));
+            assert!(point["cluster_id"].as_u64().unwrap() < 2);
+            assert!(point["x"].as_f64().unwrap().is_finite());
+            assert!(point["y"].as_f64().unwrap().is_finite());
+            let x_norm = point["x_norm"].as_f64().unwrap();
+            let y_norm = point["y_norm"].as_f64().unwrap();
+            assert!((0.0..=1.0).contains(&x_norm));
+            assert!((0.0..=1.0).contains(&y_norm));
+        }
+
+        let file_id = payload["file_id"].as_str().unwrap();
+        let result_path = clustering_path("result", file_id, "json");
+        let stored: Value =
+            serde_json::from_str(&fs::read_to_string(&result_path).await.unwrap()).unwrap();
+        assert_eq!(stored, payload);
+
+        fs::remove_file(result_path).await.unwrap();
         fs::remove_file(source_path).await.unwrap();
     }
 }
