@@ -40,7 +40,6 @@ const nodeTypes = {
     flowVisualizationNode: FlowVisualizationNode,
     abstractionMinerNode: AbstractionMinerNode,
     abstractionFileNode: AbstractionFileNode,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } satisfies Record<keyof typeof nodeRegistry, React.ComponentType<NodeProps<any>>>;
 
 const Explore: React.FC = () => {

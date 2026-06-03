@@ -15,7 +15,6 @@ export const uploadFile = async (file: ExtendedFile) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('file_id', file.id);
-    // formData.append('file_type', file.fileType);
 
     let response;
     switch (file.fileType) {
@@ -65,13 +64,11 @@ export const getOcel = async (fileId: string) => {
 };
 
 export const getHistogramEventPersp = async (fileId: string) => {
-    //const response = await api.get(`/v1/event_object_frequencies/histogram/${fileId}`);
     const response = await api.get(`/v1/event_object_frequencies/event_perspective_histogram/${fileId}`);
     return response.data;
 };
 
 export const getHistogramObjectPersp = async (fileId: string) => {
-    //const response = await api.get(`/v1/event_object_frequencies/histogram/${fileId}`);
     const response = await api.get(`/v1/event_object_frequencies/object_perspective_histogram/${fileId}`);
     return response.data;
 };
@@ -200,12 +197,7 @@ export type GetOcpnResponse = {
     ocpn: any;
 };
 
-export const getOcpnFromOcpt = async (ocptId: string): Promise<GetOcpnResponse> => {
-    const response = await api.get(`/v1/ocpn/from_ocpt/${ocptId}`);
-    return response.data;
-};
 export const getOcpn = async (fileId: string) => {
-    // Add Promise<YourResponseType> if using strict types
     const response = await api.get(`/v1/objects/ocpn/${fileId}`);
     return response.data;
 };

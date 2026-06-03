@@ -178,14 +178,6 @@ export const useGetAbstraction = (
     });
 };
 
-export const useGetOcpnFromOcpt = (ocptId: string | null) => {
-    return useQuery({
-        queryKey: ['getOcpnFromOcpt', ocptId],
-        queryFn: () => getOcpnFromOcpt(ocptId!),
-        enabled: Boolean(ocptId),
-        refetchOnWindowFocus: false,
-    });
-};
 export const useMineOcpn = (nodeId: string, fileId: string | null, shouldFetch: boolean) => {
     return useQuery({
         queryKey: ['mineOcpn', nodeId, fileId],
