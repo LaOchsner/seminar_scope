@@ -1,5 +1,6 @@
 use crate::handlers::clustering::{
-    cluster_case_ocels, get_materialized_clustered_cases, materialize_clustered_case_ocels,
+    agglomerative_cluster_case_ocels, cluster_case_ocels, cut_agglomerative_clustering,
+    get_materialized_clustered_cases, materialize_clustered_case_ocels,
 };
 use axum::{
     Router,
@@ -8,6 +9,14 @@ use axum::{
 
 pub fn router() -> Router {
     Router::new()
+        .route(
+            "/agglomerative/{agglomerative_file_id}/cut",
+            get(cut_agglomerative_clustering),
+        )
+        .route(
+            "/agglomerative/{case_ocels_file_id}",
+            get(agglomerative_cluster_case_ocels),
+        )
         .route("/cluster/{case_ocels_file_id}", get(cluster_case_ocels))
         .route(
             "/materialize/{case_ocels_file_id}",
