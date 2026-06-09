@@ -124,16 +124,15 @@ export const ArcEdge = ({
             style={{
                 ...style,
                 stroke: data?.color,
-                // Make special (variable) arcs bolder (3.5px) and normal arcs standard (1.5px)
-                strokeWidth: data?.variable ? 3.5 : 1.5,
-                // Completely removed the '4 4' dash array so no arcs are dotted!
-                strokeDasharray: 'none',
+                // Make special arcs slightly thicker so the dots are highly visible
+                strokeWidth: data?.variable ? 2.5 : 1.5,
+                //'6 4' creates the dotted effect for special arcs
+                strokeDasharray: data?.variable ? '6 4' : 'none', 
                 strokeOpacity: 0.8,
             }}
         />
     );
 };
-
 const OcpnMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const queryClient = useQueryClient();
     const { id, data: nodeData } = node;
