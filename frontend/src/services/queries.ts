@@ -19,6 +19,7 @@ import {
     getLogGraphs,
     getOcelCollection,
     getOcelObjectTypes,
+    getIdentityOcpt,
     getOcpt,
     getTraditionalCN,
     mineIdentityOcpt,
