@@ -1,8 +1,12 @@
+mod candidate_trees;
 mod check_relation;
 mod noise_resistant_check_relations;
 mod ocpt_extender;
-mod candidate_trees;
 
+#[allow(unused_imports)]
+pub use candidate_trees::{
+    NormalFormResult, NormalizationError, ReductionRule, normalize_candidate_tree,
+};
 #[allow(unused_imports)]
 pub use check_relation::check_relation;
 #[allow(unused_imports)]
