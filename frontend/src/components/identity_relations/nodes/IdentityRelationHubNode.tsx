@@ -9,6 +9,5 @@ const IdentityRelationHubNode = memo(() => (
         <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
     </div>
 ));
-IdentityRelationHubNode.displayName = 'IdentityRelationHubNode';
 
 export default IdentityRelationHubNode;

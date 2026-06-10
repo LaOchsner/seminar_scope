@@ -217,6 +217,21 @@ export const getAbstractionById = async (fileId: string): Promise<GetAbstraction
     return response.data;
 };
 
+export type ExportPm4pyResponse = {
+    status: string;
+    kind: string;
+    source_file_id: string;
+    schema: string;
+    schema_version: string;
+    filename: string;
+    path: string;
+};
+
+export const exportOcptPm4py = async (fileId: string): Promise<ExportPm4pyResponse> => {
+    const response = await api.get(`/v1/export/pm4py/ocpt/${fileId}`);
+    return response.data;
+};
+
 export const mineOcpt = async (fileId: string, algorithm: string = 'DF2'): Promise<GetOcptResponse> => {
     if (algorithm === 'DF2') {
         const response = await api.get(`v1/ocpt/df2/${fileId}`);

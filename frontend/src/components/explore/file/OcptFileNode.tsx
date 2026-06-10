@@ -1,10 +1,12 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { scaleOrdinal } from '@visx/scale';
 import type { NodeProps } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import { schemeSet1 } from 'd3-scale-chromatic';
 import { ChevronDown, TreePine } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Button } from '~/components/ui/button';
 import { Checkbox } from '~/components/ui/checkbox';
 import {
@@ -16,6 +18,7 @@ import {
 import BaseFileNode from '~/components/explore/file/BaseFileNode';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useGetIdentityOcpt, useGetOcpt } from '~/services/queries';
+import { exportOcptPm4py } from '~/services/api';
 import { generateColorMap, getDeterministicColor } from '~/lib/colors';
 import { propagateMapDownstream, syncMatchingColorsGlobally } from '~/lib/explore/flowActions';
 import { FileExploreNodeData } from '~/types/explore/nodeData/fileNodeData';
@@ -102,6 +105,20 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
         }
     }, [data, id, updateNodeData]);
 
+    const exportMutation = useMutation({
+        mutationFn: () => exportOcptPm4py(ocptAsset!.id),
+        onSuccess: (result) => {
+            toast.success(`Exported to Downloads`, { description: result.filename });
+        },
+        onError: () => {
+            toast.error('Export failed', { description: 'Could not export OCPT as PM4PY.' });
+        },
+    });
+
+    const handleDropdownAction = useCallback((action: string) => {
+        if (action === 'exportPm4pyOcpt') exportMutation.mutate();
+    }, [exportMutation]);
+
     const visualize = (filter?: string) => {
         navigate(`/data/pipeline/explore/ocpt/${id}${filter ? `?filter=${filter}` : ''}`);
     };
@@ -141,7 +158,9 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
             dropdownOptions={[
                 { label: 'Open File', action: 'openFileDialog' as const, icon: 'file' },
                 { label: 'Set Custom Color', action: 'setCustomColor' as const, icon: 'palette' },
+                ...(hasFile ? [{ label: 'Export as PM4PY', action: 'exportPm4pyOcpt' as const, icon: 'download' }] : []),
             ]}
+            onDropdownAction={handleDropdownAction}
         >
             {hasFile && (
                 <div className="mt-2 border-t pt-2">
