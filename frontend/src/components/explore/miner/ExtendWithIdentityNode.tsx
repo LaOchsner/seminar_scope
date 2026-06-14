@@ -1,15 +1,21 @@
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { NodeProps } from '@xyflow/react';
-import { Handle, Position } from '@xyflow/react';
+import { Position } from '@xyflow/react';
+import { Input } from '~/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip';
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
 import { useInputAsset, useMinerOutput } from '~/hooks/explore/useMinerAssets';
+import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useExtendOcptWithIdentity } from '~/services/queries';
-import { ASSET_TYPE_VISUALS } from '~/lib/iconMap';
 import { MinerNode } from '~/types/explore/nodes';
 
 const ExtendWithIdentityNode = memo<NodeProps<MinerNode>>((node) => {
     const queryClient = useQueryClient();
+    const { updateNodeData } = useExploreFlowStore();
+
+    const [noiseThreshold, setNoiseThreshold] = useState<number>(node.data.noiseThreshold ?? 0.8);
+    const [noiseInput, setNoiseInput] = useState<string>(String(node.data.noiseThreshold ?? 0.8));
 
     const hasMinedAsset = useMemo(() => {
         return node.data.assets.some((asset) => asset.io === 'output');
@@ -23,6 +29,7 @@ const ExtendWithIdentityNode = memo<NodeProps<MinerNode>>((node) => {
         node.id,
         ocptAsset?.id ?? null,
         ocelAsset?.id ?? null,
+        noiseThreshold,
         !hasMinedAsset
     );
 
@@ -32,43 +39,69 @@ const ExtendWithIdentityNode = memo<NodeProps<MinerNode>>((node) => {
         queryClient.removeQueries({ queryKey: ['extendOcptWithIdentity', node.id] });
     }, [queryClient, node.id]);
 
+    const renderSettings = () => (
+        <div className="flex items-center gap-1">
+            <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span className="text-xs text-foreground cursor-help">Noise:</span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs max-w-56">
+                        <p className="font-semibold mb-0.5">Noise Threshold</p>
+                        <p className="text-muted-foreground mb-1.5">
+                            Controls which identity relations the algorithm keeps based on their frequency.
+                        </p>
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="font-mono font-bold">0</span>
+                                <span className="text-muted-foreground">Keeps all identity relations.</span>
+                            </div>
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="font-mono font-bold">1</span>
+                                <span className="text-muted-foreground">
+                                    Removes all but the most frequent relations.
+                                </span>
+                            </div>
+                        </div>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+            <Input
+                type="number"
+                min={0}
+                max={1}
+                step={0.05}
+                value={noiseInput}
+                onChange={(e) => setNoiseInput(e.target.value)}
+                onBlur={() => {
+                    const clamped = Math.min(1, Math.max(0, parseFloat(noiseInput) || 0));
+                    setNoiseInput(String(clamped));
+                    setNoiseThreshold(clamped);
+                    updateNodeData(node.id, { noiseThreshold: clamped });
+                }}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                }}
+                className="h-6 w-16 px-1.5 text-xs nodrag"
+            />
+        </div>
+    );
+
     return (
         <BaseMinerNode
             {...node}
             title="Extend with Identity"
-            iconName="fingerprint"
+            iconName="scanEye"
             handleOptions={[
-                { id: 'ocptTarget', position: Position.Left, type: 'target' as const },
+                { id: 'target', position: Position.Left, type: 'target' as const },
                 { id: 'source', position: Position.Right, type: 'source' as const },
             ]}
+            secondaryHandles={[{ id: 'ocelTarget', label: 'OCEL Input', hintTypes: ['ocelAsset', 'ocelFile'] }]}
             dropdownOptions={[]}
             isLoading={isLoading || isFetching}
             onReset={handleReset}
-        >
-            <div className="relative mt-2 border-t pt-2">
-                <Handle id="ocelTarget" type="target" position={Position.Left} style={{ left: '-0.75rem' }} />
-                <p className="text-xs font-semibold text-gray-500 mb-2">Secondary Input</p>
-                {ocelAsset
-                    ? (() => {
-                          const { label, icon: Icon, color } = ASSET_TYPE_VISUALS[ocelAsset.type];
-                          return (
-                              <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-gray-50 border border-gray-200">
-                                  <Icon className={`h-3.5 w-3.5 shrink-0 ${color}`} />
-                                  <span className="text-xs font-medium text-gray-700">{label}</span>
-                              </div>
-                          );
-                      })()
-                    : (() => {
-                          const { label, icon: Icon, color } = ASSET_TYPE_VISUALS['ocelFile'];
-                          return (
-                              <div className="flex items-center gap-1.5">
-                                  <Icon className={`h-3 w-3 ${color}`} />
-                                  <span className="text-xs text-gray-600">{label}</span>
-                              </div>
-                          );
-                      })()}
-            </div>
-        </BaseMinerNode>
+            customActions={renderSettings()}
+        />
     );
 });
 

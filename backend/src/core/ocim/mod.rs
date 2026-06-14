@@ -4,8 +4,6 @@ pub mod basecase;
 pub mod common_data;
 pub mod concurrent_cut;
 pub mod concurrent_cut_detection;
-#[cfg(test)]
-pub mod example_log;
 pub mod exclusive_cut;
 pub mod exclusive_cut_detection;
 pub mod fallthrough_definition;

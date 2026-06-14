@@ -15,6 +15,9 @@ import {
     type LucideProps,
     Network,
     Pickaxe,
+    Radar,
+    ScanEye,
+    ShieldCheck,
     TreePine,
     Waves,
     Waypoints,
@@ -41,6 +44,9 @@ export const iconMap: Record<string, ComponentType<LucideProps>> = {
     layers: Layers,
     waypoints: Waypoints,
     chartNetwork: ChartNetwork,
+    radar: Radar,
+    scanEye: ScanEye,
+    shieldCheck: ShieldCheck,
 };
 
 export const getIconComponent = (iconName: string): ComponentType<LucideProps> => {
@@ -98,5 +104,10 @@ export const ASSET_TYPE_VISUALS: Record<AssetType, AssetTypeVisual> = {
         icon: Layers,
         color: 'text-purple-500',
         label: 'Abstraction',
+    },
+    conformanceAsset: {
+        icon: Radar,
+        color: 'text-blue-500',
+        label: 'Conformance',
     },
 };

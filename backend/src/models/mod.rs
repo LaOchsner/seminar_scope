@@ -1,9 +1,13 @@
 pub mod abstraction;
 pub mod case_notion;
+pub mod clustering;
 pub mod dfg;
 pub mod ocel;
 pub mod ocel1;
 pub mod ocel_collection;
 pub mod ocel_sid_df2_miner;
+pub mod ocgraphconf_case_compare;
+pub mod ocgraphconf_model_case_conformance;
 pub mod ocpn;
 pub mod ocpt;
+pub mod resource_miner;

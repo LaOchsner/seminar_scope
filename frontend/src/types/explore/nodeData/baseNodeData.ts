@@ -9,7 +9,7 @@ export type BaseExploreNodeDropdownActionType =
     | 'viewObjectEventGraph'
     | 'setCustomColor';
 
-export type HandleId = 'target' | 'source' | 'conformanceTarget' | 'ocptTarget' | 'ocelTarget';
+export type HandleId = 'target' | 'source' | 'conformanceTarget' | 'ocptTarget' | 'ocelTarget' | 'conformanceTargetSecondary';
 
 export interface BaseExploreNodeHandleOption {
     id: HandleId;
@@ -35,6 +35,7 @@ export interface BaseExploreNodeAsset {
     type: AssetType;
     origin: BaseExploreNodeAssetOrigin;
     io: IoType;
+    inputHandle?: string;
 }
 
 export interface BaseExploreNodeDisplay {

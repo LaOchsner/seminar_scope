@@ -7,11 +7,13 @@ import { Toaster } from '~/components/ui/sonner';
 import RedirectErrorBoundary from '~/components/RedirectErrorBoundary';
 import '~/index.css';
 import AbstractionViewer from '~/routes/AbstractionViewer';
+import DeviationViewer from '~/routes/DeviationViewer';
 import Explore from '~/routes/Explore';
 import FlowViewer from '~/routes/FlowViewer';
 import HistViz from '~/routes/Hist-Viz';
 import Home from '~/routes/Home';
 import OcelViewer from '~/routes/OcelViewer';
+import ResourceViewer from '~/routes/ResourceViewer';
 import OcptViewer from '~/routes/OcptViewer';
 import Pipeline from '~/routes/Pipeline';
 import Upload from '~/routes/Upload';
@@ -66,6 +68,14 @@ const router = createBrowserRouter([
         ),
     },
     {
+        path: '/data/pipeline/explore/deviations/:nodeId',
+        element: (
+            <RedirectErrorBoundary>
+                <DeviationViewer />
+            </RedirectErrorBoundary>
+        ),
+    },
+    {
         path: '/data/pipeline/explore/flow/:nodeId',
         element: (
             <RedirectErrorBoundary>
@@ -86,6 +96,13 @@ const router = createBrowserRouter([
         element: (
             <RedirectErrorBoundary>
                 <OcpnViewer />
+         ),
+     },
+     {       
+        path: '/data/pipeline/explore/resource_graph/:nodeId',
+        element: (
+             <RedirectErrorBoundary>
+                <ResourceViewer />
             </RedirectErrorBoundary>
         ),
     },

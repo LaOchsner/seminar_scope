@@ -6,6 +6,11 @@ import {
     getAbstractionById,
     getAdvancedCN,
     getCaseNotions,
+    getConformanceAbstractionAbstraction,
+    getConformanceExtendedOcptAbstraction,
+    getConformanceExtendedOcptExtendedOcpt,
+    getConformanceExtendedOcptOcel,
+    getConformanceOcptAbstraction,
     getConformanceOcptOcel,
     getConformanceOcptOcpt,
     getConnectedComponentsCN,
@@ -16,11 +21,14 @@ import {
     getOcelObjectTypes,
     getOcpn,
     getOcpnFromOcpt,
+    getIdentityOcpt,
     getOcpt,
     getTraditionalCN,
     mineIdentityOcpt,
     mineOcpn,
     mineOcpt,
+    getActivityResource,
+    postSpecialActivities,
 } from '~/services/api';
 import { getOcel } from '~/services/api';
 import { CaseNotionApiResponse } from '~/types/case_notion.types';
@@ -49,6 +57,53 @@ export const useGetOcel = (fileId: string | null) => {
         queryFn: () => getOcel(fileId!),
         refetchOnWindowFocus: false,
         enabled: Boolean(fileId),
+    });
+};
+
+
+export const useGetActivityResource = (fileId: string | null) => {
+   
+
+    return useQuery({
+        queryKey: ['getActivityResource', fileId],
+        queryFn: () => getActivityResource(fileId!),
+        refetchOnWindowFocus: false,
+        enabled: Boolean(fileId),
+    });
+};
+
+// export const usePostSpecialActivity = (fileId: string | null, ac) => {
+//     console.log('query');
+//         console.log(fileId);
+
+//     return useQuery({
+//         queryKey: ['postSpecialActivities', fileId],
+//         queryFn: () => getActivityResource(fileId!),
+//         refetchOnWindowFocus: false,
+//         enabled: Boolean(fileId),
+//     });
+// };
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+export const usePostSpecialActivity = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({
+            fileId,
+            activities,
+        }: {
+            fileId: string;
+            activities: string[];
+        }) => postSpecialActivities(fileId, activities),
+
+        onSuccess: (data, variables) => {
+            // 🔁 Refetch activity resource after POST
+            queryClient.invalidateQueries({
+                queryKey: ['getActivityResource', variables.fileId],
+            });
+        },
     });
 };
 
@@ -124,6 +179,51 @@ export const useGetConformanceOcptOcpt = (ocptFileId1: string | null, ocptFileId
     });
 };
 
+export const useGetConformanceOcptAbstraction = (ocptId: string | null, abstractionId: string | null) => {
+    return useQuery({
+        queryKey: ['getConformanceOcptAbstraction', ocptId, abstractionId],
+        queryFn: () => getConformanceOcptAbstraction(ocptId!, abstractionId!),
+        enabled: Boolean(ocptId) && Boolean(abstractionId),
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetConformanceExtendedOcptAbstraction = (extendedOcptId: string | null, abstractionId: string | null) => {
+    return useQuery({
+        queryKey: ['getConformanceExtendedOcptAbstraction', extendedOcptId, abstractionId],
+        queryFn: () => getConformanceExtendedOcptAbstraction(extendedOcptId!, abstractionId!),
+        enabled: Boolean(extendedOcptId) && Boolean(abstractionId),
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetConformanceExtendedOcptOcel = (extendedOcptId: string | null, ocelId: string | null) => {
+    return useQuery({
+        queryKey: ['getConformanceExtendedOcptOcel', extendedOcptId, ocelId],
+        queryFn: () => getConformanceExtendedOcptOcel(extendedOcptId!, ocelId!),
+        enabled: Boolean(extendedOcptId) && Boolean(ocelId),
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetConformanceExtendedOcptExtendedOcpt = (extendedOcptId1: string | null, extendedOcptId2: string | null) => {
+    return useQuery({
+        queryKey: ['getConformanceExtendedOcptExtendedOcpt', extendedOcptId1, extendedOcptId2],
+        queryFn: () => getConformanceExtendedOcptExtendedOcpt(extendedOcptId1!, extendedOcptId2!),
+        enabled: Boolean(extendedOcptId1) && Boolean(extendedOcptId2),
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetConformanceAbstractionAbstraction = (abstractionId1: string | null, abstractionId2: string | null) => {
+    return useQuery({
+        queryKey: ['getConformanceAbstractionAbstraction', abstractionId1, abstractionId2],
+        queryFn: () => getConformanceAbstractionAbstraction(abstractionId1!, abstractionId2!),
+        enabled: Boolean(abstractionId1) && Boolean(abstractionId2),
+        refetchOnWindowFocus: false,
+    });
+};
+
 export const useGetCaseNotions = (cnFileId: string, shouldFetch: boolean) => {
     return useQuery({
         queryKey: ['getCaseNotions', cnFileId],
@@ -146,11 +246,12 @@ export const useExtendOcptWithIdentity = (
     nodeId: string,
     ocptFileId: string | null,
     ocelFileId: string | null,
+    noiseThreshold: number,
     shouldFetch: boolean
 ) => {
     return useQuery({
-        queryKey: ['extendOcptWithIdentity', nodeId, ocptFileId, ocelFileId],
-        queryFn: () => extendOcptWithIdentity(ocptFileId!, ocelFileId!),
+        queryKey: ['extendOcptWithIdentity', nodeId, ocptFileId, ocelFileId, noiseThreshold],
+        queryFn: () => extendOcptWithIdentity(ocptFileId!, ocelFileId!, noiseThreshold),
         enabled: Boolean(ocptFileId) && Boolean(ocelFileId) && shouldFetch,
         refetchOnWindowFocus: false,
     });

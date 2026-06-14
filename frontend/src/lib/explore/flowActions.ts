@@ -184,9 +184,9 @@ export const handleConnect = (connection: Connection) => {
             .filter((asset) => asset.io === 'output')
             .flatMap((asset) => {
                 if (connection.targetHandle === 'conformanceTarget')
-                    return [{ ...asset, io: 'input' } as BaseExploreNodeAsset];
+                    return [{ ...asset, io: 'input', inputHandle: connection.targetHandle } as BaseExploreNodeAsset];
                 if (isFileNode(targetNode)) return [{ ...asset, io: 'output' } as BaseExploreNodeAsset];
-                return [{ ...asset, io: 'input' } as BaseExploreNodeAsset];
+                return [{ ...asset, io: 'input', inputHandle: connection.targetHandle ?? 'target' } as BaseExploreNodeAsset];
             });
         const sourceColorMap = (sourceNode.data as any).colorMap as Record<string, string> | undefined;
         updateNodeData(target, (prev) => {

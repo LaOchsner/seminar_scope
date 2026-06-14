@@ -1,5 +1,5 @@
 import { memo, type ReactNode, useEffect, useRef } from 'react';
-import { useNodeConnections } from '@xyflow/react';
+import { Handle, Position, useNodeConnections } from '@xyflow/react';
 import { CheckCircle, Pickaxe, RefreshCw } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import AssetTypeList from '~/components/explore/AssetTypeList';
@@ -18,6 +18,12 @@ import { MinerNode } from '~/types/explore/nodes';
 import { AssetType } from '~/types/files.types';
 import '~/styles/animations.css';
 
+export interface SecondaryHandleConfig {
+    id: HandleId;
+    label: string;
+    hintTypes: readonly AssetType[];
+}
+
 interface MinerNodeProps {
     id: string;
     selected: boolean;
@@ -26,6 +32,7 @@ interface MinerNodeProps {
     iconName: string;
     handleOptions: BaseExploreNodeHandleOption[];
     dropdownOptions: BaseExploreNodeDropdownOption[];
+    secondaryHandles?: SecondaryHandleConfig[];
     isLoading?: boolean;
     onDropdownAction?: (action: BaseExploreNodeDropdownActionType) => void;
     onReset?: () => void;
@@ -57,7 +64,7 @@ const AllowedInputsHint = ({
     return <AssetTypeList types={allowedAssetTypes} />;
 };
 
-const OutputBadge = ({ asset }: { asset: BaseExploreNodeAsset }) => {
+export const AssetBadge = ({ asset }: { asset: BaseExploreNodeAsset }) => {
     const visual = ASSET_TYPE_VISUALS[asset.type];
     const Icon = visual.icon;
     return (
@@ -78,6 +85,7 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
         iconName,
         handleOptions,
         dropdownOptions,
+        secondaryHandles,
         isLoading,
         onDropdownAction,
         onReset,
@@ -191,13 +199,19 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
         }
 
         const outputAssets = assets.filter((a) => a.io === 'output');
+        const primaryInputAssets = assets.filter((a) => a.io === 'input' && (!a.inputHandle || a.inputHandle === 'target'));
 
         return (
             <div className="flex flex-col gap-2">
                 {outputAssets.length > 0 ? (
                     <div>
                         <p className="text-xs font-semibold text-gray-500 mb-2">Output</p>
-                        {outputAssets.map((asset) => <OutputBadge key={asset.id} asset={asset} />)}
+                        {outputAssets.map((asset) => <AssetBadge key={asset.id} asset={asset} />)}
+                    </div>
+                ) : primaryInputAssets.length > 0 ? (
+                    <div>
+                        <p className="text-xs font-semibold text-gray-500 mb-2">Input</p>
+                        {primaryInputAssets.map((asset) => <AssetBadge key={asset.id} asset={asset} />)}
                     </div>
                 ) : (
                     <div>
@@ -225,6 +239,29 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
             customContent={renderFileContent()}
             customActions={customActions}
         >
+            {secondaryHandles?.map((handle) => {
+                const connectedAsset = assets.find(
+                    (a) => a.io === 'input' && a.inputHandle === handle.id
+                );
+                return (
+                    <div key={handle.id} className="relative">
+                        <Handle
+                            id={handle.id}
+                            type="target"
+                            position={Position.Left}
+                            style={{ left: '-0.75rem' }}
+                        />
+                        {!isLoading && (
+                            <div className="mt-2 border-t pt-2">
+                                <p className="text-xs font-semibold text-gray-500 mb-2">{handle.label}</p>
+                                {connectedAsset
+                                    ? <AssetBadge asset={connectedAsset} />
+                                    : <AssetTypeList types={handle.hintTypes} />}
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
             {children}
         </BaseExploreNode>
     );

@@ -28,8 +28,8 @@ export interface NodeRegistryEntry {
 }
 
 export const sidebarGroups: Record<SidebarGroup, SidebarGroupMeta> = {
-    files: { label: 'File Input', icon: 'file', menuClassName: 'flex flex-row' },
-    miners: { label: 'Miner', icon: 'pickaxe', menuClassName: 'flex flex-row flex-wrap' },
+    files: { label: 'File Input', icon: 'file', menuClassName: 'flex flex-row flex-wrap gap-1' },
+    miners: { label: 'Miner', icon: 'pickaxe', menuClassName: 'flex flex-row flex-wrap gap-1' },
 };
 
 // satisfies ensures every file/miner node type has a registry entry.
@@ -63,6 +63,11 @@ export const nodeRegistry = {
         allowedAssetTypes: ['abstractionAsset'],
         sidebar: null,
     },
+    conformanceFileNode: {
+        category: 'file',
+        allowedAssetTypes: ['conformanceAsset'],
+        sidebar: null,
+    },
 
     // ── Miner nodes ────────────────────────────────────────────────────────────
     ocptMinerNode: {
@@ -87,7 +92,7 @@ export const nodeRegistry = {
             { label: 'Primary', types: ['ocptAsset', 'ocptFile'] },
             { label: 'Secondary', types: ['ocelAsset', 'ocelFile'] },
         ],
-        sidebar: { label: 'Extend Identity', icon: 'fingerprint', group: 'miners' },
+        sidebar: { label: 'Extend Identity', icon: 'scanEye', group: 'miners' },
     },
     flowVisualizationNode: {
         category: 'miner',
@@ -107,5 +112,24 @@ export const nodeRegistry = {
         category: 'miner',
         allowedAssetTypes: ['ocptFile', 'ocptAsset'],
         sidebar: { label: 'OCPN Miner', icon: 'waypoints', group: 'miners' },
+    resourceMinerNode: {
+        category: 'miner',
+        allowedAssetTypes: ['ocelFile'],
+        sidebar: { label: 'Resource Miner', icon: 'waves', group: 'miners' },
+        },
+    conformanceMinerNode: {
+        category: 'miner',
+        allowedAssetTypes: ['ocptAsset', 'ocptFile', 'identityOcptAsset', 'ocelFile', 'ocelAsset', 'abstractionAsset'],
+        inputs: [
+            {
+                label: 'Input A',
+                types: ['ocptAsset', 'ocptFile', 'identityOcptAsset', 'ocelFile', 'ocelAsset', 'abstractionAsset'],
+            },
+            {
+                label: 'Input B',
+                types: ['ocptAsset', 'ocptFile', 'identityOcptAsset', 'ocelFile', 'ocelAsset', 'abstractionAsset'],
+            },
+        ],
+        sidebar: { label: 'Conformance', icon: 'radar', group: 'miners' },
     },
 } satisfies Record<RegistrableNodeType, NodeRegistryEntry>;

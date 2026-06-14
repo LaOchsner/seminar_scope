@@ -3,10 +3,29 @@ use crate::handlers::conformance::{
     get_conformance_extended_ocpt_extended_ocpt, get_conformance_extended_ocpt_ocel,
     get_conformance_ocpt_abstraction, get_conformance_ocpt_ocel, get_conformance_ocpt_ocpt,
 };
-use axum::{Router, routing::get};
+use crate::handlers::conformance_ocgraphconf::{
+    post_conformance_case_ocels_ocgraphconf, post_conformance_ocpn_case_ocels_ocgraphconf,
+    post_conformance_ocpt_case_ocels_ocgraphconf,
+};
+use axum::{
+    Router,
+    routing::{get, post},
+};
 
 pub fn router() -> Router {
     Router::new()
+        .route(
+            "/case_ocels/ocgraphconf",
+            post(post_conformance_case_ocels_ocgraphconf),
+        )
+        .route(
+            "/ocpn/{ocpn_id}/case_ocels/ocgraphconf",
+            post(post_conformance_ocpn_case_ocels_ocgraphconf),
+        )
+        .route(
+            "/ocpt/{ocpt_id}/case_ocels/ocgraphconf",
+            post(post_conformance_ocpt_case_ocels_ocgraphconf),
+        )
         .route(
             "/abstraction_1/{abstraction_id_1}/abstraction_2/{abstraction_id_2}",
             get(get_conformance_abstraction_abstraction),

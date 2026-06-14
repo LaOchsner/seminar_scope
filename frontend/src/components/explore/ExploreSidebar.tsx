@@ -48,7 +48,7 @@ const ExploreSidebar: React.FC = () => {
                             <SidebarGroupContent className="p-1">
                                 <SidebarMenu className={menuClassName}>
                                     {entries.map(({ type, label: entryLabel, icon: entryIcon }) => (
-                                        <SidebarMenuItem key={type} className="ml-1">
+                                        <SidebarMenuItem key={type}>
                                             <DndCard
                                                 title={entryLabel}
                                                 Icon={getIconComponent(entryIcon)}
