@@ -1,4 +1,3 @@
-
 import React, { memo, useCallback, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { BaseEdge, Edge, EdgeProps, Handle, Node, NodeProps, Position } from '@xyflow/react';
@@ -148,12 +147,6 @@ const OcpnMinerNode = memo<NodeProps<MinerNode>>((node) => {
 
     const { isLoading, isFetching, data } = useMineOcpn(id, inputFileId, !hasMinedAsset);
 
-    useEffect(() => {
-        if (data) {
-            console.log('🔥 RAW OCPN DATA FROM BACKEND:', data);
-            console.log('👉 Keys available in data:', Object.keys(data));
-        }
-    }, [data]);
     useMinerOutput(id, data?.file_id, fileName, 'ocpnAsset', 'ocpnFileNode');
 
     const handleReset = useCallback(() => {
