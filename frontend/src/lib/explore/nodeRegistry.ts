@@ -112,6 +112,7 @@ export const nodeRegistry = {
         category: 'miner',
         allowedAssetTypes: ['ocptFile', 'ocptAsset'],
         sidebar: { label: 'OCPN Miner', icon: 'waypoints', group: 'miners' },
+    },    
     resourceMinerNode: {
         category: 'miner',
         allowedAssetTypes: ['ocelFile'],

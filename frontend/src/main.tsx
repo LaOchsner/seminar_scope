@@ -96,6 +96,7 @@ const router = createBrowserRouter([
         element: (
             <RedirectErrorBoundary>
                 <OcpnViewer />
+            </RedirectErrorBoundary>    
          ),
      },
      {       
