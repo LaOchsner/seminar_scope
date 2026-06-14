@@ -1,10 +1,10 @@
 import axios, { type AxiosResponse } from 'axios';
 import { GetCaseNotionsResponse } from '~/services/response.types';
+import type { OCLanguageAbstraction } from '~/types/abstraction.types';
 import { CaseOcelResponse } from '~/types/api/ocel_collection.api';
 import { CaseNotionApiResponse } from '~/types/case_notion.types';
 import { ExtendedFile } from '~/types/files.types';
 import { OcptSchemaApi } from '~/types/ocpt/ocpt.types';
-import type { OCLanguageAbstraction } from '~/types/abstraction.types';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_BACKEND_BASE_URL,
@@ -15,7 +15,6 @@ export const uploadFile = async (file: ExtendedFile) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('file_id', file.id);
-    // formData.append('file_type', file.fileType);
 
     let response;
     switch (file.fileType) {
@@ -78,13 +77,11 @@ export const postSpecialActivities= async (fileId : string, activities: string[]
 }
 
 export const getHistogramEventPersp = async (fileId: string) => {
-    //const response = await api.get(`/v1/event_object_frequencies/histogram/${fileId}`);
     const response = await api.get(`/v1/event_object_frequencies/event_perspective_histogram/${fileId}`);
     return response.data;
 };
 
 export const getHistogramObjectPersp = async (fileId: string) => {
-    //const response = await api.get(`/v1/event_object_frequencies/histogram/${fileId}`);
     const response = await api.get(`/v1/event_object_frequencies/object_perspective_histogram/${fileId}`);
     return response.data;
 };
@@ -228,6 +225,11 @@ export const mineOcpt = async (fileId: string, algorithm: string = 'DF2'): Promi
     throw new Error(`Algorithm ${algorithm} not supported`);
 };
 
+export const mineOcpn = async (fileId: string): Promise<GetOcpnResponse> => {
+    const response = await api.get(`/v1/ocpn/from_ocpt/${fileId}`);
+    return response.data;
+};
+
 export const getCaseNotions = async (cnFileId: string) => {
     const response = await api.get<GetCaseNotionsResponse>(`v1/case_notion/case_ocel/${cnFileId}`);
     return response.data;
@@ -240,5 +242,15 @@ export const getLogGraphs = async (ocelFileId: string) => {
 
 export const getOcelCollection = async (ocelCollectionFileId: string): Promise<CaseOcelResponse> => {
     const response = await api.get(`v1/objects/ocel_collection/${ocelCollectionFileId}`);
+    return response.data;
+};
+
+export type GetOcpnResponse = {
+    file_id: string;
+    ocpn: any;
+};
+
+export const getOcpn = async (fileId: string) => {
+    const response = await api.get(`/v1/objects/ocpn/${fileId}`);
     return response.data;
 };
