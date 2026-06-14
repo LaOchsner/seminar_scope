@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import {
     Activity,
     ChartBar,
+    ChartNetwork,
     Database,
     File,
     FileJson,
@@ -19,6 +20,7 @@ import {
     ShieldCheck,
     TreePine,
     Waves,
+    Waypoints,
     Workflow,
 } from 'lucide-react';
 import type { AssetType } from '~/types/files.types';
@@ -40,6 +42,8 @@ export const iconMap: Record<string, ComponentType<LucideProps>> = {
     chartBar: ChartBar,
     fileStack: FileStack,
     layers: Layers,
+    waypoints: Waypoints,
+    chartNetwork: ChartNetwork,
     radar: Radar,
     scanEye: ScanEye,
     shieldCheck: ShieldCheck,
@@ -66,10 +70,20 @@ export const ASSET_TYPE_VISUALS: Record<AssetType, AssetTypeVisual> = {
         color: 'text-green-500',
         label: 'OCPT',
     },
+    ocpnFile: {
+        icon: ChartNetwork,
+        color: 'text-purple-500',
+        label: 'OCPN',
+    },
     ocptAsset: {
         icon: FileText,
         color: 'text-green-500',
         label: 'OCPT',
+    },
+    ocpnAsset: {
+        icon: ChartNetwork,
+        color: 'text-purple-500',
+        label: 'OCPN',
     },
     ocelAsset: {
         icon: Database,

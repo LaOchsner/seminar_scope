@@ -126,12 +126,12 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
         }
 
         if (!hasResetStale.current) {
-            // 1. Trigger specific miner cleanup
+            // Trigger specific miner cleanup
             if (onReset) {
                 onReset();
             }
 
-            // 2. Perform generic miner cleanup (remove outputs, inputs if not done already)
+            // Perform generic miner cleanup (remove outputs, inputs if not done already)
             updateNodeData(id, (prev) => ({
                 assets: prev.assets.filter((asset) => asset.io !== 'output' && asset.io !== 'input'),
             }));
