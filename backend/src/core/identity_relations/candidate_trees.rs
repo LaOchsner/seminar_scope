@@ -1,4 +1,6 @@
-use crate::models::ocpt::{OCPTLeafLabel, OCPTNode, OCPTOperatorType};
+use crate::models::ocpt::{
+    IdentityRelation, OCPTLeaf, OCPTLeafLabel, OCPTNode, OCPTOperator, OCPTOperatorType,
+};
 use std::collections::HashSet;
 use std::error::Error;
 use std::fmt;
@@ -17,6 +19,13 @@ pub enum ReductionRule {
 pub struct NormalFormResult {
     pub root: OCPTNode,
     pub applied_rules: Vec<ReductionRule>,
+}
+
+#[derive(Debug)]
+pub struct CandidateTreeResult {
+    pub root: OCPTNode,
+    pub normal_form_distance: usize,
+    pub applied_rules_to_normal_form: Vec<ReductionRule>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -113,6 +122,71 @@ pub fn normalize_candidate_tree(root: OCPTNode) -> Result<NormalFormResult, Norm
         root,
         applied_rules,
     })
+}
+
+pub fn generate_candidate_trees(
+    root: OCPTNode,
+) -> Result<Vec<CandidateTreeResult>, NormalizationError> {
+    let normal_form = normalize_candidate_tree(duplicate_node(&root))?;
+    let normal_form_distance = normal_form.applied_rules.len();
+
+    let mut candidates = Vec::new();
+    candidates.push(CandidateTreeResult {
+        root,
+        normal_form_distance,
+        applied_rules_to_normal_form: normal_form.applied_rules.clone(),
+    });
+
+    if normal_form_distance > 0 {
+        candidates.push(CandidateTreeResult {
+            root: normal_form.root,
+            normal_form_distance: 0,
+            applied_rules_to_normal_form: Vec::new(),
+        });
+    }
+
+    Ok(candidates)
+}
+
+fn duplicate_node(node: &OCPTNode) -> OCPTNode {
+    match node {
+        OCPTNode::Operator(operator) => OCPTNode::Operator(OCPTOperator {
+            uuid: operator.uuid,
+            operator_type: duplicate_operator_type(&operator.operator_type),
+            children: operator.children.iter().map(duplicate_node).collect(),
+        }),
+        OCPTNode::Leaf(leaf) => OCPTNode::Leaf(OCPTLeaf {
+            uuid: leaf.uuid,
+            activity_label: duplicate_leaf_label(&leaf.activity_label),
+            related_ob_types: leaf.related_ob_types.clone(),
+            divergent_ob_types: leaf.divergent_ob_types.clone(),
+            convergent_ob_types: leaf.convergent_ob_types.clone(),
+            deficient_ob_types: leaf.deficient_ob_types.clone(),
+        }),
+    }
+}
+
+fn duplicate_operator_type(operator_type: &OCPTOperatorType) -> OCPTOperatorType {
+    match operator_type {
+        OCPTOperatorType::Sequence => OCPTOperatorType::Sequence,
+        OCPTOperatorType::ExclusiveChoice => OCPTOperatorType::ExclusiveChoice,
+        OCPTOperatorType::Concurrency => OCPTOperatorType::Concurrency,
+        OCPTOperatorType::Loop(repetitions) => OCPTOperatorType::Loop(*repetitions),
+        OCPTOperatorType::IdentityRelation(relation) => {
+            OCPTOperatorType::IdentityRelation(IdentityRelation {
+                left: relation.left.clone(),
+                right: relation.right.clone(),
+                kind: relation.kind.clone(),
+            })
+        }
+    }
+}
+
+fn duplicate_leaf_label(label: &OCPTLeafLabel) -> OCPTLeafLabel {
+    match label {
+        OCPTLeafLabel::Activity(activity) => OCPTLeafLabel::Activity(activity.clone()),
+        OCPTLeafLabel::Tau => OCPTLeafLabel::Tau,
+    }
 }
 
 fn validate_and_collect(
@@ -898,6 +972,28 @@ mod tests {
 
         assert_eq!(first_key, structural_key(&second.root));
         assert!(second.applied_rules.is_empty());
+    }
+
+    #[test]
+    fn candidate_generation_returns_source_and_normal_form_with_distances() {
+        let tree = operator(
+            NormalFormOperator::Concurrency,
+            vec![
+                leaf("c", &["x"], &[]),
+                operator(
+                    NormalFormOperator::Concurrency,
+                    vec![leaf("a", &["x"], &[]), leaf("b", &["x"], &[])],
+                ),
+            ],
+        );
+
+        let candidates = generate_candidate_trees(tree).unwrap();
+
+        assert_eq!(candidates.len(), 2);
+        assert!(candidates[0].normal_form_distance > 0);
+        assert!(!candidates[0].applied_rules_to_normal_form.is_empty());
+        assert_eq!(candidates[1].normal_form_distance, 0);
+        assert!(candidates[1].applied_rules_to_normal_form.is_empty());
     }
 
     #[test]
