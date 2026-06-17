@@ -275,6 +275,7 @@ fn normalize_ocpt(
         .collect();
 
     loop {
+        // R5: remove a unary operator and continue normalizing its only child.
         if operator.children.len() == 1 {
             applied_rules.push(ReductionRule::R5RemoveUnaryOperator);
             let child = operator.children.pop().expect("unary operator has a child");
@@ -297,6 +298,8 @@ fn normalize_ocpt(
             }
             _ => None,
         };
+        // R4: if all child subtrees are independent, retag the operator to the parent
+        // operator; at the root, use concurrency by convention.
         if let Some(target) = r4_target
             && check_subtree_independence(&operator.children, object_types)
         {
@@ -315,6 +318,9 @@ fn normalize_ocpt(
     }
 }
 
+// R1/R2/R3: flatten a child with the same operator into its parent. R1 always
+// applies for concurrency; R2 and R3 additionally enforce the paper's
+// divergence guards for choice and sequence.
 fn flatten_associative_child(
     children: &mut Vec<OCPTNode>,
     parent_kind: NormalFormOperator,
@@ -362,6 +368,8 @@ fn flatten_associative_child(
     false
 }
 
+// R4 helper: checks whether every pair of child subtrees shares no
+// non-diverging related object type, so their operator can be changed safely.
 fn check_subtree_independence(children: &[OCPTNode], object_types: &HashSet<String>) -> bool {
     if children.len() < 2 {
         return false;
@@ -378,6 +386,8 @@ fn check_subtree_independence(children: &[OCPTNode], object_types: &HashSet<Stri
     true
 }
 
+// R4 pair predicate: one pair is independent when all shared related object
+// types are divergent or unrelated across the pair.
 fn check_subtree_pair_independence(
     left: &OCPTNode,
     right: &OCPTNode,
@@ -450,6 +460,8 @@ fn is_divergent_or_unrelated(node: &OCPTNode, object_type: &str) -> bool {
     }
 }
 
+// R6: impose deterministic ordering. Concurrency and choice are fully sorted;
+// sequence only swaps adjacent independent subtrees.
 fn apply_deterministic_ordering(
     children: &mut [OCPTNode],
     operator_kind: NormalFormOperator,
@@ -489,6 +501,8 @@ fn apply_deterministic_ordering(
     }
 }
 
+// R6 traversal: apply deterministic ordering after R1-R5 have reached a
+// structural fixed point.
 fn apply_ordering_recursively(
     node: &mut OCPTNode,
     object_types: &HashSet<String>,
