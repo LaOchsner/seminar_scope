@@ -48,6 +48,11 @@ export const nodeRegistry = {
         allowedAssetTypes: ['ocelFile'],
         sidebar: { label: 'OCEL File', icon: 'fileSpreadsheet', group: 'files' },
     },
+    ocpnFileNode: {
+        category: 'file',
+        allowedAssetTypes: ['ocpnFile'],
+        sidebar: { label: 'OCPN File', icon: 'fileTree', group: 'files' },
+    },
     ocelCollectionNode: {
         category: 'file',
         allowedAssetTypes: ['ocelCollectionFile'],
@@ -103,6 +108,11 @@ export const nodeRegistry = {
         allowedAssetTypes: ['ocelFile', 'ocelAsset', 'ocptFile', 'ocptAsset', 'identityOcptAsset'],
         sidebar: { label: 'Abstraction', icon: 'layers', group: 'miners' },
     },
+    ocpnMinerNode: {
+        category: 'miner',
+        allowedAssetTypes: ['ocptFile', 'ocptAsset'],
+        sidebar: { label: 'OCPN Miner', icon: 'waypoints', group: 'miners' },
+    },    
     resourceMinerNode: {
         category: 'miner',
         allowedAssetTypes: ['ocelFile'],
