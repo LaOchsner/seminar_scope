@@ -28,6 +28,17 @@ pub struct CandidateTreeResult {
     pub applied_rules_to_normal_form: Vec<ReductionRule>,
 }
 
+struct NormalizationSnapshot {
+    root: OCPTNode,
+    applied_rules: Vec<ReductionRule>,
+}
+
+struct NormalizationRun {
+    root: OCPTNode,
+    applied_rules: Vec<ReductionRule>,
+    snapshots: Vec<NormalizationSnapshot>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NormalizationError {
     LoopOperator,
@@ -110,42 +121,81 @@ impl NormalFormOperator {
 }
 
 pub fn normalize_candidate_tree(root: OCPTNode) -> Result<NormalFormResult, NormalizationError> {
-    let mut activities = HashSet::new();
-    let mut object_types = HashSet::new();
-    validate_and_collect(&root, &mut activities, &mut object_types)?;
-
-    let mut applied_rules = Vec::new();
-    let mut root = normalize_ocpt(root, None, &object_types, &mut applied_rules);
-    apply_ordering_recursively(&mut root, &object_types, &mut applied_rules);
+    let run = run_normalization(root, false)?;
 
     Ok(NormalFormResult {
-        root,
-        applied_rules,
+        root: run.root,
+        applied_rules: run.applied_rules,
     })
 }
 
 pub fn generate_candidate_trees(
     root: OCPTNode,
 ) -> Result<Vec<CandidateTreeResult>, NormalizationError> {
-    let normal_form = normalize_candidate_tree(duplicate_node(&root))?;
-    let normal_form_distance = normal_form.applied_rules.len();
-
+    let run = run_normalization(root, true)?;
     let mut candidates = Vec::new();
-    candidates.push(CandidateTreeResult {
-        root,
-        normal_form_distance,
-        applied_rules_to_normal_form: normal_form.applied_rules.clone(),
-    });
+    let mut seen = HashSet::new();
 
-    if normal_form_distance > 0 {
+    for snapshot in run.snapshots {
+        let key = structural_key(&snapshot.root);
+        if !seen.insert(key) {
+            continue;
+        }
+
+        let applied_count = snapshot.applied_rules.len();
+        let remaining_rules = run.applied_rules[applied_count..].to_vec();
         candidates.push(CandidateTreeResult {
-            root: normal_form.root,
-            normal_form_distance: 0,
-            applied_rules_to_normal_form: Vec::new(),
+            root: snapshot.root,
+            normal_form_distance: remaining_rules.len(),
+            applied_rules_to_normal_form: remaining_rules,
         });
     }
 
     Ok(candidates)
+}
+
+fn run_normalization(
+    mut root: OCPTNode,
+    capture_snapshots: bool,
+) -> Result<NormalizationRun, NormalizationError> {
+    let mut activities = HashSet::new();
+    let mut object_types = HashSet::new();
+    validate_and_collect(&root, &mut activities, &mut object_types)?;
+
+    let mut applied_rules = Vec::new();
+    let mut snapshots = Vec::new();
+    if capture_snapshots {
+        snapshots.push(NormalizationSnapshot {
+            root: duplicate_node(&root),
+            applied_rules: Vec::new(),
+        });
+    }
+
+    while let Some(rule) = apply_one_structural_rule(&mut root, None, &object_types) {
+        applied_rules.push(rule);
+        if capture_snapshots {
+            snapshots.push(NormalizationSnapshot {
+                root: duplicate_node(&root),
+                applied_rules: applied_rules.clone(),
+            });
+        }
+    }
+
+    while let Some(rule) = apply_one_ordering_rule(&mut root, &object_types) {
+        applied_rules.push(rule);
+        if capture_snapshots {
+            snapshots.push(NormalizationSnapshot {
+                root: duplicate_node(&root),
+                applied_rules: applied_rules.clone(),
+            });
+        }
+    }
+
+    Ok(NormalizationRun {
+        root,
+        applied_rules,
+        snapshots,
+    })
 }
 
 fn duplicate_node(node: &OCPTNode) -> OCPTNode {
@@ -256,65 +306,88 @@ fn validate_and_collect(
     Ok(())
 }
 
-fn normalize_ocpt(
-    node: OCPTNode,
+fn apply_one_structural_rule(
+    node: &mut OCPTNode,
     parent_kind: Option<NormalFormOperator>,
     object_types: &HashSet<String>,
-    applied_rules: &mut Vec<ReductionRule>,
-) -> OCPTNode {
-    let OCPTNode::Operator(mut operator) = node else {
-        return node;
+) -> Option<ReductionRule> {
+    let operator_kind = match node {
+        OCPTNode::Operator(operator) => NormalFormOperator::from_operator(&operator.operator_type)
+            .expect("validation excludes unsupported operators"),
+        OCPTNode::Leaf(_) => return None,
     };
 
-    let mut operator_kind = NormalFormOperator::from_operator(&operator.operator_type)
-        .expect("validation excludes unsupported operators");
-    operator.children = operator
-        .children
-        .into_iter()
-        .map(|child| normalize_ocpt(child, Some(operator_kind), object_types, applied_rules))
-        .collect();
-
-    loop {
-        // R5: remove a unary operator and continue normalizing its only child.
-        if operator.children.len() == 1 {
-            applied_rules.push(ReductionRule::R5RemoveUnaryOperator);
-            let child = operator.children.pop().expect("unary operator has a child");
-            return normalize_ocpt(child, parent_kind, object_types, applied_rules);
-        }
-
-        if flatten_associative_child(&mut operator.children, operator_kind, object_types) {
-            applied_rules.push(match operator_kind {
-                NormalFormOperator::Concurrency => ReductionRule::R1ConcurrentAssociativity,
-                NormalFormOperator::ExclusiveChoice => ReductionRule::R2ChoiceAssociativity,
-                NormalFormOperator::Sequence => ReductionRule::R3SequenceAssociativity,
-            });
-            continue;
-        }
-
-        let r4_target = match parent_kind {
-            Some(parent_kind) if parent_kind != operator_kind => Some(parent_kind),
-            None if operator_kind != NormalFormOperator::Concurrency => {
-                Some(NormalFormOperator::Concurrency)
+    if let OCPTNode::Operator(operator) = node {
+        for child in &mut operator.children {
+            if let Some(rule) = apply_one_structural_rule(child, Some(operator_kind), object_types)
+            {
+                return Some(rule);
             }
-            _ => None,
-        };
-        // R4: if all child subtrees are independent, retag the operator to the parent
-        // operator; at the root, use concurrency by convention.
-        if let Some(target) = r4_target
-            && check_subtree_independence(&operator.children, object_types)
-        {
-            operator_kind = target;
-            operator.operator_type = target.into_operator();
-            applied_rules.push(ReductionRule::R4IndependentSubtrees);
-            operator.children = operator
-                .children
-                .into_iter()
-                .map(|child| normalize_ocpt(child, Some(target), object_types, applied_rules))
-                .collect();
-            continue;
         }
+    }
 
-        return OCPTNode::Operator(operator);
+    // R5: remove a unary operator and continue normalizing its only child.
+    let unary_child = match node {
+        OCPTNode::Operator(operator) if operator.children.len() == 1 => {
+            Some(operator.children.pop().expect("unary operator has a child"))
+        }
+        _ => None,
+    };
+    if let Some(child) = unary_child {
+        *node = child;
+        return Some(ReductionRule::R5RemoveUnaryOperator);
+    }
+
+    if let OCPTNode::Operator(operator) = node
+        && flatten_associative_child(&mut operator.children, operator_kind, object_types)
+    {
+        return Some(match operator_kind {
+            NormalFormOperator::Concurrency => ReductionRule::R1ConcurrentAssociativity,
+            NormalFormOperator::ExclusiveChoice => ReductionRule::R2ChoiceAssociativity,
+            NormalFormOperator::Sequence => ReductionRule::R3SequenceAssociativity,
+        });
+    }
+
+    let r4_target = match parent_kind {
+        Some(parent_kind) if parent_kind != operator_kind => Some(parent_kind),
+        None if operator_kind != NormalFormOperator::Concurrency => {
+            Some(NormalFormOperator::Concurrency)
+        }
+        _ => None,
+    };
+    // R4: if all child subtrees are independent, retag the operator to the parent
+    // operator; at the root, use concurrency by convention.
+    if let Some(target) = r4_target
+        && let OCPTNode::Operator(operator) = node
+        && check_subtree_independence(&operator.children, object_types)
+    {
+        operator.operator_type = target.into_operator();
+        return Some(ReductionRule::R4IndependentSubtrees);
+    }
+
+    None
+}
+
+fn apply_one_ordering_rule(
+    node: &mut OCPTNode,
+    object_types: &HashSet<String>,
+) -> Option<ReductionRule> {
+    let OCPTNode::Operator(operator) = node else {
+        return None;
+    };
+
+    for child in &mut operator.children {
+        if let Some(rule) = apply_one_ordering_rule(child, object_types) {
+            return Some(rule);
+        }
+    }
+
+    let operator_kind = NormalFormOperator::from_operator(&operator.operator_type)
+        .expect("validation excludes unsupported operators");
+    if apply_deterministic_ordering(&mut operator.children, operator_kind, object_types) {
+        Some(ReductionRule::R6DeterministicOrdering)
+    } else {
+        None
     }
 }
 
@@ -498,28 +571,6 @@ fn apply_deterministic_ordering(
 
             changed
         }
-    }
-}
-
-// R6 traversal: apply deterministic ordering after R1-R5 have reached a
-// structural fixed point.
-fn apply_ordering_recursively(
-    node: &mut OCPTNode,
-    object_types: &HashSet<String>,
-    applied_rules: &mut Vec<ReductionRule>,
-) {
-    let OCPTNode::Operator(operator) = node else {
-        return;
-    };
-
-    for child in &mut operator.children {
-        apply_ordering_recursively(child, object_types, applied_rules);
-    }
-
-    let operator_kind = NormalFormOperator::from_operator(&operator.operator_type)
-        .expect("validation excludes unsupported operators");
-    if apply_deterministic_ordering(&mut operator.children, operator_kind, object_types) {
-        applied_rules.push(ReductionRule::R6DeterministicOrdering);
     }
 }
 
@@ -989,7 +1040,7 @@ mod tests {
     }
 
     #[test]
-    fn candidate_generation_returns_source_and_normal_form_with_distances() {
+    fn candidate_generation_returns_all_intermediate_trees_with_distances() {
         let tree = operator(
             NormalFormOperator::Concurrency,
             vec![
@@ -1003,11 +1054,13 @@ mod tests {
 
         let candidates = generate_candidate_trees(tree).unwrap();
 
-        assert_eq!(candidates.len(), 2);
+        assert_eq!(candidates.len(), 3);
         assert!(candidates[0].normal_form_distance > 0);
         assert!(!candidates[0].applied_rules_to_normal_form.is_empty());
-        assert_eq!(candidates[1].normal_form_distance, 0);
-        assert!(candidates[1].applied_rules_to_normal_form.is_empty());
+        assert!(candidates[1].normal_form_distance > 0);
+        assert!(candidates[1].normal_form_distance < candidates[0].normal_form_distance);
+        assert_eq!(candidates[2].normal_form_distance, 0);
+        assert!(candidates[2].applied_rules_to_normal_form.is_empty());
     }
 
     #[test]
