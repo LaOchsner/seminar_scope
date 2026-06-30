@@ -1,5 +1,6 @@
 use crate::core::ocim::algorithm::ocim_init;
 use crate::core::struct_converters::ocpt_frontend_backend::backend_to_frontend;
+use crate::handlers::ocpn::persist_ocpn_from_ocpt;
 use crate::models::ocel::OCEL;
 use crate::models::ocel_collection::OCELCollection;
 use crate::traits::import_export::{ExportableToPath, ImportableFromPath};
@@ -28,10 +29,20 @@ pub async fn apply_ocim(
         )
     })?;
 
+    let (ocpn_file_id, _) = persist_ocpn_from_ocpt(&ocpt)
+        .await
+        .map_err(|(status, message)| {
+            (
+                status,
+                format!("Convert generated OCPT -> OCPN failed: {message}"),
+            )
+        })?;
+
     let ocpt_frontend = backend_to_frontend(&ocpt);
 
     let payload = json!({
         "file_id": id,
+        "ocpn_file_id": ocpn_file_id,
         "ocpt": ocpt_frontend
     });
 

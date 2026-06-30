@@ -282,6 +282,79 @@ export const handleMinerOutput = ({
     spawnDownstreamNode(nodeId, outputNodeType);
 };
 
+export interface MinerOutputAsset {
+    id: string | null | undefined;
+    type: AssetType;
+    nodeType: ExploreNodeType;
+    name: string;
+}
+
+export const handleMinerOutputs = (nodeId: string, outputs: MinerOutputAsset[]) => {
+    const validOutputs = outputs.filter((output) => output.id && output.name);
+    if (validOutputs.length === 0) return;
+
+    const { updateNodeData, getNode, addNode, setEdges } = useExploreFlowStore.getState();
+    const sourceNode = getNode(nodeId);
+    if (!sourceNode) return;
+
+    const outputAssets: BaseExploreNodeAsset[] = validOutputs.map((output) => ({
+        id: output.id!,
+        io: 'output',
+        origin: 'mined',
+        type: output.type,
+        name: output.name,
+    }));
+
+    updateNodeData(nodeId, (prev) => {
+        const inputAssets = prev.assets.filter((asset) => asset.io !== 'output');
+        return { assets: [...inputAssets, ...outputAssets] };
+    });
+
+    validOutputs.forEach((output, index) => {
+        const asset = outputAssets[index];
+        const state = useExploreFlowStore.getState();
+        const existingEdge = state.edges.find((edge) => {
+            const target = state.nodes.find((node) => node.id === edge.target);
+            return edge.source === nodeId && target?.type === output.nodeType;
+        });
+
+        if (existingEdge) {
+            updateNodeData(existingEdge.target, (prev: any) => ({
+                assets: [...prev.assets.filter((current: any) => current.io !== 'output'), { ...asset, io: 'output' }],
+                colorMap: { ...(prev.colorMap || {}), ...((sourceNode.data as any).colorMap || {}) },
+            }));
+            return;
+        }
+
+        const newNode = createNode(
+            {
+                x: sourceNode.position.x + 400,
+                y: sourceNode.position.y + index * 180,
+            },
+            output.nodeType,
+            true
+        );
+        addNode(newNode);
+        updateNodeData(newNode.id, {
+            assets: [{ ...asset, io: 'output' }],
+            colorMap: (sourceNode.data as any).colorMap || {},
+        } as any);
+
+        const latestEdges = useExploreFlowStore.getState().edges;
+        setEdges([
+            ...latestEdges,
+            {
+                id: `${nodeId}-${newNode.id}`,
+                source: nodeId,
+                target: newNode.id,
+                sourceHandle: 'source',
+                targetHandle: 'target',
+                animated: true,
+            },
+        ]);
+    });
+};
+
 export const pullUpstreamData = (targetNodeId: string) => {
     const { edges, getNode, updateNodeData } = useExploreFlowStore.getState();
     const targetNode = getNode(targetNodeId);

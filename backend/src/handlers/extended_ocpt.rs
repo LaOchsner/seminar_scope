@@ -1,11 +1,15 @@
+use crate::core::eocpn_conversion::{
+    ConvertOcptToEocpnError, convert_eocpt_to_eocpn_with_supported_identities,
+};
 use crate::core::identity_relations::get_best_extended_ocpt;
 use crate::core::struct_converters::ocpt_frontend_backend::backend_to_frontend;
 use crate::core::utils::relations::build_relations_from_ocels;
 use crate::handlers::ocpt::ensure_temp_dir;
+use crate::models::eocpn::EOCPN;
 use crate::models::ocel::OCEL;
 use crate::models::ocel_collection::OCELCollection;
 use crate::models::ocpt::OCPT;
-use crate::traits::import_export::ImportableFromPath;
+use crate::traits::import_export::{ExportableToPath, ImportableFromPath};
 use axum::extract::{Path, Query};
 use axum::{Json, http::StatusCode, response::IntoResponse};
 use serde::Deserialize;
@@ -62,6 +66,22 @@ async fn persist_extended_ocpt(ocpt: &OCPT) -> Result<String, (StatusCode, Strin
     Ok(file_id)
 }
 
+async fn persist_eocpn_from_extended_ocpt(
+    ocpt: &OCPT,
+) -> Result<(String, EOCPN), (StatusCode, String)> {
+    if !ocpt.is_valid() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Source extended OCPT is invalid".to_string(),
+        ));
+    }
+
+    let eocpn =
+        convert_eocpt_to_eocpn_with_supported_identities(ocpt).map_err(map_eocpn_convert_error)?;
+    let file_id = eocpn.export_to_path().await?;
+    Ok((file_id, eocpn))
+}
+
 pub async fn apply_extended_ocpt(
     Path(ocpt_id): Path<String>,
     Query(query): Query<ExtendOcptQuery>,
@@ -111,9 +131,12 @@ pub async fn apply_extended_ocpt(
     ocpt.root = selection.root;
 
     let new_file_id = persist_extended_ocpt(&ocpt).await?;
+    let (eocpn_file_id, eocpn) = persist_eocpn_from_extended_ocpt(&ocpt).await?;
     let payload = json!({
         "file_id": new_file_id,
-        "extended_ocpt": backend_to_frontend(&ocpt)
+        "eocpn_file_id": eocpn_file_id,
+        "extended_ocpt": backend_to_frontend(&ocpt),
+        "eocpn": eocpn
     });
 
     Ok(Json(payload))
@@ -148,5 +171,57 @@ pub async fn delete_extended_ocpt(Path(file_id): Path<String>) -> impl IntoRespo
             format!("Failed to delete extended OCPT: {}", e),
         )
             .into_response(),
+    }
+}
+
+pub async fn get_eocpn(Path(file_id): Path<String>) -> impl IntoResponse {
+    match EOCPN::import_from_path(&file_id).await {
+        Ok(eocpn) => (
+            StatusCode::OK,
+            Json(json!({
+                "file_id": file_id,
+                "eocpn": eocpn
+            })),
+        )
+            .into_response(),
+        Err((status, message)) => (status, message).into_response(),
+    }
+}
+
+pub async fn delete_eocpn(Path(file_id): Path<String>) -> impl IntoResponse {
+    let path = format!("./temp/eocpn_{}.json", file_id);
+    match fs::remove_file(&path).await {
+        Ok(_) => (StatusCode::NO_CONTENT, "Deleted file").into_response(),
+        Err(e) if e.kind() == ErrorKind::NotFound => (
+            StatusCode::NOT_FOUND,
+            format!("EOCPN file not found for file_id: {}", file_id),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to delete EOCPN: {}", e),
+        )
+            .into_response(),
+    }
+}
+
+fn map_eocpn_convert_error(error: ConvertOcptToEocpnError) -> (StatusCode, String) {
+    match error {
+        ConvertOcptToEocpnError::OcpnConversion(inner) => {
+            let message = inner.to_string();
+            if matches!(
+                inner,
+                crate::core::ocpn_conversion::ConvertOcptToOcpnError::InvalidOcpt
+                    | crate::core::ocpn_conversion::ConvertOcptToOcpnError::UnsupportedIdentityRelations
+                    | crate::core::ocpn_conversion::ConvertOcptToOcpnError::MalformedLoop { .. }
+            ) {
+                (StatusCode::BAD_REQUEST, message)
+            } else {
+                (StatusCode::INTERNAL_SERVER_ERROR, message)
+            }
+        }
+        ConvertOcptToEocpnError::InvalidGeneratedEocpn => {
+            (StatusCode::INTERNAL_SERVER_ERROR, error.to_string())
+        }
     }
 }

@@ -117,6 +117,18 @@ pub async fn get_ocpn_from_ocpt(
     Path(ocpt_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let ocpt = OCPT::import_from_path(&ocpt_id).await?;
+
+    let (file_id, ocpn) = persist_ocpn_from_ocpt(&ocpt).await?;
+    let payload = serde_json::json!({
+        "file_id": file_id,
+        "ocpn": ocpn,
+    });
+    Ok((StatusCode::OK, Json(payload)))
+}
+
+pub(crate) async fn persist_ocpn_from_ocpt(
+    ocpt: &OCPT,
+) -> Result<(String, OCPN), (StatusCode, String)> {
     if !ocpt.is_valid() {
         return Err((
             StatusCode::BAD_REQUEST,
@@ -127,11 +139,7 @@ pub async fn get_ocpn_from_ocpt(
     // The converter rejects unsupported OCPT constructs and returns HTTP-safe errors through map_convert_error.
     let ocpn = convert_ocpt_to_ocpn(&ocpt).map_err(map_convert_error)?;
     let file_id = ocpn.export_to_path().await?;
-    let payload = serde_json::json!({
-        "file_id": file_id,
-        "ocpn": ocpn,
-    });
-    Ok((StatusCode::OK, Json(payload)))
+    Ok((file_id, ocpn))
 }
 
 pub async fn get_ocpn_as_ocgraphconf(

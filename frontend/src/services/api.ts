@@ -35,6 +35,8 @@ export const uploadFile = async (file: ExtendedFile) => {
 type GetOcptResponse = {
     ocpt: OcptSchemaApi;
     file_id: string;
+    ocpn_file_id?: string;
+    eocpn_file_id?: string;
 };
 export const getOcpt = async (fileId: string): Promise<GetOcptResponse> => {
     const response = await api.get(`/v1/objects/ocpt/${fileId}`);
@@ -53,12 +55,20 @@ export const mineIdentityOcpt = async (ocelFileId: string, baseAlgorithm: string
     const baseFileId: string = baseResponse.data.file_id;
     // Extend with identity relations using the same OCEL
     const extendedResponse = await api.get(`v1/ocpt/extend/${baseFileId}?ocel_id=${ocelFileId}`);
-    return { file_id: extendedResponse.data.file_id, ocpt: extendedResponse.data.extended_ocpt };
+    return {
+        file_id: extendedResponse.data.file_id,
+        eocpn_file_id: extendedResponse.data.eocpn_file_id,
+        ocpt: extendedResponse.data.extended_ocpt,
+    };
 };
 
 export const extendOcptWithIdentity = async (ocptFileId: string, ocelFileId: string, noiseThreshold: number): Promise<GetOcptResponse> => {
     const response = await api.get(`v1/ocpt/extend/${ocptFileId}`, { params: { ocel_id: ocelFileId, noise_threshold: noiseThreshold } });
-    return { file_id: response.data.file_id, ocpt: response.data.extended_ocpt };
+    return {
+        file_id: response.data.file_id,
+        eocpn_file_id: response.data.eocpn_file_id,
+        ocpt: response.data.extended_ocpt,
+    };
 };
 
 export const getOcel = async (fileId: string) => {
@@ -270,5 +280,10 @@ export type GetOcpnResponse = {
 
 export const getOcpn = async (fileId: string) => {
     const response = await api.get(`/v1/objects/ocpn/${fileId}`);
+    return response.data;
+};
+
+export const getEocpn = async (fileId: string) => {
+    const response = await api.get(`/v1/objects/eocpn/${fileId}`);
     return response.data;
 };

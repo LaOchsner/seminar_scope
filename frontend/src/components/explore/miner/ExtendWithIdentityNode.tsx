@@ -1,11 +1,12 @@
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { NodeProps } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import { Input } from '~/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip';
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
-import { useInputAsset, useMinerOutput } from '~/hooks/explore/useMinerAssets';
+import { useInputAsset } from '~/hooks/explore/useMinerAssets';
+import { handleMinerOutputs } from '~/lib/explore/flowActions';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useExtendOcptWithIdentity } from '~/services/queries';
 import { MinerNode } from '~/types/explore/nodes';
@@ -33,7 +34,22 @@ const ExtendWithIdentityNode = memo<NodeProps<MinerNode>>((node) => {
         !hasMinedAsset
     );
 
-    useMinerOutput(node.id, data?.file_id, inputFileName, 'identityOcptAsset', 'ocptFileNode');
+    useEffect(() => {
+        handleMinerOutputs(node.id, [
+            {
+                id: data?.file_id,
+                type: 'identityOcptAsset',
+                nodeType: 'ocptFileNode',
+                name: inputFileName,
+            },
+            {
+                id: data?.eocpn_file_id,
+                type: 'eocpnAsset',
+                nodeType: 'eocpnFileNode',
+                name: inputFileName,
+            },
+        ]);
+    }, [data?.file_id, data?.eocpn_file_id, inputFileName, node.id]);
 
     const handleReset = useCallback(() => {
         queryClient.removeQueries({ queryKey: ['extendOcptWithIdentity', node.id] });

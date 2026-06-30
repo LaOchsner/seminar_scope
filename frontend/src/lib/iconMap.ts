@@ -85,6 +85,11 @@ export const ASSET_TYPE_VISUALS: Record<AssetType, AssetTypeVisual> = {
         color: 'text-purple-500',
         label: 'OCPN',
     },
+    eocpnAsset: {
+        icon: ChartNetwork,
+        color: 'text-amber-500',
+        label: 'EOCPN',
+    },
     ocelAsset: {
         icon: Database,
         color: 'text-blue-500',

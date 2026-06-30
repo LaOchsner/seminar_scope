@@ -1,6 +1,7 @@
 pub mod case_notion;
 pub mod clustering;
 pub mod df2_miner;
+pub mod eocpn_conversion;
 pub mod event_object_frequencies;
 pub mod identity_relations;
 pub mod ocgraphconf_case_compare;
