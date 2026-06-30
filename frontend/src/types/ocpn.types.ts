@@ -71,14 +71,15 @@
 // }
 
 export type OcpnEndpointKind = 'place' | 'transition';
+export type OcpnId = string | number;
 
 export interface OcpnArcEndpoint {
     kind: OcpnEndpointKind;
-    id: string;
+    id: OcpnId;
 }
 
 export interface RustOcpnPlace {
-    id: string;
+    id: OcpnId;
     name: string;
     object_type: string;
     initial: boolean;
@@ -86,14 +87,14 @@ export interface RustOcpnPlace {
 }
 
 export interface RustOcpnTransition {
-    id: string;
+    id: OcpnId;
     name: string;
     label?: string | null;
     silent: boolean;
 }
 
 export interface RustOcpnArc {
-    id: string;
+    id: OcpnId;
     source: OcpnArcEndpoint;
     target: OcpnArcEndpoint;
     variable: boolean;
