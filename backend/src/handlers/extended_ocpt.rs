@@ -1,4 +1,4 @@
-use crate::core::identity_relations::get_extended_ocpt as extend_ocpt_with_identity_relations;
+use crate::core::identity_relations::get_best_extended_ocpt;
 use crate::core::struct_converters::ocpt_frontend_backend::backend_to_frontend;
 use crate::core::utils::relations::build_relations_from_ocels;
 use crate::handlers::ocpt::ensure_temp_dir;
@@ -101,8 +101,14 @@ pub async fn apply_extended_ocpt(
 
     let source_ocels = load_source_ocels(ocel_id).await?;
     let relations = build_relations_from_ocels(&source_ocels);
-    ocpt.root =
-        extend_ocpt_with_identity_relations(ocpt.root, &relations, None, violation_threshold);
+    let selection =
+        get_best_extended_ocpt(ocpt.root, &relations, violation_threshold).map_err(|err| {
+            (
+                StatusCode::BAD_REQUEST,
+                format!("Failed to generate candidate trees: {err}"),
+            )
+        })?;
+    ocpt.root = selection.root;
 
     let new_file_id = persist_extended_ocpt(&ocpt).await?;
     let payload = json!({
