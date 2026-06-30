@@ -16,6 +16,7 @@ import {
     getConnectedComponentsCN,
     getHistogramEventPersp,
     getHistogramObjectPersp,
+    getEocpn,
     getLogGraphs,
     getOcelCollection,
     getOcelObjectTypes,
@@ -293,5 +294,14 @@ export const useGetOcpn = (fileId: string | null, enabled: boolean = true) => {
         queryFn: () => getOcpn(fileId as string),
         // This ensures it only runs if the fileId actually exists AND the component says it's okay to run
         enabled: !!fileId && enabled,
+    });
+};
+
+export const useGetEocpn = (fileId: string | null, enabled: boolean = true) => {
+    return useQuery({
+        queryKey: ['getEocpn', fileId],
+        queryFn: () => getEocpn(fileId as string),
+        enabled: !!fileId && enabled,
+        refetchOnWindowFocus: false,
     });
 };

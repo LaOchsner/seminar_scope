@@ -8,6 +8,7 @@ import ExploreSidebar from '~/components/explore/ExploreSidebar';
 import OcelCollectionNode from '~/components/explore/file/OcelCollectionNode';
 import OcelFileNode from '~/components/explore/file/OcelFileNode';
 import OcpnFileNode from '~/components/explore/file/OcpnFileNode';
+import EocpnFileNode from '~/components/explore/file/EocpnFileNode';
 import OcptFileNode from '~/components/explore/file/OcptFileNode';
 import FileSelectionDialog from '~/components/explore/file/ui/FileSelectionDialog';
 
@@ -35,6 +36,7 @@ const nodeTypes = {
     ocptFileNode: OcptFileNode,
     ocelFileNode: OcelFileNode,
     ocpnFileNode: OcpnFileNode,
+    eocpnFileNode: EocpnFileNode,
     ocelCollectionNode: OcelCollectionNode,
     ocptMinerNode: OcptMinerNode,
     ocpnMinerNode: OcpnMinerNode,
