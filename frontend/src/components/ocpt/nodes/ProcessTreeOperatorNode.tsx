@@ -2,6 +2,7 @@ import { Group } from '@visx/group';
 import { HierarchyPointNode } from '@visx/hierarchy/lib/types';
 import ProcessTreeOperatorSVG from '~/components/ocpt/nodes/ProcessTreeOperatorSVG';
 import * as Ocpt from '~/types/ocpt/ocpt.types';
+import { ScaleOrdinal } from 'd3';
 
 interface ProcessTreeNodeProps {
     width: number;
@@ -10,12 +11,99 @@ interface ProcessTreeNodeProps {
     operator: Ocpt.ExtendedOperatorType;
     key: number;
     opacity: number;
-    identityKinds?: Ocpt.IdentityRelationKind[];
+    identityRelations?: Ocpt.IdentityRelation[];
     onMouseEnter?: () => void;
     onMouseMove?: () => void;
     onMouseLeave?: () => void;
     onClick?: () => void;
+    colorScale: ScaleOrdinal<string, string, never>;
+    //identityRelations?: Ocpt.IdentityRelation[];
 }
+
+const getRelationKey = (relation: Ocpt.IdentityRelation) => {
+    const left = [...relation.left].sort().join('|');
+    const right = [...relation.right].sort().join('|');
+
+    return `${relation.kind}:${left}->${right}:${relation.batchSize ?? ''}`;
+};
+
+const collectChildRelationKeys = (node: HierarchyPointNode<Ocpt.Node>) => {
+    const keys = new Set<string>();
+
+    const visit = (current: HierarchyPointNode<Ocpt.Node>) => {
+        const value = current.data.value;
+
+        if (
+            typeof value === 'object' &&
+            value !== null &&
+            'identity' in value &&
+            Array.isArray(value.identity)
+        ) {
+            value.identity.forEach((relation) => {
+                keys.add(getRelationKey(relation));
+            });
+        }
+
+        current.children?.forEach(visit);
+    };
+
+    node.children?.forEach(visit);
+
+    return keys;
+};
+
+const getIdentityBadge = (
+    kind: Ocpt.IdentityRelationKind,
+    batchSize?: number
+) => {
+    switch (kind) {
+        case 'sync':
+            return { symbol: '=', color: '#16a34a', width: 18 };
+        case 'subsetSync':
+            return { symbol: '⊂=', color: '#0891b2', width: 28 };
+        case 'subsetSyncPartition':
+            return { symbol: '⊂∩', color: '#0e7490', width: 28 };
+        case 'subsetSyncOverlap':
+            return { symbol: '⊂⊗', color: '#f59e0b', width: 28 };
+        case 'impConcurrent':
+            return { symbol: '⇒‖', color: '#2563eb', width: 30 };
+        case 'impOrdered':
+            return { symbol: '⇒→', color: '#16a34a', width: 30 };
+        case 'impBatch':
+            return { symbol: `⇒·${batchSize ?? 'N'}`, color: '#7c3aed', width: 38 };
+        case 'objectSplit':
+            return { symbol: '↙↘', color: '#ea580c', width: 30 };
+        case 'objectMerge':
+            return { symbol: '↘↙', color: '#dc2626', width: 30 };
+        default:
+            return { symbol: '?', color: '#6b7280', width: 18 };
+    }
+};
+
+const getRelationLabel = (kind: Ocpt.IdentityRelationKind, batchSize?: number) => {
+    switch (kind) {
+        case 'sync':
+            return 'Strict Sync';
+        case 'subsetSync':
+            return 'Subset Sync';
+        case 'subsetSyncPartition':
+            return 'Partition';
+        case 'subsetSyncOverlap':
+            return 'Overlap';
+        case 'impConcurrent':
+            return 'Concurrent Imp';
+        case 'impOrdered':
+            return 'Ordered Imp';
+        case 'impBatch':
+            return `Batch Imp${batchSize != null ? ` (${batchSize})` : ''}`;
+        case 'objectSplit':
+            return 'Split';
+        case 'objectMerge':
+            return 'Merge';
+        default:
+            return kind;
+    }
+};
 
 const ProcessTreeOperatorNode: React.FC<ProcessTreeNodeProps> = ({
     height,
@@ -24,12 +112,19 @@ const ProcessTreeOperatorNode: React.FC<ProcessTreeNodeProps> = ({
     key,
     operator,
     opacity,
-    identityKinds,
+    identityRelations,
+    colorScale,
     onMouseEnter,
     onMouseMove,
     onMouseLeave,
     onClick,
+    
 }) => {
+    const childRelationKeys = collectChildRelationKeys(node);
+
+    const visibleIdentityRelations = identityRelations?.filter(
+        (relation) => !childRelationKeys.has(getRelationKey(relation))
+    );
     return (
         <Group
             top={node.y}
@@ -156,38 +251,69 @@ const ProcessTreeOperatorNode: React.FC<ProcessTreeNodeProps> = ({
                         return <circle r={15} fill="none" stroke="black" strokeWidth={2} opacity={opacity} />;
                 }
             })()}
-            {identityKinds?.map((kind, i) => {
-                const iconSize = 14;
-                const baseX = -width / 2 - 2;
-                const baseY = height / 2 - iconSize + 2;
-                const offsetY = i * (iconSize + 2);
-                const symbol = kind === 'sync' ? '=' : kind === 'impConcurrent' ? '⇒‖' : '⇒→';
-                const rectWidth = kind === 'sync' ? iconSize : iconSize + 10;
-                return (
-                    <g key={kind} transform={`translate(${baseX}, ${baseY - offsetY})`}>
-                        <rect
-                            width={rectWidth}
-                            height={iconSize}
-                            rx={3}
-                            ry={3}
-                            fill="white"
-                            stroke="#6366f1"
-                            strokeWidth={1.5}
+            {visibleIdentityRelations?.map((relation, i) => {
+            const chipHeight = 22;
+            const chipWidth = 120;
+            const gap = 5;
+
+            const x = -chipWidth / 2;
+            const y = -height / 2 - chipHeight - 8 - i * (chipHeight + gap);
+
+            const label = getRelationLabel(relation.kind, relation.batchSize);
+
+            return (
+                <g key={`${relation.kind}-${i}`} transform={`translate(${x}, ${y})`}>
+                    <rect
+                        width={chipWidth}
+                        height={chipHeight}
+                        rx={6}
+                        ry={6}
+                        fill="white"
+                        stroke="#9ca3af"
+                        strokeWidth={1.5}
+                        opacity={opacity}
+                    />
+
+                    {/* Left object type dots */}
+                    {relation.left.map((ot, index) => (
+                        <circle
+                            key={`left-${ot}`}
+                            cx={12 + index * 12}
+                            cy={chipHeight / 2}
+                            r={5}
+                            fill={colorScale(ot)}
+                            opacity={opacity}
                         />
-                        <text
-                            x={rectWidth / 2}
-                            y={iconSize / 2}
-                            textAnchor="middle"
-                            dominantBaseline="central"
-                            fontSize={9}
-                            fill="#6366f1"
-                            fontFamily="sans-serif"
-                        >
-                            {symbol}
-                        </text>
-                    </g>
-                );
-            })}
+                    ))}
+
+                    <text
+                        x={chipWidth / 2}
+                        y={chipHeight / 2}
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        fontSize={13}
+                        fontWeight={600}
+                        fill="black"
+                        fontFamily="Inter, Arial, sans-serif"
+                        opacity={opacity}
+                    >
+                        {label}
+                    </text>
+
+                    {/* Right object type dots */}
+                    {relation.right.map((ot, index) => (
+                        <circle
+                            key={`right-${ot}`}
+                            cx={chipWidth - 12 - index * 12}
+                            cy={chipHeight / 2}
+                            r={5}
+                            fill={colorScale(ot)}
+                            opacity={opacity}
+                        />
+                    ))}
+                </g>
+            );
+        })}
         </Group>
     );
 };

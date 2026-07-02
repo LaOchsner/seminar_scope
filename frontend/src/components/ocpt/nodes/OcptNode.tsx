@@ -1,4 +1,5 @@
 import { HierarchyPointNode } from '@visx/hierarchy/lib/types';
+//import type { HierarchyPointNode } from 'd3-hierarchy';
 import { ScaleOrdinal } from 'd3';
 import ProcessTreeOperatorNode from '~/components/ocpt/nodes/ProcessTreeOperatorNode';
 import TextNode from '~/components/ocpt/nodes/TextNode';
@@ -29,6 +30,7 @@ interface OcptNodeProps {
     colorScale: ScaleOrdinal<string, string, never>;
     showDetails?: boolean;
     onOperatorClick?: (node: HierarchyPointNode<Node>) => void;
+    
 }
 
 const OcptNode: React.FC<OcptNodeProps> = ({ node, key, setHoveredNode, colorScale, showDetails, onOperatorClick }) => {
@@ -81,6 +83,7 @@ const OcptNode: React.FC<OcptNodeProps> = ({ node, key, setHoveredNode, colorSca
                 onMouseEnter={() => setHoveredNode(node)}
                 onMouseMove={() => setHoveredNode(node)}
                 onMouseLeave={() => setHoveredNode(null)}
+                colorScale={colorScale}
             />
         );
     } else if (isExtendedProcessTreeOperatorNode(value) || isIdentityOperatorApi(value)) {
@@ -92,11 +95,13 @@ const OcptNode: React.FC<OcptNodeProps> = ({ node, key, setHoveredNode, colorSca
                 node={node}
                 key={key}
                 opacity={opacity}
-                identityKinds={value.identity?.length ? [...new Set(value.identity.map((r) => r.kind))] : undefined}
+                //identityKinds={value.identity?.length ? [...new Set(value.identity.map((r) => r.kind))] : undefined}
+                identityRelations={value.identity}
                 onMouseEnter={() => setHoveredNode(node)}
                 onMouseMove={() => setHoveredNode(node)}
                 onMouseLeave={() => setHoveredNode(null)}
                 onClick={onOperatorClick ? () => onOperatorClick(node) : undefined}
+                colorScale={colorScale}
             />
         );
     }

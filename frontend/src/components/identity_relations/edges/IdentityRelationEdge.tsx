@@ -19,16 +19,26 @@ function getDashArray(kind: IdentityRelationKind): string | undefined {
 
 function getKindSymbol(kind: IdentityRelationKind, batchSize?: number): string | null {
     switch (kind) {
-        case 'sync': return '=';
-        case 'subsetSync': return '⊆';
-        case 'subsetSyncPartition': return '⊂';
-        case 'subsetSyncOverlap': return '⊆~';
-        case 'impConcurrent': return '‖';
-        case 'impOrdered': return '[→]';
-        case 'impBatch': return batchSize != null ? `×${batchSize}` : '×k';
-        case 'objectSplit': return '÷';
-        case 'objectMerge': return '⊕';
-        default: return null;
+        case 'sync':
+            return '=';
+        case 'subsetSync':
+            return '⊂=';
+        case 'subsetSyncPartition':
+            return '⊂∩';
+        case 'subsetSyncOverlap':
+            return '⊂⊗';
+        case 'impConcurrent':
+            return '⇒‖';
+        case 'impOrdered':
+            return '⇒→';
+        case 'impBatch':
+            return batchSize != null ? `⇒·${batchSize}` : '⇒·k';
+        case 'objectSplit':
+            return '↙↘';
+        case 'objectMerge':
+            return '↘↙';
+        default:
+            return null;
     }
 }
 
