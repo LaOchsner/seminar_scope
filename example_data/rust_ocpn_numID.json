@@ -1,0 +1,5784 @@
+{
+  "name": "example_ocpn",
+  "places": [
+    {
+      "id": 1,
+      "name": "customers1",
+      "object_type": "customers",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 2,
+      "name": "customers2",
+      "object_type": "customers",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 3,
+      "name": "customers3",
+      "object_type": "customers",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 4,
+      "name": "customers4",
+      "object_type": "customers",
+      "initial": false,
+      "final": true
+    },
+    {
+      "id": 5,
+      "name": "customers5",
+      "object_type": "customers",
+      "initial": true,
+      "final": false
+    },
+    {
+      "id": 6,
+      "name": "employees1",
+      "object_type": "employees",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 7,
+      "name": "employees2",
+      "object_type": "employees",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 8,
+      "name": "employees3",
+      "object_type": "employees",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 9,
+      "name": "employees4",
+      "object_type": "employees",
+      "initial": false,
+      "final": true
+    },
+    {
+      "id": 10,
+      "name": "employees5",
+      "object_type": "employees",
+      "initial": true,
+      "final": false
+    },
+    {
+      "id": 11,
+      "name": "items1",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 12,
+      "name": "items2",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 13,
+      "name": "items3",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 14,
+      "name": "items4",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 15,
+      "name": "items5",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 16,
+      "name": "items6",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 17,
+      "name": "items7",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 18,
+      "name": "items8",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 19,
+      "name": "items9",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 20,
+      "name": "items10",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 21,
+      "name": "items11",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 22,
+      "name": "items12",
+      "object_type": "items",
+      "initial": false,
+      "final": true
+    },
+    {
+      "id": 23,
+      "name": "items13",
+      "object_type": "items",
+      "initial": true,
+      "final": false
+    },
+    {
+      "id": 24,
+      "name": "items14",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 25,
+      "name": "items15",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 26,
+      "name": "items16",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 27,
+      "name": "items17",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 28,
+      "name": "items18",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 29,
+      "name": "items19",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 30,
+      "name": "items20",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 31,
+      "name": "items21",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 32,
+      "name": "items22",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 33,
+      "name": "items23",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 34,
+      "name": "items24",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 35,
+      "name": "items25",
+      "object_type": "items",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 36,
+      "name": "orders1",
+      "object_type": "orders",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 37,
+      "name": "orders2",
+      "object_type": "orders",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 38,
+      "name": "orders3",
+      "object_type": "orders",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 39,
+      "name": "orders4",
+      "object_type": "orders",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 40,
+      "name": "orders5",
+      "object_type": "orders",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 41,
+      "name": "orders6",
+      "object_type": "orders",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 42,
+      "name": "orders7",
+      "object_type": "orders",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 43,
+      "name": "orders8",
+      "object_type": "orders",
+      "initial": true,
+      "final": false
+    },
+    {
+      "id": 44,
+      "name": "orders9",
+      "object_type": "orders",
+      "initial": false,
+      "final": true
+    },
+    {
+      "id": 45,
+      "name": "packages1",
+      "object_type": "packages",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 46,
+      "name": "packages2",
+      "object_type": "packages",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 47,
+      "name": "packages3",
+      "object_type": "packages",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 48,
+      "name": "packages4",
+      "object_type": "packages",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 49,
+      "name": "packages5",
+      "object_type": "packages",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 50,
+      "name": "packages6",
+      "object_type": "packages",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 51,
+      "name": "packages7",
+      "object_type": "packages",
+      "initial": true,
+      "final": false
+    },
+    {
+      "id": 52,
+      "name": "packages8",
+      "object_type": "packages",
+      "initial": false,
+      "final": true
+    },
+    {
+      "id": 53,
+      "name": "packages9",
+      "object_type": "packages",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 54,
+      "name": "packages10",
+      "object_type": "packages",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 55,
+      "name": "packages11",
+      "object_type": "packages",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 56,
+      "name": "products1",
+      "object_type": "products",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 57,
+      "name": "products2",
+      "object_type": "products",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 58,
+      "name": "products3",
+      "object_type": "products",
+      "initial": false,
+      "final": false
+    },
+    {
+      "id": 59,
+      "name": "products4",
+      "object_type": "products",
+      "initial": true,
+      "final": false
+    },
+    {
+      "id": 60,
+      "name": "products5",
+      "object_type": "products",
+      "initial": false,
+      "final": true
+    }
+  ],
+  "transitions": [
+    {
+      "id": 61,
+      "name": "confirm order",
+      "label": "confirm order",
+      "silent": false
+    },
+    {
+      "id": 62,
+      "name": "place order",
+      "label": "place order",
+      "silent": false
+    },
+    {
+      "id": 63,
+      "name": "t_88dd971f0b578aa7c07f32c4b8747cd6",
+      "silent": true
+    },
+    {
+      "id": 64,
+      "name": "t_88dd971f0b578aa7cfd6a2826374b41b",
+      "silent": true
+    },
+    {
+      "id": 65,
+      "name": "t_88dd971f0b578aa7e182cdca6bf75645",
+      "silent": true
+    },
+    {
+      "id": 66,
+      "name": "t_88dd971f0b578aa7e182cdca6bf75646",
+      "silent": true
+    },
+    {
+      "id": 67,
+      "name": "create package",
+      "label": "create package",
+      "silent": false
+    },
+    {
+      "id": 68,
+      "name": "failed delivery",
+      "label": "failed delivery",
+      "silent": false
+    },
+    {
+      "id": 69,
+      "name": "item out of stock",
+      "label": "item out of stock",
+      "silent": false
+    },
+    {
+      "id": 70,
+      "name": "package delivered",
+      "label": "package delivered",
+      "silent": false
+    },
+    {
+      "id": 71,
+      "name": "pick item",
+      "label": "pick item",
+      "silent": false
+    },
+    {
+      "id": 72,
+      "name": "reorder item",
+      "label": "reorder item",
+      "silent": false
+    },
+    {
+      "id": 73,
+      "name": "send package",
+      "label": "send package",
+      "silent": false
+    },
+    {
+      "id": 74,
+      "name": "t_88dd971f0b578aa77acfb43fa3ccec5d",
+      "silent": true
+    },
+    {
+      "id": 75,
+      "name": "t_88dd971f0b578aa77acfb43fa3ccec5e",
+      "silent": true
+    },
+    {
+      "id": 76,
+      "name": "t_88dd971f0b578aa7c73619c267e3f1de",
+      "silent": true
+    },
+    {
+      "id": 77,
+      "name": "t_88dd971f0b578aa7cd77b1542d354803",
+      "silent": true
+    },
+    {
+      "id": 78,
+      "name": "pay order",
+      "label": "pay order",
+      "silent": false
+    },
+    {
+      "id": 79,
+      "name": "payment reminder",
+      "label": "payment reminder",
+      "silent": false
+    },
+    {
+      "id": 80,
+      "name": "t_88dd971f0b578aa7191af5ceeadf9540",
+      "silent": true
+    },
+    {
+      "id": 81,
+      "name": "t_88dd971f0b578aa7191af5ceeadf9541",
+      "silent": true
+    },
+    {
+      "id": 82,
+      "name": "t_88dd971f0b578aa7191af5ceeadf9542",
+      "silent": true
+    },
+    {
+      "id": 83,
+      "name": "t_88dd971f0b578aa7191af5ceeadf9544",
+      "silent": true
+    },
+    {
+      "id": 84,
+      "name": "t_88dd971f0b578aa7191af5ceeadf9545",
+      "silent": true
+    },
+    {
+      "id": 85,
+      "name": "t_88dd971f0b578aa7191af5ceeadf9551",
+      "silent": true
+    },
+    {
+      "id": 86,
+      "name": "t_88dd971f0b578aa7191af5ceeadf9552",
+      "silent": true
+    },
+    {
+      "id": 87,
+      "name": "t_88dd971f0b578aa7191af5ceeadf9553",
+      "silent": true
+    },
+    {
+      "id": 88,
+      "name": "t_88dd971f0b578aa7191af5ceeadf9558",
+      "silent": true
+    },
+    {
+      "id": 89,
+      "name": "t_88dd971f0b578aa7191af5ceeadf9559",
+      "silent": true
+    },
+    {
+      "id": 90,
+      "name": "t_88dd971f0b578aa7191af5ceeadf955a",
+      "silent": true
+    },
+    {
+      "id": 91,
+      "name": "t_88dd971f0b578aa7191af5ceeadf955b",
+      "silent": true
+    },
+    {
+      "id": 92,
+      "name": "t_88dd971f0b578aa7191af5ceeadf955c",
+      "silent": true
+    },
+    {
+      "id": 93,
+      "name": "t_88dd971f0b578aa7191af5ceeadf955f",
+      "silent": true
+    },
+    {
+      "id": 94,
+      "name": "t_88dd971f0b578aa73395331a62924ea4",
+      "silent": true
+    },
+    {
+      "id": 95,
+      "name": "t_88dd971f0b578aa7459352c63fc2c7e3",
+      "silent": true
+    },
+    {
+      "id": 96,
+      "name": "t_88dd971f0b578aa7459352c63fc2c7f2",
+      "silent": true
+    },
+    {
+      "id": 97,
+      "name": "t_88dd971f0b578aa777d94773fb173c65",
+      "silent": true
+    },
+    {
+      "id": 98,
+      "name": "t_88dd971f0b578aa777d94773fb173c6d",
+      "silent": true
+    },
+    {
+      "id": 99,
+      "name": "t_88dd971f0b578aa71327a7e99c8b45f8",
+      "silent": true
+    },
+    {
+      "id": 100,
+      "name": "t_88dd971f0b578aa7200ca537d057ece6",
+      "silent": true
+    },
+    {
+      "id": 101,
+      "name": "t_88dd971f0b578aa7437081e517f58781",
+      "silent": true
+    },
+    {
+      "id": 102,
+      "name": "t_88dd971f0b578aa7437081e517f5878c",
+      "silent": true
+    },
+    {
+      "id": 103,
+      "name": "t_88dd971f0b578aa7437081e517f5878e",
+      "silent": true
+    },
+    {
+      "id": 104,
+      "name": "t_88dd971f0b578aa7437081e517f5878f",
+      "silent": true
+    },
+    {
+      "id": 105,
+      "name": "t_88dd971f0b578aa7272e79f4dbbd7fc1",
+      "silent": true
+    },
+    {
+      "id": 106,
+      "name": "t_88dd971f0b578aa7956e7d714bc77234",
+      "silent": true
+    },
+    {
+      "id": 107,
+      "name": "t_88dd971f0b578aa7a021df28f1a36c90",
+      "silent": true
+    },
+    {
+      "id": 108,
+      "name": "t_88dd971f0b578aa7a021df28f1a36c91",
+      "silent": true
+    },
+    {
+      "id": 109,
+      "name": "t_88dd971f0b578aa7a021df28f1a36c95",
+      "silent": true
+    },
+    {
+      "id": 110,
+      "name": "t_88dd971f0b578aa7a021df28f1a36c96",
+      "silent": true
+    },
+    {
+      "id": 111,
+      "name": "t_88dd971f0b578aa7a021df28f1a36c98",
+      "silent": true
+    },
+    {
+      "id": 112,
+      "name": "t_88dd971f0b578aa7a021df28f1a36c9a",
+      "silent": true
+    },
+    {
+      "id": 113,
+      "name": "t_88dd971f0b578aa7a021df28f1a36c9b",
+      "silent": true
+    },
+    {
+      "id": 114,
+      "name": "t_88dd971f0b578aa7c5d52620eafe76fe",
+      "silent": true
+    },
+    {
+      "id": 115,
+      "name": "t_88dd971f0b578aa713e9d278854c7dff",
+      "silent": true
+    },
+    {
+      "id": 116,
+      "name": "t_88dd971f0b578aa7572327d7ee8e4c34",
+      "silent": true
+    },
+    {
+      "id": 117,
+      "name": "t_88dd971f0b578aa7572327d7ee8e4c37",
+      "silent": true
+    },
+    {
+      "id": 118,
+      "name": "t_88dd971f0b578aa779b3f969be242618",
+      "silent": true
+    }
+  ],
+  "arcs": [
+    {
+      "id": 119,
+      "source": {
+        "kind": "place",
+        "id": 1
+      },
+      "target": {
+        "kind": "transition",
+        "id": 65
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 120,
+      "source": {
+        "kind": "place",
+        "id": 1
+      },
+      "target": {
+        "kind": "transition",
+        "id": 62
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 121,
+      "source": {
+        "kind": "place",
+        "id": 1
+      },
+      "target": {
+        "kind": "transition",
+        "id": 61
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 122,
+      "source": {
+        "kind": "place",
+        "id": 2
+      },
+      "target": {
+        "kind": "transition",
+        "id": 63
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 123,
+      "source": {
+        "kind": "place",
+        "id": 3
+      },
+      "target": {
+        "kind": "transition",
+        "id": 66
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 124,
+      "source": {
+        "kind": "place",
+        "id": 5
+      },
+      "target": {
+        "kind": "transition",
+        "id": 64
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 125,
+      "source": {
+        "kind": "transition",
+        "id": 63
+      },
+      "target": {
+        "kind": "place",
+        "id": 3
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 126,
+      "source": {
+        "kind": "transition",
+        "id": 64
+      },
+      "target": {
+        "kind": "place",
+        "id": 3
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 127,
+      "source": {
+        "kind": "transition",
+        "id": 65
+      },
+      "target": {
+        "kind": "place",
+        "id": 4
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 128,
+      "source": {
+        "kind": "transition",
+        "id": 66
+      },
+      "target": {
+        "kind": "place",
+        "id": 1
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 129,
+      "source": {
+        "kind": "transition",
+        "id": 62
+      },
+      "target": {
+        "kind": "place",
+        "id": 2
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 130,
+      "source": {
+        "kind": "transition",
+        "id": 61
+      },
+      "target": {
+        "kind": "place",
+        "id": 2
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 131,
+      "source": {
+        "kind": "place",
+        "id": 6
+      },
+      "target": {
+        "kind": "transition",
+        "id": 74
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 132,
+      "source": {
+        "kind": "place",
+        "id": 6
+      },
+      "target": {
+        "kind": "transition",
+        "id": 69
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 133,
+      "source": {
+        "kind": "place",
+        "id": 6
+      },
+      "target": {
+        "kind": "transition",
+        "id": 72
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 134,
+      "source": {
+        "kind": "place",
+        "id": 6
+      },
+      "target": {
+        "kind": "transition",
+        "id": 73
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 135,
+      "source": {
+        "kind": "place",
+        "id": 6
+      },
+      "target": {
+        "kind": "transition",
+        "id": 67
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 136,
+      "source": {
+        "kind": "place",
+        "id": 6
+      },
+      "target": {
+        "kind": "transition",
+        "id": 71
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 137,
+      "source": {
+        "kind": "place",
+        "id": 6
+      },
+      "target": {
+        "kind": "transition",
+        "id": 70
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 138,
+      "source": {
+        "kind": "place",
+        "id": 6
+      },
+      "target": {
+        "kind": "transition",
+        "id": 68
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 139,
+      "source": {
+        "kind": "place",
+        "id": 6
+      },
+      "target": {
+        "kind": "transition",
+        "id": 61
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 140,
+      "source": {
+        "kind": "place",
+        "id": 7
+      },
+      "target": {
+        "kind": "transition",
+        "id": 76
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 141,
+      "source": {
+        "kind": "place",
+        "id": 8
+      },
+      "target": {
+        "kind": "transition",
+        "id": 75
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 142,
+      "source": {
+        "kind": "place",
+        "id": 10
+      },
+      "target": {
+        "kind": "transition",
+        "id": 77
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 143,
+      "source": {
+        "kind": "transition",
+        "id": 74
+      },
+      "target": {
+        "kind": "place",
+        "id": 9
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 144,
+      "source": {
+        "kind": "transition",
+        "id": 75
+      },
+      "target": {
+        "kind": "place",
+        "id": 6
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 145,
+      "source": {
+        "kind": "transition",
+        "id": 76
+      },
+      "target": {
+        "kind": "place",
+        "id": 8
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 146,
+      "source": {
+        "kind": "transition",
+        "id": 77
+      },
+      "target": {
+        "kind": "place",
+        "id": 8
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 147,
+      "source": {
+        "kind": "transition",
+        "id": 69
+      },
+      "target": {
+        "kind": "place",
+        "id": 7
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 148,
+      "source": {
+        "kind": "transition",
+        "id": 72
+      },
+      "target": {
+        "kind": "place",
+        "id": 7
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 149,
+      "source": {
+        "kind": "transition",
+        "id": 73
+      },
+      "target": {
+        "kind": "place",
+        "id": 7
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 150,
+      "source": {
+        "kind": "transition",
+        "id": 67
+      },
+      "target": {
+        "kind": "place",
+        "id": 7
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 151,
+      "source": {
+        "kind": "transition",
+        "id": 71
+      },
+      "target": {
+        "kind": "place",
+        "id": 7
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 152,
+      "source": {
+        "kind": "transition",
+        "id": 70
+      },
+      "target": {
+        "kind": "place",
+        "id": 7
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 153,
+      "source": {
+        "kind": "transition",
+        "id": 68
+      },
+      "target": {
+        "kind": "place",
+        "id": 7
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 154,
+      "source": {
+        "kind": "transition",
+        "id": 61
+      },
+      "target": {
+        "kind": "place",
+        "id": 7
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 155,
+      "source": {
+        "kind": "place",
+        "id": 11
+      },
+      "target": {
+        "kind": "transition",
+        "id": 88
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 156,
+      "source": {
+        "kind": "place",
+        "id": 11
+      },
+      "target": {
+        "kind": "transition",
+        "id": 70
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 157,
+      "source": {
+        "kind": "place",
+        "id": 12
+      },
+      "target": {
+        "kind": "transition",
+        "id": 97
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 158,
+      "source": {
+        "kind": "place",
+        "id": 13
+      },
+      "target": {
+        "kind": "transition",
+        "id": 93
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 159,
+      "source": {
+        "kind": "place",
+        "id": 13
+      },
+      "target": {
+        "kind": "transition",
+        "id": 67
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 160,
+      "source": {
+        "kind": "place",
+        "id": 14
+      },
+      "target": {
+        "kind": "transition",
+        "id": 94
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 161,
+      "source": {
+        "kind": "place",
+        "id": 15
+      },
+      "target": {
+        "kind": "transition",
+        "id": 98
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 162,
+      "source": {
+        "kind": "place",
+        "id": 16
+      },
+      "target": {
+        "kind": "transition",
+        "id": 90
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 163,
+      "source": {
+        "kind": "place",
+        "id": 16
+      },
+      "target": {
+        "kind": "transition",
+        "id": 92
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 164,
+      "source": {
+        "kind": "place",
+        "id": 16
+      },
+      "target": {
+        "kind": "transition",
+        "id": 69
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 165,
+      "source": {
+        "kind": "place",
+        "id": 17
+      },
+      "target": {
+        "kind": "transition",
+        "id": 85
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 166,
+      "source": {
+        "kind": "place",
+        "id": 17
+      },
+      "target": {
+        "kind": "transition",
+        "id": 86
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 167,
+      "source": {
+        "kind": "place",
+        "id": 18
+      },
+      "target": {
+        "kind": "transition",
+        "id": 79
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 168,
+      "source": {
+        "kind": "place",
+        "id": 19
+      },
+      "target": {
+        "kind": "transition",
+        "id": 78
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 169,
+      "source": {
+        "kind": "place",
+        "id": 20
+      },
+      "target": {
+        "kind": "transition",
+        "id": 98
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 170,
+      "source": {
+        "kind": "place",
+        "id": 21
+      },
+      "target": {
+        "kind": "transition",
+        "id": 87
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 171,
+      "source": {
+        "kind": "place",
+        "id": 21
+      },
+      "target": {
+        "kind": "transition",
+        "id": 95
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 172,
+      "source": {
+        "kind": "place",
+        "id": 23
+      },
+      "target": {
+        "kind": "transition",
+        "id": 62
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 173,
+      "source": {
+        "kind": "place",
+        "id": 24
+      },
+      "target": {
+        "kind": "transition",
+        "id": 80
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 174,
+      "source": {
+        "kind": "place",
+        "id": 24
+      },
+      "target": {
+        "kind": "transition",
+        "id": 81
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 175,
+      "source": {
+        "kind": "place",
+        "id": 25
+      },
+      "target": {
+        "kind": "transition",
+        "id": 68
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 176,
+      "source": {
+        "kind": "place",
+        "id": 26
+      },
+      "target": {
+        "kind": "transition",
+        "id": 98
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 177,
+      "source": {
+        "kind": "place",
+        "id": 27
+      },
+      "target": {
+        "kind": "transition",
+        "id": 82
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 178,
+      "source": {
+        "kind": "place",
+        "id": 27
+      },
+      "target": {
+        "kind": "transition",
+        "id": 96
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 179,
+      "source": {
+        "kind": "place",
+        "id": 28
+      },
+      "target": {
+        "kind": "transition",
+        "id": 98
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 180,
+      "source": {
+        "kind": "place",
+        "id": 29
+      },
+      "target": {
+        "kind": "transition",
+        "id": 84
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 181,
+      "source": {
+        "kind": "place",
+        "id": 29
+      },
+      "target": {
+        "kind": "transition",
+        "id": 72
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 182,
+      "source": {
+        "kind": "place",
+        "id": 30
+      },
+      "target": {
+        "kind": "transition",
+        "id": 98
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 183,
+      "source": {
+        "kind": "place",
+        "id": 31
+      },
+      "target": {
+        "kind": "transition",
+        "id": 83
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 184,
+      "source": {
+        "kind": "place",
+        "id": 31
+      },
+      "target": {
+        "kind": "transition",
+        "id": 73
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 185,
+      "source": {
+        "kind": "place",
+        "id": 32
+      },
+      "target": {
+        "kind": "transition",
+        "id": 98
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 186,
+      "source": {
+        "kind": "place",
+        "id": 33
+      },
+      "target": {
+        "kind": "transition",
+        "id": 91
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 187,
+      "source": {
+        "kind": "place",
+        "id": 33
+      },
+      "target": {
+        "kind": "transition",
+        "id": 61
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 188,
+      "source": {
+        "kind": "place",
+        "id": 34
+      },
+      "target": {
+        "kind": "transition",
+        "id": 97
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 189,
+      "source": {
+        "kind": "place",
+        "id": 35
+      },
+      "target": {
+        "kind": "transition",
+        "id": 89
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 190,
+      "source": {
+        "kind": "place",
+        "id": 35
+      },
+      "target": {
+        "kind": "transition",
+        "id": 71
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 191,
+      "source": {
+        "kind": "transition",
+        "id": 80
+      },
+      "target": {
+        "kind": "place",
+        "id": 25
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 192,
+      "source": {
+        "kind": "transition",
+        "id": 81
+      },
+      "target": {
+        "kind": "place",
+        "id": 26
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 193,
+      "source": {
+        "kind": "transition",
+        "id": 82
+      },
+      "target": {
+        "kind": "place",
+        "id": 26
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 194,
+      "source": {
+        "kind": "transition",
+        "id": 83
+      },
+      "target": {
+        "kind": "place",
+        "id": 30
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 195,
+      "source": {
+        "kind": "transition",
+        "id": 84
+      },
+      "target": {
+        "kind": "place",
+        "id": 28
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 196,
+      "source": {
+        "kind": "transition",
+        "id": 85
+      },
+      "target": {
+        "kind": "place",
+        "id": 18
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 197,
+      "source": {
+        "kind": "transition",
+        "id": 86
+      },
+      "target": {
+        "kind": "place",
+        "id": 19
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 198,
+      "source": {
+        "kind": "transition",
+        "id": 87
+      },
+      "target": {
+        "kind": "place",
+        "id": 19
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 199,
+      "source": {
+        "kind": "transition",
+        "id": 88
+      },
+      "target": {
+        "kind": "place",
+        "id": 12
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 200,
+      "source": {
+        "kind": "transition",
+        "id": 89
+      },
+      "target": {
+        "kind": "place",
+        "id": 34
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 201,
+      "source": {
+        "kind": "transition",
+        "id": 90
+      },
+      "target": {
+        "kind": "place",
+        "id": 15
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 202,
+      "source": {
+        "kind": "transition",
+        "id": 91
+      },
+      "target": {
+        "kind": "place",
+        "id": 32
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 203,
+      "source": {
+        "kind": "transition",
+        "id": 92
+      },
+      "target": {
+        "kind": "place",
+        "id": 14
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 204,
+      "source": {
+        "kind": "transition",
+        "id": 93
+      },
+      "target": {
+        "kind": "place",
+        "id": 11
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 205,
+      "source": {
+        "kind": "transition",
+        "id": 94
+      },
+      "target": {
+        "kind": "place",
+        "id": 13
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 206,
+      "source": {
+        "kind": "transition",
+        "id": 94
+      },
+      "target": {
+        "kind": "place",
+        "id": 35
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 207,
+      "source": {
+        "kind": "transition",
+        "id": 95
+      },
+      "target": {
+        "kind": "place",
+        "id": 18
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 208,
+      "source": {
+        "kind": "transition",
+        "id": 96
+      },
+      "target": {
+        "kind": "place",
+        "id": 25
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 209,
+      "source": {
+        "kind": "transition",
+        "id": 97
+      },
+      "target": {
+        "kind": "place",
+        "id": 15
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 210,
+      "source": {
+        "kind": "transition",
+        "id": 98
+      },
+      "target": {
+        "kind": "place",
+        "id": 22
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 211,
+      "source": {
+        "kind": "transition",
+        "id": 61
+      },
+      "target": {
+        "kind": "place",
+        "id": 32
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 212,
+      "source": {
+        "kind": "transition",
+        "id": 72
+      },
+      "target": {
+        "kind": "place",
+        "id": 28
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 213,
+      "source": {
+        "kind": "transition",
+        "id": 62
+      },
+      "target": {
+        "kind": "place",
+        "id": 16
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 214,
+      "source": {
+        "kind": "transition",
+        "id": 62
+      },
+      "target": {
+        "kind": "place",
+        "id": 21
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 215,
+      "source": {
+        "kind": "transition",
+        "id": 62
+      },
+      "target": {
+        "kind": "place",
+        "id": 27
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 216,
+      "source": {
+        "kind": "transition",
+        "id": 62
+      },
+      "target": {
+        "kind": "place",
+        "id": 29
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 217,
+      "source": {
+        "kind": "transition",
+        "id": 62
+      },
+      "target": {
+        "kind": "place",
+        "id": 31
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 218,
+      "source": {
+        "kind": "transition",
+        "id": 62
+      },
+      "target": {
+        "kind": "place",
+        "id": 33
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 219,
+      "source": {
+        "kind": "transition",
+        "id": 71
+      },
+      "target": {
+        "kind": "place",
+        "id": 34
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 220,
+      "source": {
+        "kind": "transition",
+        "id": 67
+      },
+      "target": {
+        "kind": "place",
+        "id": 11
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 221,
+      "source": {
+        "kind": "transition",
+        "id": 68
+      },
+      "target": {
+        "kind": "place",
+        "id": 24
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 222,
+      "source": {
+        "kind": "transition",
+        "id": 73
+      },
+      "target": {
+        "kind": "place",
+        "id": 30
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 223,
+      "source": {
+        "kind": "transition",
+        "id": 78
+      },
+      "target": {
+        "kind": "place",
+        "id": 20
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 224,
+      "source": {
+        "kind": "transition",
+        "id": 69
+      },
+      "target": {
+        "kind": "place",
+        "id": 14
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 225,
+      "source": {
+        "kind": "transition",
+        "id": 70
+      },
+      "target": {
+        "kind": "place",
+        "id": 12
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 226,
+      "source": {
+        "kind": "transition",
+        "id": 79
+      },
+      "target": {
+        "kind": "place",
+        "id": 17
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 227,
+      "source": {
+        "kind": "place",
+        "id": 36
+      },
+      "target": {
+        "kind": "transition",
+        "id": 102
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 228,
+      "source": {
+        "kind": "place",
+        "id": 36
+      },
+      "target": {
+        "kind": "transition",
+        "id": 104
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 229,
+      "source": {
+        "kind": "place",
+        "id": 37
+      },
+      "target": {
+        "kind": "transition",
+        "id": 101
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 230,
+      "source": {
+        "kind": "place",
+        "id": 37
+      },
+      "target": {
+        "kind": "transition",
+        "id": 61
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 231,
+      "source": {
+        "kind": "place",
+        "id": 38
+      },
+      "target": {
+        "kind": "transition",
+        "id": 100
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 232,
+      "source": {
+        "kind": "place",
+        "id": 39
+      },
+      "target": {
+        "kind": "transition",
+        "id": 99
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 233,
+      "source": {
+        "kind": "place",
+        "id": 39
+      },
+      "target": {
+        "kind": "transition",
+        "id": 103
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 234,
+      "source": {
+        "kind": "place",
+        "id": 40
+      },
+      "target": {
+        "kind": "transition",
+        "id": 100
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 235,
+      "source": {
+        "kind": "place",
+        "id": 41
+      },
+      "target": {
+        "kind": "transition",
+        "id": 78
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 236,
+      "source": {
+        "kind": "place",
+        "id": 42
+      },
+      "target": {
+        "kind": "transition",
+        "id": 79
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 237,
+      "source": {
+        "kind": "place",
+        "id": 43
+      },
+      "target": {
+        "kind": "transition",
+        "id": 62
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 238,
+      "source": {
+        "kind": "transition",
+        "id": 99
+      },
+      "target": {
+        "kind": "place",
+        "id": 42
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 239,
+      "source": {
+        "kind": "transition",
+        "id": 100
+      },
+      "target": {
+        "kind": "place",
+        "id": 44
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 240,
+      "source": {
+        "kind": "transition",
+        "id": 101
+      },
+      "target": {
+        "kind": "place",
+        "id": 38
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 241,
+      "source": {
+        "kind": "transition",
+        "id": 102
+      },
+      "target": {
+        "kind": "place",
+        "id": 42
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 242,
+      "source": {
+        "kind": "transition",
+        "id": 103
+      },
+      "target": {
+        "kind": "place",
+        "id": 41
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 243,
+      "source": {
+        "kind": "transition",
+        "id": 104
+      },
+      "target": {
+        "kind": "place",
+        "id": 41
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 244,
+      "source": {
+        "kind": "transition",
+        "id": 62
+      },
+      "target": {
+        "kind": "place",
+        "id": 37
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 245,
+      "source": {
+        "kind": "transition",
+        "id": 62
+      },
+      "target": {
+        "kind": "place",
+        "id": 39
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 246,
+      "source": {
+        "kind": "transition",
+        "id": 79
+      },
+      "target": {
+        "kind": "place",
+        "id": 36
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 247,
+      "source": {
+        "kind": "transition",
+        "id": 78
+      },
+      "target": {
+        "kind": "place",
+        "id": 40
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 248,
+      "source": {
+        "kind": "transition",
+        "id": 61
+      },
+      "target": {
+        "kind": "place",
+        "id": 38
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 249,
+      "source": {
+        "kind": "place",
+        "id": 45
+      },
+      "target": {
+        "kind": "transition",
+        "id": 109
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 250,
+      "source": {
+        "kind": "place",
+        "id": 45
+      },
+      "target": {
+        "kind": "transition",
+        "id": 73
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 251,
+      "source": {
+        "kind": "place",
+        "id": 46
+      },
+      "target": {
+        "kind": "transition",
+        "id": 106
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 252,
+      "source": {
+        "kind": "place",
+        "id": 47
+      },
+      "target": {
+        "kind": "transition",
+        "id": 107
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 253,
+      "source": {
+        "kind": "place",
+        "id": 47
+      },
+      "target": {
+        "kind": "transition",
+        "id": 114
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 254,
+      "source": {
+        "kind": "place",
+        "id": 48
+      },
+      "target": {
+        "kind": "transition",
+        "id": 106
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 255,
+      "source": {
+        "kind": "place",
+        "id": 49
+      },
+      "target": {
+        "kind": "transition",
+        "id": 68
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 256,
+      "source": {
+        "kind": "place",
+        "id": 50
+      },
+      "target": {
+        "kind": "transition",
+        "id": 108
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 257,
+      "source": {
+        "kind": "place",
+        "id": 50
+      },
+      "target": {
+        "kind": "transition",
+        "id": 110
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 258,
+      "source": {
+        "kind": "place",
+        "id": 51
+      },
+      "target": {
+        "kind": "transition",
+        "id": 105
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 259,
+      "source": {
+        "kind": "place",
+        "id": 53
+      },
+      "target": {
+        "kind": "transition",
+        "id": 111
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 260,
+      "source": {
+        "kind": "place",
+        "id": 53
+      },
+      "target": {
+        "kind": "transition",
+        "id": 112
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 261,
+      "source": {
+        "kind": "place",
+        "id": 53
+      },
+      "target": {
+        "kind": "transition",
+        "id": 67
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 262,
+      "source": {
+        "kind": "place",
+        "id": 54
+      },
+      "target": {
+        "kind": "transition",
+        "id": 106
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 263,
+      "source": {
+        "kind": "place",
+        "id": 55
+      },
+      "target": {
+        "kind": "transition",
+        "id": 113
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 264,
+      "source": {
+        "kind": "place",
+        "id": 55
+      },
+      "target": {
+        "kind": "transition",
+        "id": 70
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 265,
+      "source": {
+        "kind": "transition",
+        "id": 105
+      },
+      "target": {
+        "kind": "place",
+        "id": 45
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 266,
+      "source": {
+        "kind": "transition",
+        "id": 105
+      },
+      "target": {
+        "kind": "place",
+        "id": 47
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 267,
+      "source": {
+        "kind": "transition",
+        "id": 105
+      },
+      "target": {
+        "kind": "place",
+        "id": 53
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 268,
+      "source": {
+        "kind": "transition",
+        "id": 106
+      },
+      "target": {
+        "kind": "place",
+        "id": 52
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 269,
+      "source": {
+        "kind": "transition",
+        "id": 107
+      },
+      "target": {
+        "kind": "place",
+        "id": 48
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 270,
+      "source": {
+        "kind": "transition",
+        "id": 108
+      },
+      "target": {
+        "kind": "place",
+        "id": 48
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 271,
+      "source": {
+        "kind": "transition",
+        "id": 109
+      },
+      "target": {
+        "kind": "place",
+        "id": 46
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 272,
+      "source": {
+        "kind": "transition",
+        "id": 110
+      },
+      "target": {
+        "kind": "place",
+        "id": 49
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 273,
+      "source": {
+        "kind": "transition",
+        "id": 111
+      },
+      "target": {
+        "kind": "place",
+        "id": 55
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 274,
+      "source": {
+        "kind": "transition",
+        "id": 112
+      },
+      "target": {
+        "kind": "place",
+        "id": 54
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 275,
+      "source": {
+        "kind": "transition",
+        "id": 113
+      },
+      "target": {
+        "kind": "place",
+        "id": 54
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 276,
+      "source": {
+        "kind": "transition",
+        "id": 114
+      },
+      "target": {
+        "kind": "place",
+        "id": 49
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 277,
+      "source": {
+        "kind": "transition",
+        "id": 73
+      },
+      "target": {
+        "kind": "place",
+        "id": 46
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 278,
+      "source": {
+        "kind": "transition",
+        "id": 68
+      },
+      "target": {
+        "kind": "place",
+        "id": 50
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 279,
+      "source": {
+        "kind": "transition",
+        "id": 70
+      },
+      "target": {
+        "kind": "place",
+        "id": 54
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 280,
+      "source": {
+        "kind": "transition",
+        "id": 67
+      },
+      "target": {
+        "kind": "place",
+        "id": 55
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 281,
+      "source": {
+        "kind": "place",
+        "id": 56
+      },
+      "target": {
+        "kind": "transition",
+        "id": 117
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 282,
+      "source": {
+        "kind": "place",
+        "id": 57
+      },
+      "target": {
+        "kind": "transition",
+        "id": 115
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 283,
+      "source": {
+        "kind": "place",
+        "id": 58
+      },
+      "target": {
+        "kind": "transition",
+        "id": 116
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 284,
+      "source": {
+        "kind": "place",
+        "id": 58
+      },
+      "target": {
+        "kind": "transition",
+        "id": 62
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 285,
+      "source": {
+        "kind": "place",
+        "id": 58
+      },
+      "target": {
+        "kind": "transition",
+        "id": 78
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 286,
+      "source": {
+        "kind": "place",
+        "id": 58
+      },
+      "target": {
+        "kind": "transition",
+        "id": 61
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 287,
+      "source": {
+        "kind": "place",
+        "id": 58
+      },
+      "target": {
+        "kind": "transition",
+        "id": 68
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 288,
+      "source": {
+        "kind": "place",
+        "id": 58
+      },
+      "target": {
+        "kind": "transition",
+        "id": 70
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 289,
+      "source": {
+        "kind": "place",
+        "id": 58
+      },
+      "target": {
+        "kind": "transition",
+        "id": 71
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 290,
+      "source": {
+        "kind": "place",
+        "id": 58
+      },
+      "target": {
+        "kind": "transition",
+        "id": 69
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 291,
+      "source": {
+        "kind": "place",
+        "id": 58
+      },
+      "target": {
+        "kind": "transition",
+        "id": 73
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 292,
+      "source": {
+        "kind": "place",
+        "id": 58
+      },
+      "target": {
+        "kind": "transition",
+        "id": 79
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 293,
+      "source": {
+        "kind": "place",
+        "id": 58
+      },
+      "target": {
+        "kind": "transition",
+        "id": 67
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 294,
+      "source": {
+        "kind": "place",
+        "id": 58
+      },
+      "target": {
+        "kind": "transition",
+        "id": 72
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 295,
+      "source": {
+        "kind": "place",
+        "id": 59
+      },
+      "target": {
+        "kind": "transition",
+        "id": 118
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 296,
+      "source": {
+        "kind": "transition",
+        "id": 115
+      },
+      "target": {
+        "kind": "place",
+        "id": 56
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 297,
+      "source": {
+        "kind": "transition",
+        "id": 116
+      },
+      "target": {
+        "kind": "place",
+        "id": 60
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 298,
+      "source": {
+        "kind": "transition",
+        "id": 117
+      },
+      "target": {
+        "kind": "place",
+        "id": 58
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 299,
+      "source": {
+        "kind": "transition",
+        "id": 118
+      },
+      "target": {
+        "kind": "place",
+        "id": 56
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 300,
+      "source": {
+        "kind": "transition",
+        "id": 62
+      },
+      "target": {
+        "kind": "place",
+        "id": 57
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 301,
+      "source": {
+        "kind": "transition",
+        "id": 78
+      },
+      "target": {
+        "kind": "place",
+        "id": 57
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 302,
+      "source": {
+        "kind": "transition",
+        "id": 61
+      },
+      "target": {
+        "kind": "place",
+        "id": 57
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 303,
+      "source": {
+        "kind": "transition",
+        "id": 68
+      },
+      "target": {
+        "kind": "place",
+        "id": 57
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 304,
+      "source": {
+        "kind": "transition",
+        "id": 70
+      },
+      "target": {
+        "kind": "place",
+        "id": 57
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 305,
+      "source": {
+        "kind": "transition",
+        "id": 71
+      },
+      "target": {
+        "kind": "place",
+        "id": 57
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 306,
+      "source": {
+        "kind": "transition",
+        "id": 69
+      },
+      "target": {
+        "kind": "place",
+        "id": 57
+      },
+      "variable": false,
+      "weight": 1
+    },
+    {
+      "id": 307,
+      "source": {
+        "kind": "transition",
+        "id": 73
+      },
+      "target": {
+        "kind": "place",
+        "id": 57
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 308,
+      "source": {
+        "kind": "transition",
+        "id": 79
+      },
+      "target": {
+        "kind": "place",
+        "id": 57
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 309,
+      "source": {
+        "kind": "transition",
+        "id": 67
+      },
+      "target": {
+        "kind": "place",
+        "id": 57
+      },
+      "variable": true,
+      "weight": 1
+    },
+    {
+      "id": 310,
+      "source": {
+        "kind": "transition",
+        "id": 72
+      },
+      "target": {
+        "kind": "place",
+        "id": 57
+      },
+      "variable": false,
+      "weight": 1
+    }
+  ],
+  "nets": {
+    "customers": {
+      "net": {
+        "places": {
+          "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3bb": {
+            "id": "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3bb"
+          },
+          "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3b8": {
+            "id": "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3b8"
+          },
+          "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3b9": {
+            "id": "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3b9"
+          },
+          "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3bc": {
+            "id": "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3bc"
+          },
+          "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3bf": {
+            "id": "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3bf"
+          }
+        },
+        "transitions": {
+          "d6f54bb0-ebac-13bf-aea7-a990bedfc2b5": {
+            "label": "confirm order",
+            "id": "d6f54bb0-ebac-13bf-aea7-a990bedfc2b5"
+          },
+          "88dd971f-0b57-8aa7-cfd6-a2826374b41b": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-cfd6-a2826374b41b"
+          },
+          "88dd971f-0b57-8aa7-c07f-32c4b8747cd6": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-c07f-32c4b8747cd6"
+          },
+          "d6f54bb0-ebac-13bf-70a1-737f616fefb5": {
+            "label": "place order",
+            "id": "d6f54bb0-ebac-13bf-70a1-737f616fefb5"
+          },
+          "88dd971f-0b57-8aa7-e182-cdca6bf75645": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-e182-cdca6bf75645"
+          },
+          "88dd971f-0b57-8aa7-e182-cdca6bf75646": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-e182-cdca6bf75646"
+          }
+        },
+        "arcs": [
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3bf",
+                "88dd971f-0b57-8aa7-cfd6-a2826374b41b"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3bb",
+                "88dd971f-0b57-8aa7-e182-cdca6bf75646"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-e182-cdca6bf75646",
+                "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3b8"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3b8",
+                "d6f54bb0-ebac-13bf-aea7-a990bedfc2b5"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-aea7-a990bedfc2b5",
+                "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3b9"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3b8",
+                "d6f54bb0-ebac-13bf-70a1-737f616fefb5"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-70a1-737f616fefb5",
+                "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3b9"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3b8",
+                "88dd971f-0b57-8aa7-e182-cdca6bf75645"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3b9",
+                "88dd971f-0b57-8aa7-c07f-32c4b8747cd6"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-c07f-32c4b8747cd6",
+                "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3bb"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-e182-cdca6bf75645",
+                "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3bc"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-cfd6-a2826374b41b",
+                "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3bb"
+              ]
+            },
+            "weight": 1
+          }
+        ],
+        "initial_marking": null,
+        "final_markings": null
+      },
+      "initial_marking": {
+        "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3bf": 1
+      },
+      "final_marking": {
+        "fd6f0e4e-166f-85bc-0c98-79d1e6ffa3bc": 1
+      }
+    },
+    "employees": {
+      "net": {
+        "places": {
+          "fd6f0e4e-166f-85bc-cfcf-587678724694": {
+            "id": "fd6f0e4e-166f-85bc-cfcf-587678724694"
+          },
+          "fd6f0e4e-166f-85bc-cfcf-587678724693": {
+            "id": "fd6f0e4e-166f-85bc-cfcf-587678724693"
+          },
+          "fd6f0e4e-166f-85bc-cfcf-587678724690": {
+            "id": "fd6f0e4e-166f-85bc-cfcf-587678724690"
+          },
+          "fd6f0e4e-166f-85bc-cfcf-587678724697": {
+            "id": "fd6f0e4e-166f-85bc-cfcf-587678724697"
+          },
+          "fd6f0e4e-166f-85bc-cfcf-587678724691": {
+            "id": "fd6f0e4e-166f-85bc-cfcf-587678724691"
+          }
+        },
+        "transitions": {
+          "88dd971f-0b57-8aa7-7acf-b43fa3ccec5d": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-7acf-b43fa3ccec5d"
+          },
+          "d6f54bb0-ebac-13bf-eff0-af606bf36430": {
+            "label": "failed delivery",
+            "id": "d6f54bb0-ebac-13bf-eff0-af606bf36430"
+          },
+          "d6f54bb0-ebac-13bf-3e10-f0e5aaa98e06": {
+            "label": "send package",
+            "id": "d6f54bb0-ebac-13bf-3e10-f0e5aaa98e06"
+          },
+          "88dd971f-0b57-8aa7-cd77-b1542d354803": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-cd77-b1542d354803"
+          },
+          "88dd971f-0b57-8aa7-7acf-b43fa3ccec5e": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-7acf-b43fa3ccec5e"
+          },
+          "d6f54bb0-ebac-13bf-c259-11fe32c704c9": {
+            "label": "package delivered",
+            "id": "d6f54bb0-ebac-13bf-c259-11fe32c704c9"
+          },
+          "d6f54bb0-ebac-13bf-fe19-581ffb62a64d": {
+            "label": "confirm order",
+            "id": "d6f54bb0-ebac-13bf-fe19-581ffb62a64d"
+          },
+          "d6f54bb0-ebac-13bf-2e89-e9bdcbed2ed1": {
+            "label": "reorder item",
+            "id": "d6f54bb0-ebac-13bf-2e89-e9bdcbed2ed1"
+          },
+          "88dd971f-0b57-8aa7-c736-19c267e3f1de": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-c736-19c267e3f1de"
+          },
+          "d6f54bb0-ebac-13bf-1a84-87dd9247fa16": {
+            "label": "item out of stock",
+            "id": "d6f54bb0-ebac-13bf-1a84-87dd9247fa16"
+          },
+          "d6f54bb0-ebac-13bf-967b-89aa13af5462": {
+            "label": "create package",
+            "id": "d6f54bb0-ebac-13bf-967b-89aa13af5462"
+          },
+          "d6f54bb0-ebac-13bf-b7ff-9591dff684e6": {
+            "label": "pick item",
+            "id": "d6f54bb0-ebac-13bf-b7ff-9591dff684e6"
+          }
+        },
+        "arcs": [
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-cfcf-587678724697",
+                "88dd971f-0b57-8aa7-cd77-b1542d354803"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-cfcf-587678724693",
+                "88dd971f-0b57-8aa7-7acf-b43fa3ccec5e"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-7acf-b43fa3ccec5e",
+                "fd6f0e4e-166f-85bc-cfcf-587678724690"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-cfcf-587678724690",
+                "d6f54bb0-ebac-13bf-fe19-581ffb62a64d"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-fe19-581ffb62a64d",
+                "fd6f0e4e-166f-85bc-cfcf-587678724691"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-cfcf-587678724690",
+                "d6f54bb0-ebac-13bf-967b-89aa13af5462"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-967b-89aa13af5462",
+                "fd6f0e4e-166f-85bc-cfcf-587678724691"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-cfcf-587678724690",
+                "d6f54bb0-ebac-13bf-eff0-af606bf36430"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-eff0-af606bf36430",
+                "fd6f0e4e-166f-85bc-cfcf-587678724691"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-cfcf-587678724690",
+                "d6f54bb0-ebac-13bf-1a84-87dd9247fa16"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-1a84-87dd9247fa16",
+                "fd6f0e4e-166f-85bc-cfcf-587678724691"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-cfcf-587678724690",
+                "d6f54bb0-ebac-13bf-c259-11fe32c704c9"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-c259-11fe32c704c9",
+                "fd6f0e4e-166f-85bc-cfcf-587678724691"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-cfcf-587678724690",
+                "d6f54bb0-ebac-13bf-b7ff-9591dff684e6"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-b7ff-9591dff684e6",
+                "fd6f0e4e-166f-85bc-cfcf-587678724691"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-cfcf-587678724690",
+                "d6f54bb0-ebac-13bf-2e89-e9bdcbed2ed1"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-2e89-e9bdcbed2ed1",
+                "fd6f0e4e-166f-85bc-cfcf-587678724691"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-cfcf-587678724690",
+                "d6f54bb0-ebac-13bf-3e10-f0e5aaa98e06"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-3e10-f0e5aaa98e06",
+                "fd6f0e4e-166f-85bc-cfcf-587678724691"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-cfcf-587678724690",
+                "88dd971f-0b57-8aa7-7acf-b43fa3ccec5d"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-cfcf-587678724691",
+                "88dd971f-0b57-8aa7-c736-19c267e3f1de"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-c736-19c267e3f1de",
+                "fd6f0e4e-166f-85bc-cfcf-587678724693"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-cd77-b1542d354803",
+                "fd6f0e4e-166f-85bc-cfcf-587678724693"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-7acf-b43fa3ccec5d",
+                "fd6f0e4e-166f-85bc-cfcf-587678724694"
+              ]
+            },
+            "weight": 1
+          }
+        ],
+        "initial_marking": null,
+        "final_markings": null
+      },
+      "initial_marking": {
+        "fd6f0e4e-166f-85bc-cfcf-587678724697": 1
+      },
+      "final_marking": {
+        "fd6f0e4e-166f-85bc-cfcf-587678724694": 1
+      }
+    },
+    "items": {
+      "net": {
+        "places": {
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c69": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c69"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c7b": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c7b"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c7a": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c7a"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c76": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c76"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c68": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c68"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c6e": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c6e"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c6a": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c6a"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c65": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c65"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c7c": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c7c"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c75": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c75"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c79": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c79"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c78": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c78"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c74": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c74"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c77": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c77"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c62": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c62"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c61": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c61"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c63": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c63"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c6d": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c6d"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c7f": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c7f"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c64": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c64"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c7d": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c7d"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c67": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c67"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c6b": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c6b"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c60": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c60"
+          },
+          "fd6f0e4e-166f-85bc-3e78-84bf4f412c7e": {
+            "id": "fd6f0e4e-166f-85bc-3e78-84bf4f412c7e"
+          }
+        },
+        "transitions": {
+          "88dd971f-0b57-8aa7-191a-f5ceeadf9553": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-191a-f5ceeadf9553"
+          },
+          "88dd971f-0b57-8aa7-191a-f5ceeadf9559": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-191a-f5ceeadf9559"
+          },
+          "88dd971f-0b57-8aa7-4593-52c63fc2c7f2": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-4593-52c63fc2c7f2"
+          },
+          "d6f54bb0-ebac-13bf-ea5d-9312e73b838b": {
+            "label": "package delivered",
+            "id": "d6f54bb0-ebac-13bf-ea5d-9312e73b838b"
+          },
+          "88dd971f-0b57-8aa7-191a-f5ceeadf9558": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-191a-f5ceeadf9558"
+          },
+          "88dd971f-0b57-8aa7-191a-f5ceeadf955b": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-191a-f5ceeadf955b"
+          },
+          "88dd971f-0b57-8aa7-4593-52c63fc2c7e3": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-4593-52c63fc2c7e3"
+          },
+          "88dd971f-0b57-8aa7-191a-f5ceeadf955a": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-191a-f5ceeadf955a"
+          },
+          "88dd971f-0b57-8aa7-191a-f5ceeadf9540": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-191a-f5ceeadf9540"
+          },
+          "88dd971f-0b57-8aa7-191a-f5ceeadf955c": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-191a-f5ceeadf955c"
+          },
+          "88dd971f-0b57-8aa7-77d9-4773fb173c65": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-77d9-4773fb173c65"
+          },
+          "88dd971f-0b57-8aa7-191a-f5ceeadf9541": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-191a-f5ceeadf9541"
+          },
+          "d6f54bb0-ebac-13bf-aa08-9c3c073735d7": {
+            "label": "item out of stock",
+            "id": "d6f54bb0-ebac-13bf-aa08-9c3c073735d7"
+          },
+          "d6f54bb0-ebac-13bf-5c2f-3c4c14864320": {
+            "label": "send package",
+            "id": "d6f54bb0-ebac-13bf-5c2f-3c4c14864320"
+          },
+          "88dd971f-0b57-8aa7-77d9-4773fb173c6d": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-77d9-4773fb173c6d"
+          },
+          "d6f54bb0-ebac-13bf-0505-cdbbfd3cf175": {
+            "label": "confirm order",
+            "id": "d6f54bb0-ebac-13bf-0505-cdbbfd3cf175"
+          },
+          "88dd971f-0b57-8aa7-191a-f5ceeadf9552": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-191a-f5ceeadf9552"
+          },
+          "88dd971f-0b57-8aa7-3395-331a62924ea4": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-3395-331a62924ea4"
+          },
+          "d6f54bb0-ebac-13bf-4243-cf3ff855322e": {
+            "label": "create package",
+            "id": "d6f54bb0-ebac-13bf-4243-cf3ff855322e"
+          },
+          "88dd971f-0b57-8aa7-191a-f5ceeadf9542": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-191a-f5ceeadf9542"
+          },
+          "d6f54bb0-ebac-13bf-05f3-82a24b67bc5b": {
+            "label": "reorder item",
+            "id": "d6f54bb0-ebac-13bf-05f3-82a24b67bc5b"
+          },
+          "d6f54bb0-ebac-13bf-7574-c107b4725e14": {
+            "label": "pay order",
+            "id": "d6f54bb0-ebac-13bf-7574-c107b4725e14"
+          },
+          "88dd971f-0b57-8aa7-191a-f5ceeadf955f": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-191a-f5ceeadf955f"
+          },
+          "d6f54bb0-ebac-13bf-3d76-ef7370737302": {
+            "label": "pick item",
+            "id": "d6f54bb0-ebac-13bf-3d76-ef7370737302"
+          },
+          "88dd971f-0b57-8aa7-191a-f5ceeadf9545": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-191a-f5ceeadf9545"
+          },
+          "d6f54bb0-ebac-13bf-59e4-caedf7ddcf95": {
+            "label": "failed delivery",
+            "id": "d6f54bb0-ebac-13bf-59e4-caedf7ddcf95"
+          },
+          "d6f54bb0-ebac-13bf-1125-cb4a3065ceb3": {
+            "label": "place order",
+            "id": "d6f54bb0-ebac-13bf-1125-cb4a3065ceb3"
+          },
+          "88dd971f-0b57-8aa7-191a-f5ceeadf9544": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-191a-f5ceeadf9544"
+          },
+          "d6f54bb0-ebac-13bf-fc6d-e33e0e0ab431": {
+            "label": "payment reminder",
+            "id": "d6f54bb0-ebac-13bf-fc6d-e33e0e0ab431"
+          },
+          "88dd971f-0b57-8aa7-191a-f5ceeadf9551": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-191a-f5ceeadf9551"
+          }
+        },
+        "arcs": [
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c6e",
+                "d6f54bb0-ebac-13bf-1125-cb4a3065ceb3"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-77d9-4773fb173c6d",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c6d"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c6a",
+                "88dd971f-0b57-8aa7-77d9-4773fb173c6d"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c6b",
+                "88dd971f-0b57-8aa7-4593-52c63fc2c7e3"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-4593-52c63fc2c7e3",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c68"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c68",
+                "d6f54bb0-ebac-13bf-fc6d-e33e0e0ab431"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-fc6d-e33e0e0ab431",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c67"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c67",
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9551"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c67",
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9552"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9552",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c69"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c6b",
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9553"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9553",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c69"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c69",
+                "d6f54bb0-ebac-13bf-7574-c107b4725e14"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-7574-c107b4725e14",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c6a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c64",
+                "88dd971f-0b57-8aa7-77d9-4773fb173c6d"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c65",
+                "d6f54bb0-ebac-13bf-aa08-9c3c073735d7"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-aa08-9c3c073735d7",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c63"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c65",
+                "88dd971f-0b57-8aa7-191a-f5ceeadf955c"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-191a-f5ceeadf955c",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c63"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c63",
+                "88dd971f-0b57-8aa7-3395-331a62924ea4"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-77d9-4773fb173c65",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c64"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-3395-331a62924ea4",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c62"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c61",
+                "88dd971f-0b57-8aa7-77d9-4773fb173c65"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c62",
+                "d6f54bb0-ebac-13bf-4243-cf3ff855322e"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-4243-cf3ff855322e",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c60"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c62",
+                "88dd971f-0b57-8aa7-191a-f5ceeadf955f"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-191a-f5ceeadf955f",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c60"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c60",
+                "d6f54bb0-ebac-13bf-ea5d-9312e73b838b"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-ea5d-9312e73b838b",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c61"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c60",
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9558"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9558",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c61"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-3395-331a62924ea4",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7f"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7e",
+                "88dd971f-0b57-8aa7-77d9-4773fb173c65"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7f",
+                "d6f54bb0-ebac-13bf-3d76-ef7370737302"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-3d76-ef7370737302",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7e"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7f",
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9559"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9559",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7e"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c65",
+                "88dd971f-0b57-8aa7-191a-f5ceeadf955a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-191a-f5ceeadf955a",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c64"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7c",
+                "88dd971f-0b57-8aa7-77d9-4773fb173c6d"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7d",
+                "d6f54bb0-ebac-13bf-0505-cdbbfd3cf175"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-0505-cdbbfd3cf175",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7c"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7d",
+                "88dd971f-0b57-8aa7-191a-f5ceeadf955b"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-191a-f5ceeadf955b",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7c"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7a",
+                "88dd971f-0b57-8aa7-77d9-4773fb173c6d"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7b",
+                "d6f54bb0-ebac-13bf-5c2f-3c4c14864320"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-5c2f-3c4c14864320",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7b",
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9544"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9544",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c78",
+                "88dd971f-0b57-8aa7-77d9-4773fb173c6d"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c79",
+                "d6f54bb0-ebac-13bf-05f3-82a24b67bc5b"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-05f3-82a24b67bc5b",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c78"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c79",
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9545"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9545",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c78"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c76",
+                "88dd971f-0b57-8aa7-77d9-4773fb173c6d"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c77",
+                "88dd971f-0b57-8aa7-4593-52c63fc2c7f2"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-4593-52c63fc2c7f2",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c75"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c75",
+                "d6f54bb0-ebac-13bf-59e4-caedf7ddcf95"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-59e4-caedf7ddcf95",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c74"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c74",
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9540"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c74",
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9541"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9541",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c76"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c77",
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9542"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9542",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c76"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9551",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c68"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-191a-f5ceeadf9540",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c75"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-1125-cb4a3065ceb3",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c6b"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-1125-cb4a3065ceb3",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c65"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-1125-cb4a3065ceb3",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7d"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-1125-cb4a3065ceb3",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c7b"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-1125-cb4a3065ceb3",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c79"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-1125-cb4a3065ceb3",
+                "fd6f0e4e-166f-85bc-3e78-84bf4f412c77"
+              ]
+            },
+            "weight": 1
+          }
+        ],
+        "initial_marking": null,
+        "final_markings": null
+      },
+      "initial_marking": {
+        "fd6f0e4e-166f-85bc-3e78-84bf4f412c6e": 1
+      },
+      "final_marking": {
+        "fd6f0e4e-166f-85bc-3e78-84bf4f412c6d": 1
+      }
+    },
+    "orders": {
+      "net": {
+        "places": {
+          "fd6f0e4e-166f-85bc-0012-5d9250be8b4a": {
+            "id": "fd6f0e4e-166f-85bc-0012-5d9250be8b4a"
+          },
+          "fd6f0e4e-166f-85bc-0012-5d9250be8b44": {
+            "id": "fd6f0e4e-166f-85bc-0012-5d9250be8b44"
+          },
+          "fd6f0e4e-166f-85bc-0012-5d9250be8b4e": {
+            "id": "fd6f0e4e-166f-85bc-0012-5d9250be8b4e"
+          },
+          "fd6f0e4e-166f-85bc-0012-5d9250be8b47": {
+            "id": "fd6f0e4e-166f-85bc-0012-5d9250be8b47"
+          },
+          "fd6f0e4e-166f-85bc-0012-5d9250be8b46": {
+            "id": "fd6f0e4e-166f-85bc-0012-5d9250be8b46"
+          },
+          "fd6f0e4e-166f-85bc-0012-5d9250be8b49": {
+            "id": "fd6f0e4e-166f-85bc-0012-5d9250be8b49"
+          },
+          "fd6f0e4e-166f-85bc-0012-5d9250be8b4d": {
+            "id": "fd6f0e4e-166f-85bc-0012-5d9250be8b4d"
+          },
+          "fd6f0e4e-166f-85bc-0012-5d9250be8b48": {
+            "id": "fd6f0e4e-166f-85bc-0012-5d9250be8b48"
+          },
+          "fd6f0e4e-166f-85bc-0012-5d9250be8b4b": {
+            "id": "fd6f0e4e-166f-85bc-0012-5d9250be8b4b"
+          }
+        },
+        "transitions": {
+          "88dd971f-0b57-8aa7-4370-81e517f5878e": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-4370-81e517f5878e"
+          },
+          "d6f54bb0-ebac-13bf-c21b-2065e8e87a32": {
+            "label": "confirm order",
+            "id": "d6f54bb0-ebac-13bf-c21b-2065e8e87a32"
+          },
+          "88dd971f-0b57-8aa7-4370-81e517f58781": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-4370-81e517f58781"
+          },
+          "d6f54bb0-ebac-13bf-1420-98ede88f2c08": {
+            "label": "place order",
+            "id": "d6f54bb0-ebac-13bf-1420-98ede88f2c08"
+          },
+          "88dd971f-0b57-8aa7-4370-81e517f5878c": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-4370-81e517f5878c"
+          },
+          "88dd971f-0b57-8aa7-1327-a7e99c8b45f8": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-1327-a7e99c8b45f8"
+          },
+          "88dd971f-0b57-8aa7-4370-81e517f5878f": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-4370-81e517f5878f"
+          },
+          "88dd971f-0b57-8aa7-200c-a537d057ece6": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-200c-a537d057ece6"
+          },
+          "d6f54bb0-ebac-13bf-31d4-723ca7dfdfbc": {
+            "label": "payment reminder",
+            "id": "d6f54bb0-ebac-13bf-31d4-723ca7dfdfbc"
+          },
+          "d6f54bb0-ebac-13bf-96a4-7b4d0af6d687": {
+            "label": "pay order",
+            "id": "d6f54bb0-ebac-13bf-96a4-7b4d0af6d687"
+          }
+        },
+        "arcs": [
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b4d",
+                "d6f54bb0-ebac-13bf-1420-98ede88f2c08"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-200c-a537d057ece6",
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b4e"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b49",
+                "88dd971f-0b57-8aa7-200c-a537d057ece6"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b48",
+                "88dd971f-0b57-8aa7-1327-a7e99c8b45f8"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-1327-a7e99c8b45f8",
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b4b"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b4b",
+                "d6f54bb0-ebac-13bf-31d4-723ca7dfdfbc"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-31d4-723ca7dfdfbc",
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b44"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b44",
+                "88dd971f-0b57-8aa7-4370-81e517f5878c"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b44",
+                "88dd971f-0b57-8aa7-4370-81e517f5878f"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-4370-81e517f5878f",
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b4a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b48",
+                "88dd971f-0b57-8aa7-4370-81e517f5878e"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-4370-81e517f5878e",
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b4a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b4a",
+                "d6f54bb0-ebac-13bf-96a4-7b4d0af6d687"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-96a4-7b4d0af6d687",
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b49"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b47",
+                "88dd971f-0b57-8aa7-200c-a537d057ece6"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b46",
+                "d6f54bb0-ebac-13bf-c21b-2065e8e87a32"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-c21b-2065e8e87a32",
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b47"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b46",
+                "88dd971f-0b57-8aa7-4370-81e517f58781"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-4370-81e517f58781",
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b47"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-4370-81e517f5878c",
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b4b"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-1420-98ede88f2c08",
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b48"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-1420-98ede88f2c08",
+                "fd6f0e4e-166f-85bc-0012-5d9250be8b46"
+              ]
+            },
+            "weight": 1
+          }
+        ],
+        "initial_marking": null,
+        "final_markings": null
+      },
+      "initial_marking": {
+        "fd6f0e4e-166f-85bc-0012-5d9250be8b4d": 1
+      },
+      "final_marking": {
+        "fd6f0e4e-166f-85bc-0012-5d9250be8b4e": 1
+      }
+    },
+    "packages": {
+      "net": {
+        "places": {
+          "fd6f0e4e-166f-85bc-389b-53663b8119b9": {
+            "id": "fd6f0e4e-166f-85bc-389b-53663b8119b9"
+          },
+          "fd6f0e4e-166f-85bc-389b-53663b8119be": {
+            "id": "fd6f0e4e-166f-85bc-389b-53663b8119be"
+          },
+          "fd6f0e4e-166f-85bc-389b-53663b8119b2": {
+            "id": "fd6f0e4e-166f-85bc-389b-53663b8119b2"
+          },
+          "fd6f0e4e-166f-85bc-389b-53663b8119b1": {
+            "id": "fd6f0e4e-166f-85bc-389b-53663b8119b1"
+          },
+          "fd6f0e4e-166f-85bc-389b-53663b8119b4": {
+            "id": "fd6f0e4e-166f-85bc-389b-53663b8119b4"
+          },
+          "fd6f0e4e-166f-85bc-389b-53663b8119ba": {
+            "id": "fd6f0e4e-166f-85bc-389b-53663b8119ba"
+          },
+          "fd6f0e4e-166f-85bc-389b-53663b8119bd": {
+            "id": "fd6f0e4e-166f-85bc-389b-53663b8119bd"
+          },
+          "fd6f0e4e-166f-85bc-389b-53663b8119bf": {
+            "id": "fd6f0e4e-166f-85bc-389b-53663b8119bf"
+          },
+          "fd6f0e4e-166f-85bc-389b-53663b8119b0": {
+            "id": "fd6f0e4e-166f-85bc-389b-53663b8119b0"
+          },
+          "fd6f0e4e-166f-85bc-389b-53663b8119b3": {
+            "id": "fd6f0e4e-166f-85bc-389b-53663b8119b3"
+          },
+          "fd6f0e4e-166f-85bc-389b-53663b8119b5": {
+            "id": "fd6f0e4e-166f-85bc-389b-53663b8119b5"
+          }
+        },
+        "transitions": {
+          "88dd971f-0b57-8aa7-a021-df28f1a36c91": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-a021-df28f1a36c91"
+          },
+          "88dd971f-0b57-8aa7-a021-df28f1a36c98": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-a021-df28f1a36c98"
+          },
+          "88dd971f-0b57-8aa7-a021-df28f1a36c95": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-a021-df28f1a36c95"
+          },
+          "d6f54bb0-ebac-13bf-fe24-af3fbee23a07": {
+            "label": "create package",
+            "id": "d6f54bb0-ebac-13bf-fe24-af3fbee23a07"
+          },
+          "d6f54bb0-ebac-13bf-d552-3d70d052d9e4": {
+            "label": "package delivered",
+            "id": "d6f54bb0-ebac-13bf-d552-3d70d052d9e4"
+          },
+          "d6f54bb0-ebac-13bf-0e10-8ee7f199dbcf": {
+            "label": "send package",
+            "id": "d6f54bb0-ebac-13bf-0e10-8ee7f199dbcf"
+          },
+          "88dd971f-0b57-8aa7-a021-df28f1a36c9b": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-a021-df28f1a36c9b"
+          },
+          "d6f54bb0-ebac-13bf-243e-f4c13d4ab7d1": {
+            "label": "failed delivery",
+            "id": "d6f54bb0-ebac-13bf-243e-f4c13d4ab7d1"
+          },
+          "88dd971f-0b57-8aa7-956e-7d714bc77234": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-956e-7d714bc77234"
+          },
+          "88dd971f-0b57-8aa7-272e-79f4dbbd7fc1": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-272e-79f4dbbd7fc1"
+          },
+          "88dd971f-0b57-8aa7-a021-df28f1a36c90": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-a021-df28f1a36c90"
+          },
+          "88dd971f-0b57-8aa7-a021-df28f1a36c9a": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-a021-df28f1a36c9a"
+          },
+          "88dd971f-0b57-8aa7-c5d5-2620eafe76fe": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-c5d5-2620eafe76fe"
+          },
+          "88dd971f-0b57-8aa7-a021-df28f1a36c96": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-a021-df28f1a36c96"
+          }
+        },
+        "arcs": [
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119b9",
+                "88dd971f-0b57-8aa7-272e-79f4dbbd7fc1"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119be",
+                "88dd971f-0b57-8aa7-956e-7d714bc77234"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119bd",
+                "d6f54bb0-ebac-13bf-fe24-af3fbee23a07"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-fe24-af3fbee23a07",
+                "fd6f0e4e-166f-85bc-389b-53663b8119bf"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119bd",
+                "88dd971f-0b57-8aa7-a021-df28f1a36c98"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-a021-df28f1a36c98",
+                "fd6f0e4e-166f-85bc-389b-53663b8119bf"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119bf",
+                "d6f54bb0-ebac-13bf-d552-3d70d052d9e4"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-d552-3d70d052d9e4",
+                "fd6f0e4e-166f-85bc-389b-53663b8119be"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119bf",
+                "88dd971f-0b57-8aa7-a021-df28f1a36c9b"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-a021-df28f1a36c9b",
+                "fd6f0e4e-166f-85bc-389b-53663b8119be"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119bd",
+                "88dd971f-0b57-8aa7-a021-df28f1a36c9a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-a021-df28f1a36c9a",
+                "fd6f0e4e-166f-85bc-389b-53663b8119be"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119b1",
+                "88dd971f-0b57-8aa7-956e-7d714bc77234"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119b0",
+                "d6f54bb0-ebac-13bf-0e10-8ee7f199dbcf"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-0e10-8ee7f199dbcf",
+                "fd6f0e4e-166f-85bc-389b-53663b8119b1"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119b0",
+                "88dd971f-0b57-8aa7-a021-df28f1a36c95"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-a021-df28f1a36c95",
+                "fd6f0e4e-166f-85bc-389b-53663b8119b1"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119b3",
+                "88dd971f-0b57-8aa7-956e-7d714bc77234"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119b2",
+                "88dd971f-0b57-8aa7-c5d5-2620eafe76fe"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-c5d5-2620eafe76fe",
+                "fd6f0e4e-166f-85bc-389b-53663b8119b4"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119b4",
+                "d6f54bb0-ebac-13bf-243e-f4c13d4ab7d1"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-243e-f4c13d4ab7d1",
+                "fd6f0e4e-166f-85bc-389b-53663b8119b5"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119b5",
+                "88dd971f-0b57-8aa7-a021-df28f1a36c96"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119b5",
+                "88dd971f-0b57-8aa7-a021-df28f1a36c91"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-a021-df28f1a36c91",
+                "fd6f0e4e-166f-85bc-389b-53663b8119b3"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-389b-53663b8119b2",
+                "88dd971f-0b57-8aa7-a021-df28f1a36c90"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-a021-df28f1a36c90",
+                "fd6f0e4e-166f-85bc-389b-53663b8119b3"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-272e-79f4dbbd7fc1",
+                "fd6f0e4e-166f-85bc-389b-53663b8119bd"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-272e-79f4dbbd7fc1",
+                "fd6f0e4e-166f-85bc-389b-53663b8119b0"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-272e-79f4dbbd7fc1",
+                "fd6f0e4e-166f-85bc-389b-53663b8119b2"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-956e-7d714bc77234",
+                "fd6f0e4e-166f-85bc-389b-53663b8119ba"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-a021-df28f1a36c96",
+                "fd6f0e4e-166f-85bc-389b-53663b8119b4"
+              ]
+            },
+            "weight": 1
+          }
+        ],
+        "initial_marking": null,
+        "final_markings": null
+      },
+      "initial_marking": {
+        "fd6f0e4e-166f-85bc-389b-53663b8119b9": 1
+      },
+      "final_marking": {
+        "fd6f0e4e-166f-85bc-389b-53663b8119ba": 1
+      }
+    },
+    "products": {
+      "net": {
+        "places": {
+          "fd6f0e4e-166f-85bc-eea9-0aa769b1462f": {
+            "id": "fd6f0e4e-166f-85bc-eea9-0aa769b1462f"
+          },
+          "fd6f0e4e-166f-85bc-eea9-0aa769b1462c": {
+            "id": "fd6f0e4e-166f-85bc-eea9-0aa769b1462c"
+          },
+          "fd6f0e4e-166f-85bc-eea9-0aa769b14628": {
+            "id": "fd6f0e4e-166f-85bc-eea9-0aa769b14628"
+          },
+          "fd6f0e4e-166f-85bc-eea9-0aa769b1462a": {
+            "id": "fd6f0e4e-166f-85bc-eea9-0aa769b1462a"
+          },
+          "fd6f0e4e-166f-85bc-eea9-0aa769b1462b": {
+            "id": "fd6f0e4e-166f-85bc-eea9-0aa769b1462b"
+          }
+        },
+        "transitions": {
+          "d6f54bb0-ebac-13bf-4975-6e4a92ea1175": {
+            "label": "place order",
+            "id": "d6f54bb0-ebac-13bf-4975-6e4a92ea1175"
+          },
+          "d6f54bb0-ebac-13bf-676b-c9966f8de75e": {
+            "label": "confirm order",
+            "id": "d6f54bb0-ebac-13bf-676b-c9966f8de75e"
+          },
+          "d6f54bb0-ebac-13bf-8bd2-a22163877e15": {
+            "label": "item out of stock",
+            "id": "d6f54bb0-ebac-13bf-8bd2-a22163877e15"
+          },
+          "88dd971f-0b57-8aa7-5723-27d7ee8e4c37": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-5723-27d7ee8e4c37"
+          },
+          "d6f54bb0-ebac-13bf-fd94-96ceb75419fd": {
+            "label": "reorder item",
+            "id": "d6f54bb0-ebac-13bf-fd94-96ceb75419fd"
+          },
+          "d6f54bb0-ebac-13bf-6ee3-ed285c6661ae": {
+            "label": "package delivered",
+            "id": "d6f54bb0-ebac-13bf-6ee3-ed285c6661ae"
+          },
+          "d6f54bb0-ebac-13bf-f505-f0149d6dd54f": {
+            "label": "create package",
+            "id": "d6f54bb0-ebac-13bf-f505-f0149d6dd54f"
+          },
+          "88dd971f-0b57-8aa7-13e9-d278854c7dff": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-13e9-d278854c7dff"
+          },
+          "d6f54bb0-ebac-13bf-afd8-9836ba2976c8": {
+            "label": "send package",
+            "id": "d6f54bb0-ebac-13bf-afd8-9836ba2976c8"
+          },
+          "d6f54bb0-ebac-13bf-d6db-474456e0d846": {
+            "label": "payment reminder",
+            "id": "d6f54bb0-ebac-13bf-d6db-474456e0d846"
+          },
+          "88dd971f-0b57-8aa7-5723-27d7ee8e4c34": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-5723-27d7ee8e4c34"
+          },
+          "d6f54bb0-ebac-13bf-6e6d-2e1f95a359bf": {
+            "label": "failed delivery",
+            "id": "d6f54bb0-ebac-13bf-6e6d-2e1f95a359bf"
+          },
+          "d6f54bb0-ebac-13bf-7098-fa2e501488cf": {
+            "label": "pick item",
+            "id": "d6f54bb0-ebac-13bf-7098-fa2e501488cf"
+          },
+          "88dd971f-0b57-8aa7-79b3-f969be242618": {
+            "label": null,
+            "id": "88dd971f-0b57-8aa7-79b3-f969be242618"
+          },
+          "d6f54bb0-ebac-13bf-64d9-154e727410bb": {
+            "label": "pay order",
+            "id": "d6f54bb0-ebac-13bf-64d9-154e727410bb"
+          }
+        },
+        "arcs": [
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462c",
+                "88dd971f-0b57-8aa7-79b3-f969be242618"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-eea9-0aa769b14628",
+                "88dd971f-0b57-8aa7-5723-27d7ee8e4c37"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-5723-27d7ee8e4c37",
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462b"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462b",
+                "d6f54bb0-ebac-13bf-676b-c9966f8de75e"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-676b-c9966f8de75e",
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462b",
+                "d6f54bb0-ebac-13bf-f505-f0149d6dd54f"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-f505-f0149d6dd54f",
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462b",
+                "d6f54bb0-ebac-13bf-6e6d-2e1f95a359bf"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-6e6d-2e1f95a359bf",
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462b",
+                "d6f54bb0-ebac-13bf-8bd2-a22163877e15"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-8bd2-a22163877e15",
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462b",
+                "d6f54bb0-ebac-13bf-6ee3-ed285c6661ae"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-6ee3-ed285c6661ae",
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462b",
+                "d6f54bb0-ebac-13bf-64d9-154e727410bb"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-64d9-154e727410bb",
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462b",
+                "d6f54bb0-ebac-13bf-d6db-474456e0d846"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-d6db-474456e0d846",
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462b",
+                "d6f54bb0-ebac-13bf-7098-fa2e501488cf"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-7098-fa2e501488cf",
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462b",
+                "d6f54bb0-ebac-13bf-4975-6e4a92ea1175"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-4975-6e4a92ea1175",
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462b",
+                "d6f54bb0-ebac-13bf-fd94-96ceb75419fd"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-fd94-96ceb75419fd",
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462b",
+                "d6f54bb0-ebac-13bf-afd8-9836ba2976c8"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "d6f54bb0-ebac-13bf-afd8-9836ba2976c8",
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462a"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462b",
+                "88dd971f-0b57-8aa7-5723-27d7ee8e4c34"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "PlaceTransition",
+              "nodes": [
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462a",
+                "88dd971f-0b57-8aa7-13e9-d278854c7dff"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-13e9-d278854c7dff",
+                "fd6f0e4e-166f-85bc-eea9-0aa769b14628"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-5723-27d7ee8e4c34",
+                "fd6f0e4e-166f-85bc-eea9-0aa769b1462f"
+              ]
+            },
+            "weight": 1
+          },
+          {
+            "from_to": {
+              "type": "TransitionPlace",
+              "nodes": [
+                "88dd971f-0b57-8aa7-79b3-f969be242618",
+                "fd6f0e4e-166f-85bc-eea9-0aa769b14628"
+              ]
+            },
+            "weight": 1
+          }
+        ],
+        "initial_marking": null,
+        "final_markings": null
+      },
+      "initial_marking": {
+        "fd6f0e4e-166f-85bc-eea9-0aa769b1462c": 1
+      },
+      "final_marking": {
+        "fd6f0e4e-166f-85bc-eea9-0aa769b1462f": 1
+      }
+    }
+  }
+}

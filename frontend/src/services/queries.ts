@@ -16,12 +16,17 @@ import {
     getConnectedComponentsCN,
     getHistogramEventPersp,
     getHistogramObjectPersp,
+    getEocpn,
     getLogGraphs,
     getOcelCollection,
     getOcelObjectTypes,
+    getOcpn,
+    getOcpnFromOcpt,
+    getIdentityOcpt,
     getOcpt,
     getTraditionalCN,
     mineIdentityOcpt,
+    mineOcpn,
     mineOcpt,
     getActivityResource,
     postSpecialActivities,
@@ -242,11 +247,12 @@ export const useExtendOcptWithIdentity = (
     nodeId: string,
     ocptFileId: string | null,
     ocelFileId: string | null,
+    noiseThreshold: number,
     shouldFetch: boolean
 ) => {
     return useQuery({
-        queryKey: ['extendOcptWithIdentity', nodeId, ocptFileId, ocelFileId],
-        queryFn: () => extendOcptWithIdentity(ocptFileId!, ocelFileId!),
+        queryKey: ['extendOcptWithIdentity', nodeId, ocptFileId, ocelFileId, noiseThreshold],
+        queryFn: () => extendOcptWithIdentity(ocptFileId!, ocelFileId!, noiseThreshold),
         enabled: Boolean(ocptFileId) && Boolean(ocelFileId) && shouldFetch,
         refetchOnWindowFocus: false,
     });
@@ -271,6 +277,31 @@ export const useGetAbstraction = (
         queryKey: ['getAbstraction', nodeId, fileId, sourceKind],
         queryFn: () => getAbstraction(fileId!, sourceKind!),
         enabled: Boolean(fileId) && Boolean(sourceKind) && shouldFetch,
+    });
+};
+
+export const useMineOcpn = (nodeId: string, fileId: string | null, shouldFetch: boolean) => {
+    return useQuery({
+        queryKey: ['mineOcpn', nodeId, fileId],
+        queryFn: () => mineOcpn(fileId!),
+        enabled: Boolean(fileId) && shouldFetch,
+        refetchOnWindowFocus: false,
+    });
+};
+export const useGetOcpn = (fileId: string | null, enabled: boolean = true) => {
+    return useQuery({
+        queryKey: ['getOcpn', fileId],
+        queryFn: () => getOcpn(fileId as string),
+        // This ensures it only runs if the fileId actually exists AND the component says it's okay to run
+        enabled: !!fileId && enabled,
+    });
+};
+
+export const useGetEocpn = (fileId: string | null, enabled: boolean = true) => {
+    return useQuery({
+        queryKey: ['getEocpn', fileId],
+        queryFn: () => getEocpn(fileId as string),
+        enabled: !!fileId && enabled,
         refetchOnWindowFocus: false,
     });
 };

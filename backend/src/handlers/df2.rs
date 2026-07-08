@@ -2,6 +2,7 @@ use crate::core::df2_miner::ocpt_generator::generate_ocpt_from_fileid;
 use crate::core::struct_converters::ocpt_frontend_backend::{
     backend_to_frontend, frontend_to_backend,
 };
+use crate::handlers::ocpn::persist_ocpn_from_ocpt;
 use crate::models::ocpt::{OCPT, OcptFE};
 use crate::traits::import_export::ImportableFromPath;
 use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
@@ -73,10 +74,22 @@ pub async fn apply_df2(
         )
     })?;
 
+    // Also persist the OCPN derived from this OCPT so mining creates both model artifacts.
+    let (ocpn_file_id, _) =
+        persist_ocpn_from_ocpt(&ocpt_backend)
+            .await
+            .map_err(|(status, message)| {
+                (
+                    status,
+                    format!("Convert generated OCPT -> OCPN failed: {message}"),
+                )
+            })?;
+
     // Respond with frontend shape and new file_id.
     let ocpt_frontend = backend_to_frontend(&ocpt_backend);
     let payload = json!({
         "file_id": generated_id,
+        "ocpn_file_id": ocpn_file_id,
         "ocpt": ocpt_frontend
     });
 

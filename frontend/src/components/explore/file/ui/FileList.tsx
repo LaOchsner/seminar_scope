@@ -42,6 +42,13 @@ const FileList: React.FC = () => {
                     handleFileUpload(file, 'ocptFile');
                 }
             }
+
+            const ocpnResponse = await fetch('/example_data/rust_ocpn.json');
+            if (ocpnResponse.ok) {
+                const ocpnBlob = await ocpnResponse.blob();
+                const ocpnFile = new File([ocpnBlob], 'rust_ocpn.json', { type: 'application/json' });
+                handleFileUpload(ocpnFile, 'ocpnFile');
+            }
         } catch (error) {
             console.error('Failed to load example files:', error);
         }
