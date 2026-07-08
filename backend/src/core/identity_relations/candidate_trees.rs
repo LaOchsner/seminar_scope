@@ -198,7 +198,7 @@ fn run_normalization(
     })
 }
 
-fn duplicate_node(node: &OCPTNode) -> OCPTNode {
+pub(super) fn duplicate_node(node: &OCPTNode) -> OCPTNode {
     match node {
         OCPTNode::Operator(operator) => OCPTNode::Operator(OCPTOperator {
             uuid: operator.uuid,

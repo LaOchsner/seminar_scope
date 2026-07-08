@@ -5,8 +5,8 @@ use crate::models::ocpt::{
 };
 
 use super::{
-    NoiseResistantRelationFamily, NormalizationError, Relation, check_noise_resistant_relation,
-    detect_object_merge_split, generate_candidate_trees,
+    NoiseResistantRelationFamily, NormalizationError, Relation, candidate_trees::duplicate_node,
+    check_noise_resistant_relation, detect_object_merge_split, generate_candidate_trees,
 };
 
 fn collect_activities(node: &OCPTNode, out: &mut HashSet<String>) {
@@ -316,9 +316,22 @@ pub fn get_best_extended_ocpt(
     relations: &[Relation],
     violation_threshold: f64,
 ) -> Result<ExtendedCandidateSelection, NormalizationError> {
+    let fallback_root = duplicate_node(&ocpt);
     let mut best: Option<ExtendedCandidateSelection> = None;
 
-    for candidate in generate_candidate_trees(ocpt)? {
+    let candidates = match generate_candidate_trees(ocpt) {
+        Ok(candidates) => candidates,
+        Err(_) => {
+            let extended = get_extended_ocpt(fallback_root, relations, None, violation_threshold);
+            return Ok(ExtendedCandidateSelection {
+                identity_relation_count: count_identity_relations(&extended),
+                root: extended,
+                normal_form_distance: usize::MAX,
+            });
+        }
+    };
+
+    for candidate in candidates {
         let extended = get_extended_ocpt(candidate.root, relations, None, violation_threshold);
         let identity_relation_count = count_identity_relations(&extended);
         let selection = ExtendedCandidateSelection {
@@ -410,6 +423,27 @@ mod tests {
             panic!("expected normal-form concurrency root");
         };
         assert_eq!(operator.children.len(), 3);
+    }
+
+    #[test]
+    fn best_extended_candidate_falls_back_to_original_tree_when_candidates_fail() {
+        let mut tree = leaf("all divergent");
+        let OCPTNode::Leaf(leaf) = &mut tree else {
+            unreachable!();
+        };
+        leaf.divergent_ob_types = leaf.related_ob_types.clone();
+
+        let selection = get_best_extended_ocpt(tree, &[], 0.0).unwrap();
+
+        assert_eq!(selection.identity_relation_count, 0);
+        assert_eq!(selection.normal_form_distance, usize::MAX);
+        let OCPTNode::Leaf(leaf) = selection.root else {
+            panic!("expected original leaf fallback");
+        };
+        assert_eq!(
+            leaf.activity_label,
+            OCPTLeafLabel::Activity("all divergent".to_string())
+        );
     }
 
     #[test]
