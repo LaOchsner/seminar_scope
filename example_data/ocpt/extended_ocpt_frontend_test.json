@@ -1,0 +1,339 @@
+{
+  "ots": [
+    "Order",
+    "Item",
+    "Invoice",
+    "Customer",
+    "Employee",
+    "Material",
+    "Package",
+    "Delivery"
+  ],
+  "hierarchy": {
+    "value": {
+      "operator": "sequence",
+      "identity": [
+        {
+          "left": [
+            "Order"
+          ],
+          "right": [
+            "Item"
+          ],
+          "kind": "sync"
+        },
+        {
+          "left": [
+            "Order"
+          ],
+          "right": [
+            "Invoice"
+          ],
+          "kind": "subsetSync"
+        },
+        {
+          "left": [
+            "Order"
+          ],
+          "right": [
+            "Item"
+          ],
+          "kind": "subsetSyncPartition"
+        },
+        {
+          "left": [
+            "Order"
+          ],
+          "right": [
+            "Item"
+          ],
+          "kind": "subsetSyncOverlap"
+        },
+        {
+          "left": [
+            "Order"
+          ],
+          "right": [
+            "Customer"
+          ],
+          "kind": "impConcurrent"
+        },
+        {
+          "left": [
+            "Order"
+          ],
+          "right": [
+            "Employee"
+          ],
+          "kind": "impOrdered"
+        },
+        {
+          "left": [
+            "Order"
+          ],
+          "right": [
+            "Invoice"
+          ],
+          "kind": "impBatch",
+          "batchSize": 3
+        },
+        {
+          "left": [
+            "Material"
+          ],
+          "right": [
+            "Item"
+          ],
+          "kind": "objectMerge"
+        },
+        {
+          "left": [
+            "Item"
+          ],
+          "right": [
+            "Package"
+          ],
+          "kind": "objectSplit"
+        }
+      ]
+    },
+    "children": [
+      {
+        "value": {
+          "activity": "Place Order",
+          "ots": [
+            {
+              "ot": "Order"
+            },
+            {
+              "ot": "Item",
+              "exhibits": [
+                "div"
+              ]
+            },
+            {
+              "ot": "Customer",
+              "exhibits": [
+                "div"
+              ]
+            }
+          ]
+        },
+        "children": []
+      },
+      {
+        "value": {
+          "operator": "parallel",
+          "identity": [
+            {
+              "left": [
+                "Order"
+              ],
+              "right": [
+                "Employee"
+              ],
+              "kind": "impOrdered"
+            },
+            {
+              "left": [
+                "Order"
+              ],
+              "right": [
+                "Invoice"
+              ],
+              "kind": "impBatch",
+              "batchSize": 2
+            }
+          ]
+        },
+        "children": [
+          {
+            "value": {
+              "activity": "Pack Item",
+              "ots": [
+                {
+                  "ot": "Order"
+                },
+                {
+                  "ot": "Item"
+                },
+                {
+                  "ot": "Employee",
+                  "exhibits": [
+                    "div"
+                  ]
+                }
+              ]
+            },
+            "children": []
+          },
+          {
+            "value": {
+              "activity": "Create Invoice",
+              "ots": [
+                {
+                  "ot": "Order"
+                },
+                {
+                  "ot": "Invoice",
+                  "exhibits": [
+                    "def"
+                  ]
+                }
+              ]
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "value": {
+          "operator": "xor",
+          "identity": [
+            {
+              "left": [
+                "Material"
+              ],
+              "right": [
+                "Item"
+              ],
+              "kind": "objectMerge"
+            },
+            {
+              "left": [
+                "Item"
+              ],
+              "right": [
+                "Package"
+              ],
+              "kind": "objectSplit"
+            }
+          ]
+        },
+        "children": [
+          {
+            "value": {
+              "activity": "Produce Item",
+              "ots": [
+                {
+                  "ot": "Material",
+                  "exhibits": [
+                    "con"
+                  ]
+                },
+                {
+                  "ot": "Item"
+                }
+              ]
+            },
+            "children": []
+          },
+          {
+            "value": {
+              "activity": "Ship Package",
+              "ots": [
+                {
+                  "ot": "Item"
+                },
+                {
+                  "ot": "Package"
+                },
+                {
+                  "ot": "Delivery",
+                  "exhibits": [
+                    "def"
+                  ]
+                }
+              ]
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "value": {
+          "operator": "loop",
+          "identity": [
+            {
+              "left": [
+                "Package"
+              ],
+              "right": [
+                "Delivery"
+              ],
+              "kind": "subsetSyncOverlap"
+            }
+          ]
+        },
+        "children": [
+          {
+            "value": {
+              "activity": "Deliver Package",
+              "ots": [
+                {
+                  "ot": "Package"
+                },
+                {
+                  "ot": "Delivery"
+                }
+              ]
+            },
+            "children": []
+          },
+          {
+            "value": {
+              "activity": "Retry Delivery",
+              "ots": [
+                {
+                  "ot": "Package",
+                  "exhibits": [
+                    "div"
+                  ]
+                },
+                {
+                  "ot": "Delivery",
+                  "exhibits": [
+                    "div"
+                  ]
+                }
+              ]
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "value": {
+          "operator": "sequence"
+        },
+        "children": [
+          {
+            "value": {
+              "activity": "Archive Material",
+              "ots": [
+                {
+                  "ot": "Material"
+                }
+              ]
+            },
+            "children": []
+          },
+          {
+            "value": {
+              "activity": "Close Order",
+              "ots": [
+                {
+                  "ot": "Order"
+                },
+                {
+                  "ot": "Invoice"
+                }
+              ]
+            },
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -13,6 +13,18 @@ import {
 import { Switch } from '~/components/ui/switch';
 import ObjectTypeLegend from '~/components/ocpt/ui/ObjectTypeLegend';
 
+const IDENTITY_RELATION_LEGEND = [
+    { symbol: '=', label: 'Strict synchronization' },
+    { symbol: '⊂=', label: 'Subset synchronization' },
+    { symbol: '⊂∩', label: 'Subset partition' },
+    { symbol: '⊂⊗', label: 'Subset overlap' },
+    { symbol: '⇒‖', label: 'Concurrent implication' },
+    { symbol: '⇒→', label: 'Ordered implication' },
+    { symbol: '⇒·k', label: 'Batch implication' },
+    { symbol: '↙↘', label: 'Object split' },
+    { symbol: '↘↙', label: 'Object merge' },
+];
+
 interface OcptSidebarProps {
     objectTypes: string[];
     coloring: ScaleOrdinal<string, string, never>;
@@ -75,6 +87,25 @@ const OcptSidebar: React.FC<OcptSidebarProps> = ({
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
+                <SidebarGroup>
+                <SidebarGroupLabel>Identity Relations</SidebarGroupLabel>
+                <SidebarGroupContent>
+                    <SidebarMenu>
+                        <SidebarMenuItem className="ml-1">
+                            <div className="flex flex-col gap-1 text-xs">
+                                {IDENTITY_RELATION_LEGEND.map((item) => (
+                                    <div key={item.symbol} className="flex items-center gap-2">
+                                        <span className="font-mono bg-indigo-50 text-indigo-600 rounded px-1.5 py-0.5 min-w-8 text-center">
+                                            {item.symbol}
+                                        </span>
+                                        <span className="text-muted-foreground">{item.label}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </SidebarGroupContent>
+            </SidebarGroup>
                 {conformanceData && (
                     <SidebarGroup>
                         <SidebarGroupLabel>Conformance</SidebarGroupLabel>
