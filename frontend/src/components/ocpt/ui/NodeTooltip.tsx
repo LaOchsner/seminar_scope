@@ -3,7 +3,9 @@ import { usePopper } from 'react-popper';
 import LegendRect from '~/components/ocpt/ui/LegendRect';
 import '~/components/ocpt/ui/NodeTooltip.css';
 import { isActivity, isExtendedProcessTreeOperatorNode, isIdentityOperatorApi } from '~/lib/ocpt/ocptGuards';
-import type { IdentityRelation } from '~/types/ocpt/identityOcpt.types';
+//import type { IdentityRelation } from '~/types/ocpt/identityOcpt.types';
+//import type { IdentityRelation } from '~/types/ocpt/ocpt.types';
+import type { IdentityRelation, IdentityRelationKind } from '~/types/ocpt/ocpt.types';
 import type { Activity } from '~/types/ocpt/ocpt.types';
 
 const ActivityTooltipContent = ({ value, coloring }: { value: Activity; coloring: any }) => {
@@ -44,14 +46,64 @@ const OtLabel = ({ ot, coloring }: { ot: string; coloring: any }) => (
     </span>
 );
 
+const getIdentityRelationLabel = (kind: IdentityRelation['kind']) => {
+    switch (kind) {
+        case 'sync':
+            return 'Strict Synchronization';
+        case 'subsetSync':
+            return 'Subset Synchronization';
+        case 'subsetSyncPartition':
+            return 'Subset Synchronization (Partition)';
+        case 'subsetSyncOverlap':
+            return 'Subset Synchronization (Overlap)';
+        case 'impConcurrent':
+            return 'Concurrent Implication';
+        case 'impOrdered':
+            return 'Ordered Implication';
+        case 'impBatch':
+            return 'Batch Implication';
+        case 'objectSplit':
+            return 'Object Split';
+        case 'objectMerge':
+            return 'Object Merge';
+        default:
+            return kind;
+    }
+};
+
+const getIdentityRelationSymbol = (relation: IdentityRelation) => {
+    switch (relation.kind) {
+        case 'sync':
+            return '=';
+        case 'subsetSync':
+            return '⊂=';
+        case 'subsetSyncPartition':
+            return '⊂∩';
+        case 'subsetSyncOverlap':
+            return '⊂⊗';
+        case 'impConcurrent':
+            return '⇒‖';
+        case 'impOrdered':
+            return '⇒→';
+        case 'impBatch':
+            return relation.batchSize != null ? `⇒·${relation.batchSize}` : '⇒·k';
+        case 'objectSplit':
+            return '↙↘';
+        case 'objectMerge':
+            return '↘↙';
+        default:
+            return '?';
+    }
+};
+
 const IdentityRelationItem = ({ relation, coloring }: { relation: IdentityRelation; coloring: any }) => {
-    const kindLabel =
-        relation.kind === 'sync' ? 'Synchronous' :
-        relation.kind === 'impConcurrent' ? 'Implicitly Concurrent' :
-        'Temporal Implication';
+    const kindLabel = getIdentityRelationLabel(relation.kind);
+    const symbol = getIdentityRelationSymbol(relation);
+
     return (
         <div className="py-1">
             <div className="text-xs text-gray-400 mb-0.5">{kindLabel}</div>
+
             <div className="flex items-center gap-1 text-sm flex-wrap">
                 {relation.left.map((ot, i) => (
                     <span key={i} className="inline-flex items-center">
@@ -59,9 +111,9 @@ const IdentityRelationItem = ({ relation, coloring }: { relation: IdentityRelati
                         <OtLabel ot={ot} coloring={coloring} />
                     </span>
                 ))}
-                <span className="text-gray-400">
-                    {relation.kind === 'sync' ? '=' : relation.kind === 'impConcurrent' ? '⇒‖' : '⇒→'}
-                </span>
+
+                <span className="text-gray-400">{symbol}</span>
+
                 {relation.right.map((ot, i) => (
                     <span key={i} className="inline-flex items-center">
                         {i > 0 && <span className="text-gray-400 mr-1">,</span>}
