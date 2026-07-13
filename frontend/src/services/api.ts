@@ -27,6 +27,9 @@ export const uploadFile = async (file: ExtendedFile) => {
         case 'ocpnFile':
             response = await api.post<any, AxiosResponse<any, any>, any>('/v1/upload/ocpn', formData);
             break;
+        case 'eocpnFile':
+            response = await api.post<any, AxiosResponse<any, any>, any>('/v1/upload/eocpn', formData);
+            break;
     }
 
     return response.data;

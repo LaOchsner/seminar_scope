@@ -55,8 +55,8 @@ export const nodeRegistry = {
     },
     eocpnFileNode: {
         category: 'file',
-        allowedAssetTypes: ['eocpnAsset'],
-        sidebar: null,
+        allowedAssetTypes: ['eocpnFile', 'eocpnAsset'],
+        sidebar: { label: 'EOCPN File', icon: 'chartNetwork', group: 'files' },
     },
     ocelCollectionNode: {
         category: 'file',

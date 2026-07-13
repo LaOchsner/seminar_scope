@@ -70,9 +70,12 @@ impl EOCPN {
                     .object_types
                     .iter()
                     .any(|object_type| object_type.is_empty())
+                || place.object_types.iter().collect::<BTreeSet<_>>().len()
+                    != place.object_types.len()
         }) {
             return false;
         }
+        let object_types = collect_object_types(&self.places);
 
         let transition_ids: BTreeSet<EOCPNId> = self
             .transitions
@@ -94,6 +97,14 @@ impl EOCPN {
             .map(|relation| relation.id)
             .collect();
         if identity_relation_ids.len() != self.identity_relations.len() {
+            return false;
+        }
+
+        if !self
+            .nets
+            .keys()
+            .all(|object_type| object_types.contains(object_type))
+        {
             return false;
         }
 
@@ -119,26 +130,22 @@ impl EOCPN {
             }
         }
 
-        if self.transitions.iter().any(|transition| {
-            transition
-                .function
-                .as_ref()
-                .is_some_and(|function| !function.is_valid())
-        }) {
+        if self
+            .transitions
+            .iter()
+            .any(|transition| !transition_function_is_consistent(self, transition))
+        {
             return false;
         }
 
         if self.identity_relations.iter().any(|relation| {
-            !relation.is_valid()
-                || relation
-                    .join_transition_id
-                    .is_some_and(|id| !transition_ids.contains(&id))
-                || relation
-                    .resolve_transition_id
-                    .is_some_and(|id| !transition_ids.contains(&id))
-                || relation
-                    .combined_place_id
-                    .is_some_and(|id| !place_ids.contains(&id))
+            !identity_relation_is_consistent(
+                self,
+                relation,
+                &place_ids,
+                &transition_ids,
+                &object_types,
+            )
         }) {
             return false;
         }
@@ -157,6 +164,7 @@ impl EOCPN {
                     id: place.id,
                     name: place.name,
                     object_types: vec![place.object_type],
+                    identity_role: None,
                     initial: place.initial,
                     final_place: place.final_place,
                     properties: place.properties,
@@ -194,17 +202,310 @@ impl EOCPN {
     }
 }
 
+fn collect_object_types(places: &[EOCPNPlace]) -> BTreeSet<String> {
+    places
+        .iter()
+        .flat_map(|place| place.object_types.iter().cloned())
+        .collect()
+}
+
+fn place_by_id<'a>(eocpn: &'a EOCPN, place_id: EOCPNId) -> Option<&'a EOCPNPlace> {
+    eocpn.places.iter().find(|place| place.id == place_id)
+}
+
+fn transition_input_places<'a>(eocpn: &'a EOCPN, transition_id: EOCPNId) -> Vec<&'a EOCPNPlace> {
+    eocpn
+        .arcs
+        .iter()
+        .filter_map(|arc| match (&arc.source, &arc.target) {
+            (EOCPNNodeRef::Place(place_id), EOCPNNodeRef::Transition(target_id))
+                if *target_id == transition_id =>
+            {
+                place_by_id(eocpn, *place_id)
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+fn transition_output_places<'a>(eocpn: &'a EOCPN, transition_id: EOCPNId) -> Vec<&'a EOCPNPlace> {
+    eocpn
+        .arcs
+        .iter()
+        .filter_map(|arc| match (&arc.source, &arc.target) {
+            (EOCPNNodeRef::Transition(source_id), EOCPNNodeRef::Place(place_id))
+                if *source_id == transition_id =>
+            {
+                place_by_id(eocpn, *place_id)
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+fn type_set_eq(left: &[String], right: &[String]) -> bool {
+    left.iter().collect::<BTreeSet<_>>() == right.iter().collect::<BTreeSet<_>>()
+}
+
+fn type_set_contains_all(container: &[String], values: &[String]) -> bool {
+    let container = container.iter().collect::<BTreeSet<_>>();
+    values.iter().all(|value| container.contains(value))
+}
+
+fn places_contain_type_set(places: &[&EOCPNPlace], object_types: &[String]) -> bool {
+    places
+        .iter()
+        .any(|place| type_set_eq(&place.object_types, object_types))
+}
+
+fn places_cover_type_set(places: &[&EOCPNPlace], object_types: &[String]) -> bool {
+    object_types.iter().all(|object_type| {
+        places
+            .iter()
+            .any(|place| place.object_types.contains(object_type))
+    })
+}
+
+fn transition_function_is_consistent(eocpn: &EOCPN, transition: &EOCPNTransition) -> bool {
+    let Some(function) = &transition.function else {
+        return true;
+    };
+    if !function.is_valid() {
+        return false;
+    }
+
+    let input_places = transition_input_places(eocpn, transition.id);
+    let output_places = transition_output_places(eocpn, transition.id);
+    match function {
+        EOCPNTransitionFunction::PassThrough => true,
+        EOCPNTransitionFunction::IdentityEnforcement {
+            left,
+            right,
+            combined,
+            ..
+        } => {
+            places_cover_type_set(&input_places, left)
+                && places_cover_type_set(&input_places, right)
+                && places_cover_type_set(&output_places, left)
+                && places_cover_type_set(&output_places, right)
+                && places_contain_type_set(&output_places, combined)
+        }
+        EOCPNTransitionFunction::IdentityResolution {
+            combined, outputs, ..
+        } => {
+            places_contain_type_set(&input_places, combined)
+                && outputs
+                    .iter()
+                    .all(|output| places_cover_type_set(&output_places, output))
+        }
+        EOCPNTransitionFunction::ObjectSplit { input, outputs, .. } => {
+            places_contain_type_set(&input_places, input)
+                && outputs
+                    .iter()
+                    .all(|output| places_contain_type_set(&output_places, output))
+        }
+        EOCPNTransitionFunction::ObjectMerge { inputs, output, .. } => {
+            inputs
+                .iter()
+                .all(|input| places_contain_type_set(&input_places, input))
+                && places_contain_type_set(&output_places, output)
+        }
+        EOCPNTransitionFunction::ExplicitMapping { inputs, outputs } => {
+            inputs
+                .iter()
+                .all(|flow| token_flow_matches_places(eocpn, flow, &input_places))
+                && outputs
+                    .iter()
+                    .all(|flow| token_flow_matches_places(eocpn, flow, &output_places))
+        }
+    }
+}
+
+fn token_flow_matches_places(
+    eocpn: &EOCPN,
+    flow: &EOCPNTokenFlow,
+    candidate_places: &[&EOCPNPlace],
+) -> bool {
+    let Some(place_id) = flow.place_id else {
+        return places_cover_type_set(candidate_places, &flow.object_types);
+    };
+
+    candidate_places.iter().any(|place| place.id == place_id)
+        && place_by_id(eocpn, place_id)
+            .is_some_and(|place| type_set_contains_all(&place.object_types, &flow.object_types))
+}
+
+fn identity_relation_is_consistent(
+    eocpn: &EOCPN,
+    relation: &EOCPNIdentityRelation,
+    place_ids: &BTreeSet<EOCPNId>,
+    transition_ids: &BTreeSet<EOCPNId>,
+    object_types: &BTreeSet<String>,
+) -> bool {
+    if !relation.is_valid()
+        || !type_set_eq(
+            &relation.combined,
+            &relation
+                .left
+                .iter()
+                .chain(relation.right.iter())
+                .cloned()
+                .collect::<Vec<_>>(),
+        )
+        || !relation
+            .left
+            .iter()
+            .chain(relation.right.iter())
+            .all(|object_type| object_types.contains(object_type))
+    {
+        return false;
+    }
+
+    let Some(join_transition_id) = relation.join_transition_id else {
+        return false;
+    };
+    let Some(resolve_transition_id) = relation.resolve_transition_id else {
+        return false;
+    };
+    if !transition_ids.contains(&join_transition_id)
+        || !transition_ids.contains(&resolve_transition_id)
+        || !relation
+            .combined_place_id
+            .is_some_and(|place_id| place_ids.contains(&place_id))
+        || !relation.control_place_id.is_some_and(|place_id| {
+            place_has_role_and_types(
+                eocpn,
+                place_id,
+                EOCPNIdentityPlaceRole::Control,
+                &relation.combined,
+            )
+        })
+    {
+        return false;
+    }
+
+    let semantic_place = match relation.kind {
+        EOCPNIdentityRelationKind::Sync => relation.sync_place_id,
+        EOCPNIdentityRelationKind::SubsetSync
+        | EOCPNIdentityRelationKind::SubsetSyncPartition
+        | EOCPNIdentityRelationKind::SubsetSyncOverlap => relation.subset_place_id,
+        EOCPNIdentityRelationKind::ImpConcurrent
+        | EOCPNIdentityRelationKind::ImpOrdered
+        | EOCPNIdentityRelationKind::ImpBatch(_) => relation.implication_place_id,
+        EOCPNIdentityRelationKind::ObjectSplit | EOCPNIdentityRelationKind::ObjectMerge => {
+            relation.combined_place_id
+        }
+    };
+    let semantic_role = match relation.kind {
+        EOCPNIdentityRelationKind::Sync => Some(EOCPNIdentityPlaceRole::Sync),
+        EOCPNIdentityRelationKind::SubsetSync
+        | EOCPNIdentityRelationKind::SubsetSyncPartition
+        | EOCPNIdentityRelationKind::SubsetSyncOverlap => Some(EOCPNIdentityPlaceRole::Subset),
+        EOCPNIdentityRelationKind::ImpConcurrent
+        | EOCPNIdentityRelationKind::ImpOrdered
+        | EOCPNIdentityRelationKind::ImpBatch(_) => Some(EOCPNIdentityPlaceRole::Implication),
+        EOCPNIdentityRelationKind::ObjectSplit | EOCPNIdentityRelationKind::ObjectMerge => None,
+    };
+    if let Some(role) = semantic_role {
+        if semantic_place != relation.combined_place_id
+            || !semantic_place.is_some_and(|place_id| {
+                place_has_role_and_types(eocpn, place_id, role, &relation.combined)
+            })
+        {
+            return false;
+        }
+    }
+
+    relation_transition_matches(eocpn, join_transition_id, relation, true)
+        && relation_transition_matches(eocpn, resolve_transition_id, relation, false)
+}
+
+fn place_has_role_and_types(
+    eocpn: &EOCPN,
+    place_id: EOCPNId,
+    role: EOCPNIdentityPlaceRole,
+    object_types: &[String],
+) -> bool {
+    place_by_id(eocpn, place_id).is_some_and(|place| {
+        place.identity_role == Some(role) && type_set_eq(&place.object_types, object_types)
+    })
+}
+
+fn relation_transition_matches(
+    eocpn: &EOCPN,
+    transition_id: EOCPNId,
+    relation: &EOCPNIdentityRelation,
+    expect_join: bool,
+) -> bool {
+    let Some(transition) = eocpn
+        .transitions
+        .iter()
+        .find(|transition| transition.id == transition_id)
+    else {
+        return false;
+    };
+
+    match (&transition.function, expect_join) {
+        (
+            Some(EOCPNTransitionFunction::IdentityEnforcement {
+                left,
+                right,
+                combined,
+                relation_kind,
+            }),
+            true,
+        ) => {
+            type_set_eq(left, &relation.left)
+                && type_set_eq(right, &relation.right)
+                && type_set_eq(combined, &relation.combined)
+                && relation_kind == &relation.kind
+        }
+        (
+            Some(EOCPNTransitionFunction::IdentityResolution {
+                combined,
+                outputs,
+                relation_kind,
+            }),
+            false,
+        ) => {
+            type_set_eq(combined, &relation.combined)
+                && outputs
+                    .iter()
+                    .any(|output| type_set_eq(output, &relation.left))
+                && outputs
+                    .iter()
+                    .any(|output| type_set_eq(output, &relation.right))
+                && relation_kind == &relation.kind
+        }
+        _ => false,
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct EOCPNPlace {
     pub id: EOCPNId,
     pub name: String,
     pub object_types: EOCPNObjectTypeSet,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub identity_role: Option<EOCPNIdentityPlaceRole>,
     #[serde(default)]
     pub initial: bool,
     #[serde(rename = "final", default)]
     pub final_place: bool,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub properties: EOCPNProperties,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub enum EOCPNIdentityPlaceRole {
+    #[serde(rename = "p_sync")]
+    Sync,
+    #[serde(rename = "p_control")]
+    Control,
+    #[serde(rename = "p_sub")]
+    Subset,
+    #[serde(rename = "p_imp")]
+    Implication,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -270,6 +571,14 @@ pub struct EOCPNIdentityRelation {
     pub resolve_transition_id: Option<EOCPNId>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub combined_place_id: Option<EOCPNId>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sync_place_id: Option<EOCPNId>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub subset_place_id: Option<EOCPNId>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub implication_place_id: Option<EOCPNId>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub control_place_id: Option<EOCPNId>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub properties: EOCPNProperties,
 }
@@ -665,9 +974,28 @@ mod tests {
     fn validates_identity_relation_links() {
         let mut eocpn = EOCPN::from_ocpn(sample_ocpn());
         eocpn.places.push(EOCPNPlace {
+            id: 11,
+            name: "item".to_string(),
+            object_types: vec!["item".to_string()],
+            identity_role: None,
+            initial: false,
+            final_place: false,
+            properties: EOCPNProperties::new(),
+        });
+        eocpn.places.push(EOCPNPlace {
             id: 6,
             name: "order_item_combined".to_string(),
             object_types: vec!["item".to_string(), "order".to_string()],
+            identity_role: Some(EOCPNIdentityPlaceRole::Sync),
+            initial: false,
+            final_place: false,
+            properties: EOCPNProperties::new(),
+        });
+        eocpn.places.push(EOCPNPlace {
+            id: 9,
+            name: "order_item_control".to_string(),
+            object_types: vec!["item".to_string(), "order".to_string()],
+            identity_role: Some(EOCPNIdentityPlaceRole::Control),
             initial: false,
             final_place: false,
             properties: EOCPNProperties::new(),
@@ -685,6 +1013,100 @@ mod tests {
             }),
             properties: EOCPNProperties::new(),
         });
+        eocpn.transitions.push(EOCPNTransition {
+            id: 10,
+            name: "sync_resolve".to_string(),
+            label: None,
+            silent: true,
+            function: Some(EOCPNTransitionFunction::IdentityResolution {
+                combined: vec!["order".to_string(), "item".to_string()],
+                outputs: vec![vec!["order".to_string()], vec!["item".to_string()]],
+                relation_kind: EOCPNIdentityRelationKind::Sync,
+            }),
+            properties: EOCPNProperties::new(),
+        });
+        eocpn.arcs.extend([
+            EOCPNArc {
+                id: 12,
+                source: EOCPNNodeRef::Place(1),
+                target: EOCPNNodeRef::Transition(7),
+                variable: false,
+                weight: 1,
+                properties: EOCPNProperties::new(),
+            },
+            EOCPNArc {
+                id: 13,
+                source: EOCPNNodeRef::Place(11),
+                target: EOCPNNodeRef::Transition(7),
+                variable: false,
+                weight: 1,
+                properties: EOCPNProperties::new(),
+            },
+            EOCPNArc {
+                id: 14,
+                source: EOCPNNodeRef::Transition(7),
+                target: EOCPNNodeRef::Place(1),
+                variable: false,
+                weight: 1,
+                properties: EOCPNProperties::new(),
+            },
+            EOCPNArc {
+                id: 15,
+                source: EOCPNNodeRef::Transition(7),
+                target: EOCPNNodeRef::Place(11),
+                variable: false,
+                weight: 1,
+                properties: EOCPNProperties::new(),
+            },
+            EOCPNArc {
+                id: 16,
+                source: EOCPNNodeRef::Transition(7),
+                target: EOCPNNodeRef::Place(6),
+                variable: false,
+                weight: 1,
+                properties: EOCPNProperties::new(),
+            },
+            EOCPNArc {
+                id: 17,
+                source: EOCPNNodeRef::Transition(7),
+                target: EOCPNNodeRef::Place(9),
+                variable: false,
+                weight: 1,
+                properties: EOCPNProperties::new(),
+            },
+            EOCPNArc {
+                id: 18,
+                source: EOCPNNodeRef::Place(6),
+                target: EOCPNNodeRef::Transition(10),
+                variable: false,
+                weight: 1,
+                properties: EOCPNProperties::new(),
+            },
+            EOCPNArc {
+                id: 19,
+                source: EOCPNNodeRef::Place(9),
+                target: EOCPNNodeRef::Transition(10),
+                variable: false,
+                weight: 1,
+                properties: EOCPNProperties::new(),
+            },
+            EOCPNArc {
+                id: 20,
+                source: EOCPNNodeRef::Transition(10),
+                target: EOCPNNodeRef::Place(1),
+                variable: false,
+                weight: 1,
+                properties: EOCPNProperties::new(),
+            },
+            EOCPNArc {
+                id: 21,
+                source: EOCPNNodeRef::Transition(10),
+                target: EOCPNNodeRef::Place(11),
+                variable: false,
+                weight: 1,
+                properties: EOCPNProperties::new(),
+            },
+        ]);
         eocpn.identity_relations.push(EOCPNIdentityRelation {
             id: 8,
             kind: EOCPNIdentityRelationKind::Sync,
@@ -692,8 +1114,12 @@ mod tests {
             right: vec!["item".to_string()],
             combined: vec!["item".to_string(), "order".to_string()],
             join_transition_id: Some(7),
-            resolve_transition_id: None,
+            resolve_transition_id: Some(10),
             combined_place_id: Some(6),
+            sync_place_id: Some(6),
+            subset_place_id: None,
+            implication_place_id: None,
+            control_place_id: Some(9),
             properties: EOCPNProperties::new(),
         });
 

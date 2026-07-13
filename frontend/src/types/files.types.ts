@@ -1,4 +1,4 @@
-export const fileTypes = ['ocptFile', 'ocelFile', 'ocpnFile', 'ocelCollectionFile'] as const;
+export const fileTypes = ['ocptFile', 'ocelFile', 'ocpnFile', 'eocpnFile', 'ocelCollectionFile'] as const;
 export type FileType = (typeof fileTypes)[number];
 export const otherTypes = [
     'ocptAsset',

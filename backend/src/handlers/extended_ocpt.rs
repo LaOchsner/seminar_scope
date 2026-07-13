@@ -11,9 +11,10 @@ use crate::models::ocel_collection::OCELCollection;
 use crate::models::ocpt::OCPT;
 use crate::traits::import_export::{ExportableToPath, ImportableFromPath};
 use axum::extract::{Path, Query};
-use axum::{Json, http::StatusCode, response::IntoResponse};
+use axum::{Json, http::StatusCode, response::IntoResponse, response::Response};
+use axum_extra::extract::Multipart;
 use serde::Deserialize;
-use serde_json::json;
+use serde_json::{Value, json};
 use std::io::ErrorKind;
 use tokio::fs;
 use uuid::Uuid;
@@ -186,6 +187,93 @@ pub async fn get_eocpn(Path(file_id): Path<String>) -> impl IntoResponse {
             .into_response(),
         Err((status, message)) => (status, message).into_response(),
     }
+}
+
+pub async fn post_eocpn(mut multipart: Multipart) -> Response {
+    let mut file_id: Option<String> = None;
+    let mut file_bytes: Option<bytes::Bytes> = None;
+
+    while let Some(field) = match multipart.next_field().await {
+        Ok(field) => field,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                format!("Malformed multipart: {err}"),
+            )
+                .into_response();
+        }
+    } {
+        match field.name().unwrap_or("") {
+            "file_id" => file_id = Some(field.text().await.unwrap_or_default()),
+            "file" => file_bytes = Some(field.bytes().await.unwrap_or_default()),
+            _ => {}
+        }
+    }
+
+    let (id, bytes) = match (file_id, file_bytes) {
+        (Some(id), Some(bytes)) if !id.is_empty() && !bytes.is_empty() => (id, bytes),
+        _ => return (StatusCode::BAD_REQUEST, "Missing file or fileId").into_response(),
+    };
+
+    let text = match str::from_utf8(&bytes) {
+        Ok(text) => text,
+        Err(err) => {
+            return (StatusCode::BAD_REQUEST, format!("File not UTF-8: {err}")).into_response();
+        }
+    };
+    let value: Value = match serde_json::from_str(text) {
+        Ok(value) => value,
+        Err(err) => {
+            return (StatusCode::BAD_REQUEST, format!("Invalid JSON: {err}")).into_response();
+        }
+    };
+
+    if let Err(err) = ensure_temp_dir().await {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to prepare storage: {err}"),
+        )
+            .into_response();
+    }
+
+    let eocpn: EOCPN = match serde_json::from_value(value) {
+        Ok(eocpn) => eocpn,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                format!("Invalid EOCPN payload: {err}"),
+            )
+                .into_response();
+        }
+    };
+    let eocpn = eocpn.normalize();
+
+    let path = format!("./temp/eocpn_{id}.json");
+    let pretty = match serde_json::to_string_pretty(&eocpn) {
+        Ok(serialized) => serialized,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Serialize EOCPN failed: {err}"),
+            )
+                .into_response();
+        }
+    };
+    if let Err(err) = fs::write(&path, pretty).await {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to save EOCPN: {err}"),
+        )
+            .into_response();
+    }
+
+    let resp = json!({
+        "status": "ok",
+        "kind": "eocpn",
+        "saved_as": path,
+        "is_valid": eocpn.is_valid(),
+    });
+    (StatusCode::OK, Json(resp)).into_response()
 }
 
 pub async fn delete_eocpn(Path(file_id): Path<String>) -> impl IntoResponse {

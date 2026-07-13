@@ -75,6 +75,11 @@ export const ASSET_TYPE_VISUALS: Record<AssetType, AssetTypeVisual> = {
         color: 'text-purple-500',
         label: 'OCPN',
     },
+    eocpnFile: {
+        icon: ChartNetwork,
+        color: 'text-amber-500',
+        label: 'EOCPN',
+    },
     ocptAsset: {
         icon: FileText,
         color: 'text-green-500',

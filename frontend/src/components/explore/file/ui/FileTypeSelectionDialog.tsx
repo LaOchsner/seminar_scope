@@ -25,6 +25,8 @@ const FileTypeSelectionDialog: React.FC<FileTypeSelectionDialogProps> = ({ isOpe
     const OcptIcon = ocptVisuals.icon;
     const ocpnVisuals = ASSET_TYPE_VISUALS.ocpnFile;
     const OcpnIcon = ocpnVisuals.icon;
+    const eocpnVisuals = ASSET_TYPE_VISUALS.eocpnFile;
+    const EocpnIcon = eocpnVisuals.icon;
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -73,6 +75,20 @@ const FileTypeSelectionDialog: React.FC<FileTypeSelectionDialogProps> = ({ isOpe
                             <div className="font-medium">OCPN File</div>
                             <div className="text-sm text-muted-foreground">
                                 Pre-processed Object-Centric Petri Net
+                            </div>
+                        </div>
+                    </Button>
+
+                    <Button
+                        onClick={() => handleFileTypeSelect('eocpnFile')}
+                        variant="outline"
+                        className="flex items-center gap-3 h-16 justify-start p-4"
+                    >
+                        <EocpnIcon className={`h-6 w-6 ${eocpnVisuals.color}`} />
+                        <div className="text-left">
+                            <div className="font-medium">EOCPN File</div>
+                            <div className="text-sm text-muted-foreground">
+                                Extended Object-Centric Petri Net with identity relations
                             </div>
                         </div>
                     </Button>

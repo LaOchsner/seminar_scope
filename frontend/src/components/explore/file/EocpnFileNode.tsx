@@ -14,7 +14,12 @@ const EocpnFileNode = memo<NodeProps<FileNode>>((props) => {
     const updateNodeData = useExploreFlowStore((s) => s.updateNodeData);
 
     const eocpnAsset = useMemo(
-        () => assets.find((asset) => asset.io === 'output' && asset.type === 'eocpnAsset'),
+        () =>
+            assets.find(
+                (asset) =>
+                    (asset.io === 'output' && asset.type === 'eocpnAsset') ||
+                    (asset.io === 'input' && asset.type === 'eocpnFile')
+            ),
         [assets]
     );
     const fileId = eocpnAsset?.id ?? null;

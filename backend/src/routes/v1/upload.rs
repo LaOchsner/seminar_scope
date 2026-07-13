@@ -1,3 +1,4 @@
+use crate::handlers::extended_ocpt::post_eocpn;
 use crate::handlers::ocel::post_ocel_binary;
 use crate::handlers::ocpn::post_ocpn;
 use crate::handlers::ocpt::post_ocpt;
@@ -16,5 +17,9 @@ pub fn router() -> Router {
         .route(
             "/ocpn",
             post(post_ocpn).layer(DefaultBodyLimit::max(50_0000 * 1024)),
+        )
+        .route(
+            "/eocpn",
+            post(post_eocpn).layer(DefaultBodyLimit::max(50_0000 * 1024)),
         )
 }

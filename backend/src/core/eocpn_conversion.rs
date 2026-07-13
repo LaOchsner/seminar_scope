@@ -2,8 +2,9 @@
 
 use crate::core::ocpn_conversion::{ConvertOcptToOcpnError, convert_ocpt_to_ocpn};
 use crate::models::eocpn::{
-    EOCPN, EOCPNArc, EOCPNId, EOCPNIdentityRelation, EOCPNIdentityRelationKind, EOCPNNodeRef,
-    EOCPNPlace, EOCPNProperties, EOCPNTransition, EOCPNTransitionFunction,
+    EOCPN, EOCPNArc, EOCPNId, EOCPNIdentityPlaceRole, EOCPNIdentityRelation,
+    EOCPNIdentityRelationKind, EOCPNNodeRef, EOCPNPlace, EOCPNProperties, EOCPNTransition,
+    EOCPNTransitionFunction,
 };
 use crate::models::ocpt::{
     IdentityRelation, IdentityRelationKind, OCPT, OCPTLeaf, OCPTLeafLabel, OCPTNode, OCPTOperator,
@@ -128,8 +129,12 @@ fn is_supported_identity_kind(kind: &IdentityRelationKind) -> bool {
     matches!(
         kind,
         IdentityRelationKind::Sync
+            | IdentityRelationKind::SubsetSync
             | IdentityRelationKind::SubsetSyncPartition
             | IdentityRelationKind::SubsetSyncOverlap
+            | IdentityRelationKind::ImpConcurrent
+            | IdentityRelationKind::ImpOrdered
+            | IdentityRelationKind::ImpBatch(_)
     )
 }
 
@@ -203,11 +208,25 @@ fn add_identity_layers(eocpn: &mut EOCPN, relations: &[IdentityRelation]) {
 
         let combined = combined_types(&relation);
         let prefix = identity_name_prefix(&relation.kind, &relation.left, &relation.right);
-        let combined_place_id = next_id(eocpn);
+        ensure_singleton_type_places(eocpn, &combined, &relation);
+        let identity_role = identity_place_role(&relation.kind);
+        let identity_place_id = next_id(eocpn);
         eocpn.places.push(EOCPNPlace {
-            id: combined_place_id,
-            name: format!("{prefix}_combined"),
+            id: identity_place_id,
+            name: format!("{prefix}_{}", identity_place_suffix(&relation.kind)),
             object_types: combined.clone(),
+            identity_role: Some(identity_role),
+            initial: false,
+            final_place: false,
+            properties: identity_properties(&relation),
+        });
+
+        let control_place_id = next_id(eocpn);
+        eocpn.places.push(EOCPNPlace {
+            id: control_place_id,
+            name: format!("{prefix}_control"),
+            object_types: combined.clone(),
+            identity_role: Some(EOCPNIdentityPlaceRole::Control),
             initial: false,
             final_place: false,
             properties: identity_properties(&relation),
@@ -281,17 +300,31 @@ fn add_identity_layers(eocpn: &mut EOCPN, relations: &[IdentityRelation]) {
         add_arc(
             eocpn,
             EOCPNNodeRef::Transition(join_transition_id),
-            EOCPNNodeRef::Place(combined_place_id),
+            EOCPNNodeRef::Place(identity_place_id),
             false,
         );
         add_arc(
             eocpn,
-            EOCPNNodeRef::Place(combined_place_id),
+            EOCPNNodeRef::Transition(join_transition_id),
+            EOCPNNodeRef::Place(control_place_id),
+            false,
+        );
+        add_arc(
+            eocpn,
+            EOCPNNodeRef::Place(identity_place_id),
+            EOCPNNodeRef::Transition(resolve_transition_id),
+            false,
+        );
+        add_arc(
+            eocpn,
+            EOCPNNodeRef::Place(control_place_id),
             EOCPNNodeRef::Transition(resolve_transition_id),
             false,
         );
 
         let identity_relation_id = next_id(eocpn);
+        let (sync_place_id, subset_place_id, implication_place_id) =
+            identity_relation_place_ids(&relation.kind, identity_place_id);
         eocpn.identity_relations.push(EOCPNIdentityRelation {
             id: identity_relation_id,
             kind: eocpn_identity_kind(&relation.kind),
@@ -300,8 +333,39 @@ fn add_identity_layers(eocpn: &mut EOCPN, relations: &[IdentityRelation]) {
             combined,
             join_transition_id: Some(join_transition_id),
             resolve_transition_id: Some(resolve_transition_id),
-            combined_place_id: Some(combined_place_id),
+            combined_place_id: Some(identity_place_id),
+            sync_place_id,
+            subset_place_id,
+            implication_place_id,
+            control_place_id: Some(control_place_id),
             properties: identity_properties(&relation),
+        });
+    }
+}
+
+fn ensure_singleton_type_places(
+    eocpn: &mut EOCPN,
+    object_types: &[String],
+    relation: &IdentityRelation,
+) {
+    for object_type in object_types {
+        if eocpn
+            .places
+            .iter()
+            .any(|place| place.object_types.len() == 1 && place.object_types[0] == *object_type)
+        {
+            continue;
+        }
+
+        let id = next_id(eocpn);
+        eocpn.places.push(EOCPNPlace {
+            id,
+            name: format!("tau_identity_carrier_{}", object_type.replace(' ', "_")),
+            object_types: vec![object_type.clone()],
+            identity_role: None,
+            initial: false,
+            final_place: false,
+            properties: identity_properties(relation),
         });
     }
 }
@@ -400,6 +464,50 @@ fn identity_kind_snake(kind: &IdentityRelationKind) -> &'static str {
     }
 }
 
+fn identity_place_role(kind: &IdentityRelationKind) -> EOCPNIdentityPlaceRole {
+    match kind {
+        IdentityRelationKind::Sync => EOCPNIdentityPlaceRole::Sync,
+        IdentityRelationKind::SubsetSync
+        | IdentityRelationKind::SubsetSyncPartition
+        | IdentityRelationKind::SubsetSyncOverlap => EOCPNIdentityPlaceRole::Subset,
+        IdentityRelationKind::ImpConcurrent
+        | IdentityRelationKind::ImpOrdered
+        | IdentityRelationKind::ImpBatch(_) => EOCPNIdentityPlaceRole::Implication,
+        IdentityRelationKind::ObjectSplit | IdentityRelationKind::ObjectMerge => {
+            EOCPNIdentityPlaceRole::Sync
+        }
+    }
+}
+
+fn identity_place_suffix(kind: &IdentityRelationKind) -> &'static str {
+    match kind {
+        IdentityRelationKind::Sync => "p_sync",
+        IdentityRelationKind::SubsetSync
+        | IdentityRelationKind::SubsetSyncPartition
+        | IdentityRelationKind::SubsetSyncOverlap => "p_sub",
+        IdentityRelationKind::ImpConcurrent
+        | IdentityRelationKind::ImpOrdered
+        | IdentityRelationKind::ImpBatch(_) => "p_imp",
+        IdentityRelationKind::ObjectSplit | IdentityRelationKind::ObjectMerge => "combined",
+    }
+}
+
+fn identity_relation_place_ids(
+    kind: &IdentityRelationKind,
+    place_id: EOCPNId,
+) -> (Option<EOCPNId>, Option<EOCPNId>, Option<EOCPNId>) {
+    match kind {
+        IdentityRelationKind::Sync => (Some(place_id), None, None),
+        IdentityRelationKind::SubsetSync
+        | IdentityRelationKind::SubsetSyncPartition
+        | IdentityRelationKind::SubsetSyncOverlap => (None, Some(place_id), None),
+        IdentityRelationKind::ImpConcurrent
+        | IdentityRelationKind::ImpOrdered
+        | IdentityRelationKind::ImpBatch(_) => (None, None, Some(place_id)),
+        IdentityRelationKind::ObjectSplit | IdentityRelationKind::ObjectMerge => (None, None, None),
+    }
+}
+
 fn eocpn_identity_kind(kind: &IdentityRelationKind) -> EOCPNIdentityRelationKind {
     match kind {
         IdentityRelationKind::Sync => EOCPNIdentityRelationKind::Sync,
@@ -429,7 +537,15 @@ fn annotate_identity_conversion(
     properties.insert(
         "identity_conversion".to_string(),
         json!({
-            "supported": ["Sync", "SubsetSyncPartition", "SubsetSyncOverlap"],
+            "supported": [
+                "Sync",
+                "SubsetSync",
+                "SubsetSyncPartition",
+                "SubsetSyncOverlap",
+                "ImpConcurrent",
+                "ImpOrdered",
+                "ImpBatch"
+            ],
             "supported_identity_counts": supported_counts,
             "supported_relation_count": supported_relations.len(),
             "ignored_identity_counts": ignored_identity_counts,
@@ -528,11 +644,14 @@ mod tests {
         let eocpn = convert_eocpt_to_eocpn_with_supported_identities(&wrapped).unwrap();
 
         assert!(eocpn.is_valid());
+        assert!(eocpn.places.iter().any(|place| place.object_types
+            == vec!["item".to_string(), "order".to_string()]
+            && place.identity_role == Some(EOCPNIdentityPlaceRole::Subset)));
         assert!(
             eocpn
                 .places
                 .iter()
-                .any(|place| place.object_types == vec!["item".to_string(), "order".to_string()])
+                .any(|place| place.identity_role == Some(EOCPNIdentityPlaceRole::Control))
         );
         assert!(eocpn.transitions.iter().any(|transition| matches!(
             transition.function,
@@ -551,7 +670,7 @@ mod tests {
     }
 
     #[test]
-    fn keeps_unsupported_identity_relations_in_conversion_metadata() {
+    fn converts_implication_identity_relations_to_p_imp_layers() {
         let relation = IdentityRelation {
             left: vec!["order".to_string()],
             right: vec!["item".to_string()],
@@ -568,8 +687,15 @@ mod tests {
             .get("identity_conversion")
             .expect("identity conversion metadata should be present");
 
-        assert_eq!(metadata["ignored_identity_counts"]["ImpOrdered"], 1);
-        assert_eq!(metadata["supported_relation_count"], 0);
+        assert!(eocpn.is_valid());
+        assert!(
+            eocpn
+                .places
+                .iter()
+                .any(|place| place.identity_role == Some(EOCPNIdentityPlaceRole::Implication))
+        );
+        assert_eq!(metadata["supported_identity_counts"]["ImpOrdered"], 1);
+        assert_eq!(metadata["supported_relation_count"], 1);
     }
 
     #[test]
