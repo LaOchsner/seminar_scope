@@ -15,7 +15,8 @@ fn sort_hashmap_values(map: HashMap<String, HashSet<String>>) -> HashMap<String,
 
 pub fn get_interaction_patterns(
     relations: &Vec<Relation>,
-    _ocel: &OcelJson,
+    ocel: &OcelJson,
+    noise_threshold: f64,
 ) -> (
     HashMap<String, Vec<String>>, // divergent (sorted)
     HashMap<String, Vec<String>>, // convergent (sorted)
@@ -24,210 +25,174 @@ pub fn get_interaction_patterns(
     Vec<String>,                  // set of all activities (sorted)
     Vec<String>,                  // set of all object types (sorted)
 ) {
-    // Collect unique activities and object types
-    let mut all_activities: HashSet<String> = HashSet::new();
-    let mut all_object_types: HashSet<String> = HashSet::new();
+    get_interaction_patterns_noise_resistant(relations, ocel, noise_threshold.min(1.0))
+}
 
-    for (_, activity, _, _, otype) in relations.iter() {
+fn get_interaction_patterns_noise_resistant(
+    relations: &Vec<Relation>,
+    ocel: &OcelJson,
+    noise_threshold: f64,
+) -> (
+    HashMap<String, Vec<String>>, // divergent (sorted)
+    HashMap<String, Vec<String>>, // convergent (sorted)
+    HashMap<String, Vec<String>>, // related (sorted)
+    HashMap<String, Vec<String>>, // deficient (sorted)
+    Vec<String>,                  // set of all activities (sorted)
+    Vec<String>,                  // set of all object types (sorted)
+) {
+    let mut all_activities: HashSet<String> = ocel
+        .events
+        .iter()
+        .map(|event| event.activity.clone())
+        .collect();
+    let mut all_object_types: HashSet<String> = ocel
+        .objects
+        .iter()
+        .map(|object| object.object_type.clone())
+        .collect();
+
+    for (_, activity, _, _, otype) in relations {
         all_activities.insert(activity.clone());
         all_object_types.insert(otype.clone());
     }
 
-    // Initialize maps - start with all object types for each activity
+    let mut activity_events: HashMap<String, Vec<String>> = HashMap::new();
+    for event in &ocel.events {
+        activity_events
+            .entry(event.activity.clone())
+            .or_default()
+            .push(event.id.clone());
+    }
+
+    let mut type_objects: HashMap<String, Vec<String>> = HashMap::new();
+    for object in &ocel.objects {
+        type_objects
+            .entry(object.object_type.clone())
+            .or_default()
+            .push(object.id.clone());
+    }
+
+    let mut event_type_counts: HashMap<(String, String), usize> = HashMap::new();
+    let mut object_activity_counts: HashMap<(String, String), usize> = HashMap::new();
+    for (event_id, activity, _, object_id, object_type) in relations {
+        *event_type_counts
+            .entry((event_id.clone(), object_type.clone()))
+            .or_default() += 1;
+        *object_activity_counts
+            .entry((object_id.clone(), activity.clone()))
+            .or_default() += 1;
+    }
+
     let mut related: HashMap<String, HashSet<String>> = HashMap::new();
     let mut divergent: HashMap<String, HashSet<String>> = HashMap::new();
     let mut convergent: HashMap<String, HashSet<String>> = HashMap::new();
     let mut deficient: HashMap<String, HashSet<String>> = HashMap::new();
 
     for activity in &all_activities {
-        related.insert(activity.clone(), all_object_types.clone());
+        related.insert(activity.clone(), HashSet::new());
         divergent.insert(activity.clone(), HashSet::new());
         convergent.insert(activity.clone(), HashSet::new());
         deficient.insert(activity.clone(), HashSet::new());
     }
 
-    // Create lookup dictionaries
-    let mut look_up_dict_activities: HashMap<String, String> = HashMap::new();
-    let mut look_up_dict_objects: HashMap<String, String> = HashMap::new();
-
-    for (eid, activity, _, oid, otype) in relations.iter() {
-        look_up_dict_activities.insert(eid.clone(), activity.clone());
-        look_up_dict_objects.insert(oid.clone(), otype.clone());
-    }
-
-    // Create identifiers structure (equivalent to Python's identifiers DataFrame)
-    let mut event_object_sets: HashMap<String, Vec<String>> = HashMap::new();
-
-    // Group objects by event_id
-    for (eid, _, _, oid, _) in relations.iter() {
-        event_object_sets
-            .entry(eid.clone())
-            .or_default()
-            .push(oid.clone());
-    }
-
-    // Sort object sets for each event (equivalent to tuple(sorted(set(...))))
-    let mut identifiers: HashMap<String, (Vec<String>, String)> = HashMap::new();
-    for (eid, mut oids) in event_object_sets {
-        oids.sort();
-        oids.dedup(); // Remove duplicates
-        let activity = look_up_dict_activities.get(&eid).unwrap().clone();
-        identifiers.insert(eid, (oids, activity));
-    }
-
-    // Check for deficient object types (same as original logic)
-    let mut activity_events: HashMap<String, HashSet<String>> = HashMap::new();
-    let mut activity_object_type_events: HashMap<(String, String), HashSet<String>> =
-        HashMap::new();
-
-    for (eid, activity, _, _, otype) in relations.iter() {
-        activity_events
-            .entry(activity.clone())
-            .or_default()
-            .insert(eid.clone());
-        activity_object_type_events
-            .entry((activity.clone(), otype.clone()))
-            .or_default()
-            .insert(eid.clone());
-    }
-
     for activity in &all_activities {
-        if let Some(total_events) = activity_events.get(activity) {
-            let total_event_count = total_events.len();
+        let events_for_activity = activity_events.get(activity).cloned().unwrap_or_default();
 
-            for otype in &all_object_types {
-                let key = (activity.clone(), otype.clone());
+        for object_type in &all_object_types {
+            let objects_for_type = type_objects.get(object_type).cloned().unwrap_or_default();
 
-                if let Some(otype_events) = activity_object_type_events.get(&key) {
-                    let otype_event_count = otype_events.len();
-
-                    if otype_event_count != total_event_count {
-                        if otype_event_count > 0 {
-                            deficient.get_mut(activity).unwrap().insert(otype.clone());
-                        } else {
-                            related.get_mut(activity).unwrap().remove(otype);
-                        }
-                    }
-                } else {
-                    related.get_mut(activity).unwrap().remove(otype);
-                }
-            }
-        }
-    }
-
-    // Create object type identifiers for each event (equivalent to Python's object_type columns)
-    let mut event_object_type_sets: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
-
-    for (event_id, (all_objects, _)) in &identifiers {
-        let mut type_sets: HashMap<String, Vec<String>> = HashMap::new();
-
-        for otype in &all_object_types {
-            let mut objects_of_type: Vec<String> = all_objects
+            let mul_activity_object_type: Vec<usize> = events_for_activity
                 .iter()
-                .filter(|&oid| look_up_dict_objects.get(oid).unwrap() == otype)
-                .cloned()
+                .map(|event_id| {
+                    event_type_counts
+                        .get(&(event_id.clone(), object_type.clone()))
+                        .copied()
+                        .unwrap_or(0)
+                })
                 .collect();
-            objects_of_type.sort();
-            type_sets.insert(otype.clone(), objects_of_type);
-        }
 
-        event_object_type_sets.insert(event_id.clone(), type_sets);
-    }
+            let mul_object_type_activity: Vec<usize> = objects_for_type
+                .iter()
+                .map(|object_id| {
+                    object_activity_counts
+                        .get(&(object_id.clone(), activity.clone()))
+                        .copied()
+                        .unwrap_or(0)
+                })
+                .collect();
 
-    // Analyze patterns for each object type and activity
-    for otype in &all_object_types {
-        // Filter events that have objects of this type
-        let events_with_otype: Vec<(&String, &(Vec<String>, String))> = identifiers
-            .iter()
-            .filter(|(event_id, _)| {
-                event_object_type_sets
-                    .get(*event_id)
-                    .unwrap()
-                    .get(otype)
-                    .unwrap()
-                    .len()
-                    > 0
-            })
-            .collect();
-
-        for activity in &all_activities {
-            let activity_events_with_otype: Vec<&(&String, &(Vec<String>, String))> =
-                events_with_otype
-                    .iter()
-                    .filter(|(_, (_, act))| act == activity)
-                    .collect();
-
-            if activity_events_with_otype.is_empty() {
+            let combined_len = mul_activity_object_type.len() + mul_object_type_activity.len();
+            if combined_len == 0 {
                 continue;
             }
 
-            // Check for convergent pattern: one event with multiple objects of same type
-            let has_convergent = activity_events_with_otype.iter().any(|(event_id, _)| {
-                event_object_type_sets
-                    .get(*event_id)
-                    .unwrap()
-                    .get(otype)
-                    .unwrap()
-                    .len()
-                    > 1
-            });
-
-            if has_convergent {
-                convergent.get_mut(activity).unwrap().insert(otype.clone());
+            let non_zero_count = mul_activity_object_type
+                .iter()
+                .chain(mul_object_type_activity.iter())
+                .filter(|count| **count != 0)
+                .count();
+            let is_related = ratio(non_zero_count, combined_len) >= noise_threshold;
+            if !is_related {
+                continue;
             }
 
-            // Check for divergent pattern: same object set appears in multiple events
-            // Group events by their object sets of this type
-            let mut object_set_to_events: HashMap<Vec<String>, Vec<String>> = HashMap::new();
+            related
+                .get_mut(activity)
+                .unwrap()
+                .insert(object_type.clone());
 
-            for (event_id, _) in &activity_events_with_otype {
-                let object_set = event_object_type_sets
-                    .get(*event_id)
+            if !mul_activity_object_type.is_empty()
+                && ratio(
+                    mul_activity_object_type
+                        .iter()
+                        .filter(|count| **count > 1)
+                        .count(),
+                    mul_activity_object_type.len(),
+                ) >= noise_threshold
+            {
+                convergent
+                    .get_mut(activity)
                     .unwrap()
-                    .get(otype)
-                    .unwrap()
-                    .clone();
-
-                if !object_set.is_empty() {
-                    object_set_to_events
-                        .entry(object_set)
-                        .or_default()
-                        .push((**event_id).clone());
-                }
+                    .insert(object_type.clone());
             }
 
-            // Count unique "all" object sets for each object set of this type
-            let mut matches: HashMap<Vec<String>, HashSet<Vec<String>>> = HashMap::new();
-
-            for (object_set, event_ids) in &object_set_to_events {
-                if !object_set.is_empty() {
-                    let mut unique_all_sets = HashSet::new();
-                    for event_id in event_ids {
-                        let all_objects = &identifiers.get(event_id).unwrap().0;
-                        unique_all_sets.insert(all_objects.clone());
-                    }
-                    matches.insert(object_set.clone(), unique_all_sets);
-                }
+            if !mul_activity_object_type.is_empty()
+                && ratio(
+                    mul_activity_object_type
+                        .iter()
+                        .filter(|count| **count < 1)
+                        .count(),
+                    mul_activity_object_type.len(),
+                ) >= noise_threshold
+            {
+                deficient
+                    .get_mut(activity)
+                    .unwrap()
+                    .insert(object_type.clone());
             }
 
-            // Check if any object set appears with multiple different "all" sets
-            let has_divergent = matches
-                .values()
-                .any(|unique_all_sets| unique_all_sets.len() > 1);
-
-            if has_divergent {
-                divergent.get_mut(activity).unwrap().insert(otype.clone());
+            if !mul_object_type_activity.is_empty()
+                && ratio(
+                    mul_object_type_activity
+                        .iter()
+                        .filter(|count| **count != 1)
+                        .count(),
+                    mul_object_type_activity.len(),
+                ) >= noise_threshold
+            {
+                divergent
+                    .get_mut(activity)
+                    .unwrap()
+                    .insert(object_type.clone());
             }
         }
     }
 
-    // Convert HashSets to sorted Vecs before returning
     let divergent_sorted = sort_hashmap_values(divergent);
     let convergent_sorted = sort_hashmap_values(convergent);
     let related_sorted = sort_hashmap_values(related);
     let deficient_sorted = sort_hashmap_values(deficient);
 
-    // Also sort the activity and object type sets
     let mut all_activities_sorted: Vec<String> = all_activities.into_iter().collect();
     all_activities_sorted.sort();
 
@@ -242,4 +207,100 @@ pub fn get_interaction_patterns(
         all_activities_sorted,
         all_object_types_sorted,
     )
+}
+
+fn ratio(count: usize, total: usize) -> f64 {
+    if total == 0 {
+        0.0
+    } else {
+        count as f64 / total as f64
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::get_interaction_patterns;
+    use crate::models::ocel_sid_df2_miner::{
+        Event, EventType, Object, ObjectType, OcelJson, Relationship,
+    };
+
+    fn relationship(object_id: &str) -> Relationship {
+        Relationship {
+            object_id: object_id.to_string(),
+            qualifier: String::new(),
+        }
+    }
+
+    fn event(id: &str, activity: &str, object_ids: &[&str]) -> Event {
+        Event {
+            id: id.to_string(),
+            activity: activity.to_string(),
+            time: id.to_string(),
+            attributes: None,
+            relationships: object_ids
+                .iter()
+                .map(|object_id| relationship(object_id))
+                .collect(),
+        }
+    }
+
+    fn object(id: &str, object_type: &str) -> Object {
+        Object {
+            id: id.to_string(),
+            object_type: object_type.to_string(),
+            attributes: None,
+        }
+    }
+
+    fn ocel() -> OcelJson {
+        OcelJson {
+            object_types: Vec::<ObjectType>::new(),
+            event_types: Vec::<EventType>::new(),
+            events: vec![
+                event("e1", "pack", &["i1", "i2"]),
+                event("e2", "pack", &["i1"]),
+                event("e3", "pack", &[]),
+                event("e4", "pack", &[]),
+            ],
+            objects: vec![
+                object("i1", "item"),
+                object("i2", "item"),
+                object("i3", "item"),
+            ],
+        }
+    }
+
+    #[test]
+    fn noise_resistant_multiplicities_follow_threshold_formulas() {
+        let ocel = ocel();
+        let relations = crate::core::df2_miner::build_relations_fns::build_relations(
+            &ocel.events,
+            &ocel.objects,
+        );
+
+        let (divergent, convergent, related, deficient, _, _) =
+            get_interaction_patterns(&relations, &ocel, 0.5);
+
+        assert_eq!(related["pack"], vec!["item".to_string()]);
+        assert_eq!(deficient["pack"], vec!["item".to_string()]);
+        assert_eq!(divergent["pack"], vec!["item".to_string()]);
+        assert!(convergent["pack"].is_empty());
+    }
+
+    #[test]
+    fn zero_noise_threshold_applies_formulas_literally() {
+        let ocel = ocel();
+        let relations = crate::core::df2_miner::build_relations_fns::build_relations(
+            &ocel.events,
+            &ocel.objects,
+        );
+
+        let (divergent, convergent, related, deficient, _, _) =
+            get_interaction_patterns(&relations, &ocel, 0.0);
+
+        assert_eq!(related["pack"], vec!["item".to_string()]);
+        assert_eq!(convergent["pack"], vec!["item".to_string()]);
+        assert_eq!(deficient["pack"], vec!["item".to_string()]);
+        assert_eq!(divergent["pack"], vec!["item".to_string()]);
+    }
 }

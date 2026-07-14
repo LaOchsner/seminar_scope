@@ -1,18 +1,38 @@
-use crate::core::df2_miner::ocpt_generator::generate_ocpt_from_fileid;
+use crate::core::df2_miner::ocpt_generator::generate_ocpt_from_fileid_with_noise;
 use crate::core::struct_converters::ocpt_frontend_backend::{
     backend_to_frontend, frontend_to_backend,
 };
 use crate::handlers::ocpn::persist_ocpn_from_ocpt;
 use crate::models::ocpt::{OCPT, OcptFE};
 use crate::traits::import_export::ImportableFromPath;
-use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
+use axum::{
+    Json,
+    extract::{Path, Query},
+    http::StatusCode,
+    response::IntoResponse,
+};
+use serde::Deserialize;
 use serde_json::json;
 use tokio::fs;
+
+#[derive(Debug, Deserialize)]
+pub struct Df2Query {
+    pub noise_threshold: Option<f64>,
+}
 
 /// Run the DF2 miner for the given OCEL file_id, persist backend OCPT, return frontend OCPT.
 pub async fn apply_df2(
     Path(file_id): Path<String>,
+    Query(query): Query<Df2Query>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let noise_threshold = query.noise_threshold.unwrap_or(1.0);
+    if !noise_threshold.is_finite() || !(0.1..=1.0).contains(&noise_threshold) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "noise_threshold must be a finite number between 0.1 and 1.0".to_string(),
+        ));
+    }
+
     // Ensure storage directory exists for the downstream generator output.
     if let Err(e) = fs::create_dir_all("./temp").await {
         return Err((
@@ -23,15 +43,16 @@ pub async fn apply_df2(
 
     // Run the synchronous miner on a blocking thread; it writes ./temp/ocpt_{id}.json (frontend shape).
     let file_id_for_miner = file_id.clone();
-    let generated_id =
-        tokio::task::spawn_blocking(move || generate_ocpt_from_fileid(&file_id_for_miner))
-            .await
-            .map_err(|e| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("DF2 miner panicked: {e}"),
-                )
-            })?;
+    let generated_id = tokio::task::spawn_blocking(move || {
+        generate_ocpt_from_fileid_with_noise(&file_id_for_miner, noise_threshold)
+    })
+    .await
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("DF2 miner panicked: {e}"),
+        )
+    })?;
 
     let ocpt_path = format!("./temp/ocpt_{}.json", generated_id);
 

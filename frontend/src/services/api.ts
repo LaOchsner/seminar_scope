@@ -245,9 +245,15 @@ export const exportOcptPm4py = async (fileId: string): Promise<ExportPm4pyRespon
     return response.data;
 };
 
-export const mineOcpt = async (fileId: string, algorithm: string = 'DF2'): Promise<GetOcptResponse> => {
+export const mineOcpt = async (
+    fileId: string,
+    algorithm: string = 'DF2',
+    noiseThreshold: number = 1
+): Promise<GetOcptResponse> => {
     if (algorithm === 'DF2') {
-        const response = await api.get(`v1/ocpt/df2/${fileId}`);
+        const response = await api.get(`v1/ocpt/df2/${fileId}`, {
+            params: { noise_threshold: noiseThreshold },
+        });
         return response.data;
     } else if (algorithm === 'OCIM') {
         const response = await api.get(`v1/ocpt/ocim/${fileId}`);
