@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { Background, Controls, Panel, ReactFlow, useEdgesState, useNodesState } from '@xyflow/react';
+// @ts-ignore: no type declarations for CSS side-effect import
 import '@xyflow/react/dist/style.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { HubEdge, IdentityRelationEdge } from '~/components/identity_relations/edges/IdentityRelationEdge';
@@ -20,12 +21,12 @@ export interface IdentityRelationViewerProps {
 }
 
 const KIND_LABELS: Record<IdentityRelationKind, string> = {
-    sync: 'Synchronization',
+    sync: 'Strict Synchronization',
     subsetSync: 'Subset Synchronization',
-    subsetSyncPartition: 'Subset Sync (Partition)',
-    subsetSyncOverlap: 'Subset Sync (Overlap)',
-    impConcurrent: 'Implicit Concurrency',
-    impOrdered: 'Implicit Ordering',
+    subsetSyncPartition: 'Subset Synchronization (Partition)',
+    subsetSyncOverlap: 'Subset Synchronization (Overlap)',
+    impConcurrent: 'Concurrent Implication',
+    impOrdered: 'Ordered Implication',
     impBatch: 'Batch Implication',
     objectSplit: 'Object Split',
     objectMerge: 'Object Merge',
@@ -33,14 +34,14 @@ const KIND_LABELS: Record<IdentityRelationKind, string> = {
 
 const KIND_SYMBOLS: Record<IdentityRelationKind, string> = {
     sync: '=',
-    subsetSync: '⊆',
-    subsetSyncPartition: '⊂',
-    subsetSyncOverlap: '⊆~',
-    impConcurrent: '‖',
-    impOrdered: '[→]',
-    impBatch: '×k',
-    objectSplit: '÷',
-    objectMerge: '⊕',
+    subsetSync: '⊂=',
+    subsetSyncPartition: '⊂∩',
+    subsetSyncOverlap: '⊂⊗',
+    impConcurrent: '⇒‖',
+    impOrdered: '⇒→',
+    impBatch: '⇒·k',
+    objectSplit: '↙↘',
+    objectMerge: '↘↙',
 };
 
 const nodeTypes = { otNode: IdentityRelationOtNode, hubNode: IdentityRelationHubNode };
