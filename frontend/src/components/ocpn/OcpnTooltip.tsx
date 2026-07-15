@@ -44,9 +44,14 @@ const functionName = (transitionFunction: unknown): string | null => {
     if (typeof transitionFunction === 'string') return transitionFunction;
     if (typeof transitionFunction !== 'object') return formatValue(transitionFunction);
 
+    const taggedKind = property(transitionFunction, 'kind');
+    if (typeof taggedKind === 'string') return taggedKind;
+
     const keys = Object.keys(transitionFunction);
     return keys[0] ?? null;
 };
+
+const normalizeFunctionName = (name: string) => name.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
 
 const transitionRuleDescription = (transitionFunction: unknown): string | null => {
     const name = functionName(transitionFunction);
@@ -54,19 +59,30 @@ const transitionRuleDescription = (transitionFunction: unknown): string | null =
 
     const descriptions: Record<string, string> = {
         TransferByType: 'Move tokens through normal process flow',
+        transfer_by_type: 'Move tokens through normal process flow',
         StrictSyncInit: 'Start strict synchronization',
+        strict_sync_init: 'Start strict synchronization',
         StrictSyncResolve: 'Finish strict synchronization',
+        strict_sync_resolve: 'Finish strict synchronization',
         SubsetSelect: 'Select a subset from a synchronized object set',
+        subset_select: 'Select a subset from a synchronized object set',
         SubsetResolve: 'Resolve the selected subset back into the synchronized set',
+        subset_resolve: 'Resolve the selected subset back into the synchronized set',
         SubsetOverlapLoop: 'Allow overlapping subset reuse',
+        subset_overlap_loop: 'Allow overlapping subset reuse',
         ImplicationInit: 'Start an identity implication',
+        implication_init: 'Start an identity implication',
         ImplicationResolve: 'Finish an identity implication',
+        implication_resolve: 'Finish an identity implication',
         BatchOverflow: 'Handle extra objects beyond the batch size',
+        batch_overflow: 'Handle extra objects beyond the batch size',
         ObjectSplit: 'Split one object identity into related identities',
+        object_split: 'Split one object identity into related identities',
         ObjectMerge: 'Merge related identities back together',
+        object_merge: 'Merge related identities back together',
     };
 
-    return descriptions[name] ?? name;
+    return descriptions[name] ?? descriptions[normalizeFunctionName(name)] ?? name;
 };
 
 const Row = ({ label, value }: { label: string; value: unknown }) => {

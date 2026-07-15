@@ -31,6 +31,21 @@ const identityKind = (value: unknown): string => {
     return payload === null || payload === undefined ? kind : `${kind}:${String(payload)}`;
 };
 
+const isIdentityRelationKind = (kind: string): boolean => {
+    const normalized = kind.toLowerCase().replace(/[_\-\s:]/g, '');
+    return (
+        normalized === 'sync' ||
+        normalized === 'subsetsync' ||
+        normalized === 'subsetsyncpartition' ||
+        normalized === 'subsetsyncoverlap' ||
+        normalized === 'impconcurrent' ||
+        normalized === 'impordered' ||
+        normalized.startsWith('impbatch') ||
+        normalized === 'objectsplit' ||
+        normalized === 'objectmerge'
+    );
+};
+
 const getIdentityRelation = (item: unknown): Record<string, unknown> | null => {
     const relation = property(property(item, 'properties'), 'identity_relation');
     return relation && typeof relation === 'object' ? (relation as Record<string, unknown>) : null;
@@ -52,13 +67,15 @@ const collectIdentityRelations = (data: RustOcpnData | null): OcpnIdentityRelati
     for (const item of items) {
         const relation = getIdentityRelation(item);
         if (!relation) continue;
+        const kind = identityKind(relation.kind);
+        if (!isIdentityRelationKind(kind)) continue;
 
         const id = identityRelationKey(relation);
         if (relations.has(id)) continue;
 
         relations.set(id, {
             id,
-            kind: identityKind(relation.kind),
+            kind,
             left: toStringArray(relation.left),
             right: toStringArray(relation.right),
         });
