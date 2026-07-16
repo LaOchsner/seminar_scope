@@ -15,13 +15,15 @@ import {
 import { Slider } from '~/components/ui/slider';
 import { Switch } from '~/components/ui/switch';
 import { OcpnVizParams } from '~/components/ocpn/OcpnRendering';
-import { getDeterministicColor } from '~/lib/colors';
+import { getObjectTypeBackground } from '~/lib/ocpn/objectTypeColors';
 
 export interface OcpnIdentityRelationSummary {
     id: string;
     kind: string;
     left: string[];
     right: string[];
+    connectedActivities: string[];
+    scopedActivities: string[];
 }
 
 interface OcpnSidebarProps {
@@ -80,10 +82,16 @@ const RelationSymbol = ({ kind }: { kind: string }) => (
     </span>
 );
 
-const TypeChip = ({ type, color }: { type: string; color: string }) => (
+const TypeChip = ({ type, colorMap }: { type: string; colorMap: Record<string, string> }) => (
     <span className="inline-flex items-center gap-1 rounded-sm border bg-white px-1.5 py-0.5 text-[11px] font-medium text-slate-700">
-        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+        <span className="h-2 w-2 rounded-full" style={{ background: getObjectTypeBackground(type, colorMap) }} />
         {type}
+    </span>
+);
+
+const ActivityChip = ({ activity }: { activity: string }) => (
+    <span className="inline-flex items-center rounded-sm border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[11px] font-medium text-slate-600">
+        {activity}
     </span>
 );
 
@@ -147,7 +155,6 @@ const OcpnSidebar: React.FC<OcpnSidebarProps> = ({
                                 {expandedSections.has('objects') && (
                                     <div className="mt-2 space-y-1">
                                         {objectTypes.map((type) => {
-                                            const objColor = colorMap?.[type] || getDeterministicColor(type);
                                             return (
                                                 <label
                                                     key={type}
@@ -156,7 +163,7 @@ const OcpnSidebar: React.FC<OcpnSidebarProps> = ({
                                                     <span className="flex items-center gap-2 text-slate-700">
                                                         <span
                                                             className="h-2.5 w-2.5 rounded-full"
-                                                            style={{ backgroundColor: objColor }}
+                                                            style={{ background: getObjectTypeBackground(type, colorMap) }}
                                                         />
                                                         {type}
                                                     </span>
@@ -207,7 +214,7 @@ const OcpnSidebar: React.FC<OcpnSidebarProps> = ({
                                                             <TypeChip
                                                                 key={`left-${relation.id}-${type}`}
                                                                 type={type}
-                                                                color={colorMap[type] || getDeterministicColor(type)}
+                                                                colorMap={colorMap}
                                                             />
                                                         ))}
                                                         <RelationSymbol kind={relation.kind} />
@@ -215,9 +222,45 @@ const OcpnSidebar: React.FC<OcpnSidebarProps> = ({
                                                             <TypeChip
                                                                 key={`right-${relation.id}-${type}`}
                                                                 type={type}
-                                                                color={colorMap[type] || getDeterministicColor(type)}
+                                                                colorMap={colorMap}
                                                             />
                                                         ))}
+                                                    </div>
+                                                    <div className="mt-2 space-y-2">
+                                                        <div className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                                                            <Activity className="h-3 w-3" />
+                                                            Scoped activities
+                                                        </div>
+                                                        {relation.scopedActivities.length > 0 ? (
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {relation.scopedActivities.map((activity) => (
+                                                                    <ActivityChip key={`${relation.id}-scoped-${activity}`} activity={activity} />
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-[11px] text-slate-400">
+                                                                No scoped activities available.
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                                                                Connected in OCPN
+                                                            </div>
+                                                            {relation.connectedActivities.length > 0 ? (
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {relation.connectedActivities.map((activity) => (
+                                                                        <ActivityChip
+                                                                            key={`${relation.id}-connected-${activity}`}
+                                                                            activity={activity}
+                                                                        />
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="text-[11px] text-slate-400">
+                                                                    No connected activity labels found.
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))

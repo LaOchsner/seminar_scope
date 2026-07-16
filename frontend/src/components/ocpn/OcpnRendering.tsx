@@ -15,6 +15,7 @@ import '@xyflow/react/dist/style.css';
 import { ArcEdge, PlaceNode, TransitionNode } from '~/components/ocpn/OcpnElements';
 import OcpnTooltip, { OcpnHoverState } from '~/components/ocpn/OcpnTooltip';
 import { getDeterministicColor } from '~/lib/colors';
+import { getPlaceObjectTypes } from '~/lib/ocpn/ocpnGraph';
 import { OcpnId, RustOcpnData, RustOcpnPlace, RustOcpnTransition } from '~/types/ocpn.types';
 
 export interface OcpnVizParams {
@@ -225,6 +226,8 @@ const OcpnRendering: React.FC<OcpnRenderingProps> = ({ data, params, colorMap, o
                 const id = toFlowId(n.id);
                 const layoutNode = graph.node(id);
                 const size = nodeSizes.get(id) ?? estimateNodeSize(n, currentParams);
+                const placeObjectTypes = n.type === 'place' ? getPlaceObjectTypes(n as RustOcpnPlace) : [];
+                const colorSegments = placeObjectTypes.map(getColor);
 
                 return {
                     id,
@@ -240,9 +243,8 @@ const OcpnRendering: React.FC<OcpnRenderingProps> = ({ data, params, colorMap, o
                         rawLabel: n.name || (n as RustOcpnTransition).label || '',
                         objectType: (n as RustOcpnPlace).object_type,
                         objectTypes: (n as RustOcpnPlace).object_types,
-                        color: (n as RustOcpnPlace).object_type
-                            ? getColor((n as RustOcpnPlace).object_type)
-                            : '#64748b',
+                        color: colorSegments[0] ?? ((n as RustOcpnPlace).object_type ? getColor((n as RustOcpnPlace).object_type) : '#64748b'),
+                        colorSegments,
                         size: currentParams.nodeSize,
                         labelSize: currentParams.labelSize,
                         initial: (n as RustOcpnPlace).initial,
@@ -259,7 +261,7 @@ const OcpnRendering: React.FC<OcpnRenderingProps> = ({ data, params, colorMap, o
                 const src = toFlowId(getArcId(arc.source));
                 const tgt = toFlowId(getArcId(arc.target));
                 const connectedPlace = currentData.places.find((p) => toFlowId(p.id) === src || toFlowId(p.id) === tgt);
-                const objType = connectedPlace ? connectedPlace.object_type : 'default';
+                const objType = connectedPlace ? getPlaceObjectTypes(connectedPlace)[0] ?? connectedPlace.object_type : 'default';
                 const color = objType !== 'default' ? getColor(objType) : '#94a3b8';
 
                 return {

@@ -1,4 +1,5 @@
 import { BaseEdge, Edge, EdgeProps, Handle, Node, NodeProps, Position, getSmoothStepPath } from '@xyflow/react';
+import { blendedConicGradient } from '~/lib/ocpn/objectTypeColors';
 
 export type OcpnPlaceNode = Node<{
     label: string;
@@ -6,6 +7,7 @@ export type OcpnPlaceNode = Node<{
     objectType: string;
     objectTypes?: string[];
     color: string;
+    colorSegments?: string[];
     size: number;
     labelSize: number;
     initial: boolean;
@@ -32,6 +34,8 @@ export type OcpnArcEdge = Edge<{
 
 export const PlaceNode = ({ data }: NodeProps<OcpnPlaceNode>) => {
     const isSpecial = data.initial || data.final;
+    const colorSegments = data.colorSegments?.length ? data.colorSegments : [data.color];
+    const background = colorSegments.length > 1 ? blendedConicGradient(colorSegments) : data.color;
 
     return (
         <div className="flex flex-col items-center justify-center pointer-events-none">
@@ -40,7 +44,7 @@ export const PlaceNode = ({ data }: NodeProps<OcpnPlaceNode>) => {
                 style={{
                     width: data.size * 2,
                     height: data.size * 2,
-                    backgroundColor: data.color,
+                    background,
                     borderColor: isSpecial ? '#111827' : '#0f172a',
                     borderWidth: isSpecial ? 3 : 1.5,
                 }}

@@ -23,6 +23,24 @@ const objectTypeLabel = (objectTypes: string[] | undefined): string => {
     return [...objectTypes].sort().join(' + ');
 };
 
+const filterObjectTypes = (extended: ExtendedOcpnData, places: RustOcpnData['places']): string[] => {
+    const fromProperties = extended.properties?.source_object_types;
+    const combinedTypes = places
+        .map((place) => place.object_type)
+        .filter((objectType) => objectType && objectType !== 'unknown');
+
+    if (Array.isArray(fromProperties)) {
+        return Array.from(new Set([...fromProperties.map(String), ...combinedTypes])).sort();
+    }
+
+    return Array.from(
+        new Set([
+            ...places.flatMap((place) => place.object_types?.length ? place.object_types : [place.object_type]),
+            ...combinedTypes,
+        ])
+    ).sort();
+};
+
 export const normalizeOcpnPayload = (payload: unknown): RustOcpnData | null => {
     const value = payload as any;
     const raw = value?.extended_ocpn ?? value?.ocpn ?? value;
@@ -45,8 +63,9 @@ export const normalizeOcpnPayload = (payload: unknown): RustOcpnData | null => {
         places,
         transitions: extended.transitions ?? [],
         arcs: extended.arcs ?? [],
-        object_types: Array.from(new Set(places.map((place) => place.object_type))),
+        object_types: filterObjectTypes(extended, places),
         is_extended_ocpn: Boolean(value?.extended_ocpn ?? raw.transition_functions),
         transition_functions: extended.transition_functions,
+        properties: extended.properties,
     } as RustOcpnData;
 };

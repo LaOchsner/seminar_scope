@@ -201,6 +201,10 @@ pub fn convert_extended_ocpt_to_extended_ocpn(
         "source_object_types".to_string(),
         json!(object_types.iter().cloned().collect::<Vec<_>>()),
     );
+    builder.net.properties.insert(
+        "identity_relation_scopes".to_string(),
+        json!(collect_identity_relation_scopes(&ocpt.root)),
+    );
 
     translate_node(&ocpt.root, &active_id_sets, &mut Vec::new(), &mut builder)?;
 
@@ -1003,6 +1007,53 @@ fn leaf_related_types(node: &OCPTNode) -> ObjectTypeSet {
     }
 }
 
+fn collect_identity_relation_scopes(node: &OCPTNode) -> Vec<serde_json::Value> {
+    let mut scopes = Vec::new();
+    collect_identity_relation_scopes_from_node(node, &mut scopes);
+    scopes
+}
+
+fn collect_identity_relation_scopes_from_node(
+    node: &OCPTNode,
+    scopes: &mut Vec<serde_json::Value>,
+) {
+    let OCPTNode::Operator(op) = node else {
+        return;
+    };
+
+    if let OCPTOperatorType::IdentityRelation(relation) = &op.operator_type {
+        scopes.push(json!({
+            "relation": relation,
+            "activities": collect_activity_labels(node),
+        }));
+    }
+
+    for child in &op.children {
+        collect_identity_relation_scopes_from_node(child, scopes);
+    }
+}
+
+fn collect_activity_labels(node: &OCPTNode) -> Vec<String> {
+    fn visit(node: &OCPTNode, activities: &mut BTreeSet<String>) {
+        match node {
+            OCPTNode::Leaf(leaf) => {
+                if let OCPTLeafLabel::Activity(activity) = &leaf.activity_label {
+                    activities.insert(activity.clone());
+                }
+            }
+            OCPTNode::Operator(op) => {
+                for child in &op.children {
+                    visit(child, activities);
+                }
+            }
+        }
+    }
+
+    let mut activities = BTreeSet::new();
+    visit(node, &mut activities);
+    activities.into_iter().collect()
+}
+
 fn operator_name(operator_type: &OCPTOperatorType) -> &'static str {
     match operator_type {
         OCPTOperatorType::Sequence => "sequence",
@@ -1267,5 +1318,46 @@ mod tests {
 
         assert_eq!(strict_inits, 1);
         assert_eq!(subset_selects, 1);
+    }
+
+    #[test]
+    fn conversion_stores_scoped_activities_for_identity_relations() {
+        let relation = IdentityRelation {
+            left: vec!["truck".to_string(), "worker".to_string()],
+            right: vec!["crane".to_string()],
+            kind: IdentityRelationKind::ImpBatch(5),
+        };
+        let mut sequence = OCPTOperator::new(OCPTOperatorType::Sequence);
+        sequence
+            .children
+            .push(leaf("Transport materials", &["truck", "worker"]));
+        sequence
+            .children
+            .push(leaf("Unload materials", &["crane", "worker"]));
+        sequence
+            .children
+            .push(leaf("Worker departure", &["worker"]));
+        let ocpt = OCPT::new(OCPTNode::Operator(OCPTOperator::new_identity(
+            relation.clone(),
+            OCPTNode::Operator(sequence),
+        )));
+
+        let net = convert_extended_ocpt_to_extended_ocpn(&ocpt).unwrap();
+        let scopes = net
+            .properties
+            .get("identity_relation_scopes")
+            .and_then(|value| value.as_array())
+            .expect("identity relation scopes should be present");
+
+        assert_eq!(scopes.len(), 1);
+        assert_eq!(scopes[0].get("relation"), Some(&json!(relation)));
+        assert_eq!(
+            scopes[0].get("activities"),
+            Some(&json!([
+                "Transport materials",
+                "Unload materials",
+                "Worker departure"
+            ]))
+        );
     }
 }

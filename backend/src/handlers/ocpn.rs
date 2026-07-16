@@ -10,7 +10,7 @@ use crate::models::ocpt::OCPT;
 use crate::traits::import_export::{ExportableToPath, ImportableFromPath};
 use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse, response::Response};
 use axum_extra::extract::Multipart;
-use serde_json::Value;
+use serde_json::{Value, json};
 use tokio::fs;
 
 pub async fn post_ocpn(mut multipart: Multipart) -> Response {
@@ -150,8 +150,12 @@ pub async fn get_extended_ocpn_from_extended_ocpt(
         ));
     }
 
-    let extended_ocpn =
+    let mut extended_ocpn =
         convert_extended_ocpt_to_extended_ocpn(&ocpt).map_err(map_extended_convert_error)?;
+    extended_ocpn.properties.insert(
+        "source_extended_ocpt_id".to_string(),
+        json!(extended_ocpt_id),
+    );
     let file_id = extended_ocpn.export_to_path().await?;
     let payload = serde_json::json!({
         "file_id": file_id,
