@@ -232,9 +232,15 @@ export const exportOcptPm4py = async (fileId: string): Promise<ExportPm4pyRespon
     return response.data;
 };
 
-export const mineOcpt = async (fileId: string, algorithm: string = 'DF2'): Promise<GetOcptResponse> => {
+export const mineOcpt = async (
+    fileId: string,
+    algorithm: string = 'DF2',
+    noiseThreshold: number = 1
+): Promise<GetOcptResponse> => {
     if (algorithm === 'DF2') {
-        const response = await api.get(`v1/ocpt/df2/${fileId}`);
+        const response = await api.get(`v1/ocpt/df2/${fileId}`, {
+            params: { noise_threshold: noiseThreshold },
+        });
         return response.data;
     } else if (algorithm === 'OCIM') {
         const response = await api.get(`v1/ocpt/ocim/${fileId}`);
@@ -286,6 +292,9 @@ export const getOcpn = async (fileId: string) => {
 
 export const getExtendedOcpn = async (fileId: string): Promise<GetExtendedOcpnResponse> => {
     const response = await api.get(`/v1/objects/extended_ocpn/${fileId}`);
+    return response.data;
+};
+
 export const getEventStreamInit = async (fileId: string): Promise<{ first_event: string; last_event: string; event_count: number }> => {
     const response = await api.get(`v1/event_stream/init/${fileId}`);
     return response.data;

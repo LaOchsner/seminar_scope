@@ -132,10 +132,16 @@ export const useGetHistogramObjectPersp = (fileId: string | undefined) => {
     });
 };
 
-export const useMineOcpt = (nodeId: string, fileId: string | null, algorithm: string, shouldFetch: boolean) => {
+export const useMineOcpt = (
+    nodeId: string,
+    fileId: string | null,
+    algorithm: string,
+    noiseThreshold: number,
+    shouldFetch: boolean
+) => {
     return useQuery({
-        queryKey: ['mineOcpt', nodeId, fileId, algorithm],
-        queryFn: () => mineOcpt(fileId!, algorithm),
+        queryKey: ['mineOcpt', nodeId, fileId, algorithm, noiseThreshold],
+        queryFn: () => mineOcpt(fileId!, algorithm, noiseThreshold),
         enabled: Boolean(fileId) && shouldFetch,
         refetchOnWindowFocus: false,
     });

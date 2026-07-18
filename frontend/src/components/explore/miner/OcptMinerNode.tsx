@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { NodeProps } from '@xyflow/react';
 import { Position } from '@xyflow/react';
+import { Input } from '~/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
 import { useExploreFlowStore } from '~/stores/exploreStore';
@@ -17,6 +18,8 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const queryClient = useQueryClient();
     const { updateNodeData } = useExploreFlowStore();
     const [algorithm, setAlgorithm] = useState<string>(node.data.algorithm ?? 'DF2');
+    const [noiseThreshold, setNoiseThreshold] = useState<number>(node.data.noiseThreshold ?? 1);
+    const [noiseInput, setNoiseInput] = useState<string>(String(node.data.noiseThreshold ?? 1));
 
     const hasMinedAsset = useMemo(() => {
         return node.data.assets.some((asset) => asset.io === 'output');
@@ -26,21 +29,28 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const fileId = inputAsset?.id ?? null;
     const fileName = inputAsset?.name ?? '';
 
-    const { isLoading, isFetching, data } = useMineOcpt(node.id, fileId, algorithm, !hasMinedAsset);
+    const { isLoading, isFetching, data } = useMineOcpt(
+        node.id,
+        fileId,
+        algorithm,
+        noiseThreshold,
+        !hasMinedAsset
+    );
 
     useMinerOutput(node.id, data?.file_id, fileName, 'ocptAsset', 'ocptFileNode');
 
     useEffect(() => {
-        if (algorithm === node.data.algorithm) return;
+        if (algorithm === node.data.algorithm && noiseThreshold === (node.data.noiseThreshold ?? 1)) return;
 
         updateNodeData(node.id, (prev) => {
             const newAssets = prev.assets.filter((asset) => asset.io !== 'output');
             return {
                 assets: newAssets,
                 algorithm: algorithm,
+                noiseThreshold: noiseThreshold,
             };
         });
-    }, [algorithm, node.data.algorithm, node.id, updateNodeData]);
+    }, [algorithm, noiseThreshold, node.data.algorithm, node.data.noiseThreshold, node.id, updateNodeData]);
 
     const handleExportJson = () => {
         if (!data) {
@@ -92,6 +102,28 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
                     </SelectItem>
                 </SelectContent>
             </Select>
+            {algorithm === 'DF2' && (
+                <div className="flex items-center gap-1">
+                    <span className="text-xs text-foreground">Noise:</span>
+                    <Input
+                        type="number"
+                        min={0.1}
+                        max={1}
+                        step={0.05}
+                        value={noiseInput}
+                        onChange={(e) => setNoiseInput(e.target.value)}
+                        onBlur={() => {
+                            const clamped = Math.min(1, Math.max(0.1, parseFloat(noiseInput) || 1));
+                            setNoiseInput(String(clamped));
+                            setNoiseThreshold(clamped);
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                        }}
+                        className="h-6 w-16 px-1.5 text-xs nodrag"
+                    />
+                </div>
+            )}
         </div>
     );
 

@@ -94,7 +94,8 @@ async fn validate_incremental_correctness(path: &str, step_size: usize) {
             };
             
             let relations = build_relations_fns::build_relations(&ocel_prefix.events, &ocel_prefix.objects);
-            let (div, _con, _rel, _defi, _all_acts, _all_ots) = interaction_patterns::get_interaction_patterns(&relations, &ocel_prefix);
+            let (div, _con, _rel, _defi, _all_acts, _all_ots) =
+                interaction_patterns::get_interaction_patterns(&relations, &ocel_prefix, 1.0);
             let (offline_dfg, _, _) = divergence_free_dfg::get_divergence_free_graph_v2(&relations, &div);
 
             // 2. Compare against our accumulated state
