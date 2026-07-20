@@ -1,0 +1,231 @@
+{
+  "objectTypes": [
+    {
+      "name": "orders",
+      "attributes": [{ "name": "price", "type": "float" }]
+    },
+    {
+      "name": "items",
+      "attributes": [
+        { "name": "weight", "type": "float" },
+        { "name": "price", "type": "float" }
+      ]
+    },
+    {
+      "name": "packages",
+      "attributes": [{ "name": "weight", "type": "float" }]
+    },
+    { "name": "customers", "attributes": [] },
+    {
+      "name": "products",
+      "attributes": [
+        { "name": "weight", "type": "float" },
+        { "name": "price", "type": "float" }
+      ]
+    },
+    {
+      "name": "employees",
+      "attributes": [{ "name": "role", "type": "string" }]
+    }
+  ],
+  "eventTypes": [
+    { "name": "pay order", "attributes": [] },
+    { "name": "package delivered", "attributes": [] },
+    { "name": "place order", "attributes": [] },
+    { "name": "create package", "attributes": [] },
+    { "name": "confirm order", "attributes": [] },
+    { "name": "pick item", "attributes": [] },
+    { "name": "send package", "attributes": [] }
+  ],
+  "objects": [
+    {
+      "id": "o-990001",
+      "type": "orders",
+      "attributes": [
+        { "name": "price", "value": 1353.98, "time": "2023-04-03T10:00:00.000Z" }
+      ],
+      "relationships": [{ "objectId": "i-880001", "qualifier": "comprises" }]
+    },
+    {
+      "id": "i-880001",
+      "type": "items",
+      "attributes": [
+        { "name": "weight", "value": 1.2, "time": "2023-04-03T10:00:00.000Z" },
+        { "name": "price", "value": 1353.98, "time": "2023-04-03T10:00:00.000Z" }
+      ],
+      "relationships": [{ "objectId": "Echo", "qualifier": "product" }]
+    },
+    {
+      "id": "o-990002",
+      "type": "orders",
+      "attributes": [
+        { "name": "price", "value": 849.99, "time": "2023-04-03T10:00:00.000Z" }
+      ],
+      "relationships": [{ "objectId": "i-880002", "qualifier": "comprises" }]
+    },
+    {
+      "id": "i-880002",
+      "type": "items",
+      "attributes": [
+        { "name": "weight", "value": 0.8, "time": "2023-04-03T10:00:00.000Z" },
+        { "name": "price", "value": 849.99, "time": "2023-04-03T10:00:00.000Z" }
+      ],
+      "relationships": [{ "objectId": "Echo", "qualifier": "product" }]
+    },
+    {
+      "id": "p-660001",
+      "type": "packages",
+      "attributes": [
+        { "name": "weight", "value": 1.2, "time": "2023-04-03T10:00:00.000Z" }
+      ],
+      "relationships": [{ "objectId": "i-880001", "qualifier": "contains" }]
+    },
+    {
+      "id": "p-660002",
+      "type": "packages",
+      "attributes": [
+        { "name": "weight", "value": 0.8, "time": "2023-04-03T10:00:00.000Z" }
+      ],
+      "relationships": [{ "objectId": "i-880002", "qualifier": "contains" }]
+    },
+    {
+      "id": "c-440001",
+      "type": "customers",
+      "attributes": [],
+      "relationships": [{ "objectId": "o-990001", "qualifier": "placed" }]
+    },
+    {
+      "id": "c-440002",
+      "type": "customers",
+      "attributes": [],
+      "relationships": [{ "objectId": "o-990002", "qualifier": "placed" }]
+    },
+    {
+      "id": "Echo",
+      "type": "products",
+      "attributes": [
+        { "name": "weight", "value": 1.2, "time": "2023-04-03T10:00:00.000Z" },
+        { "name": "price", "value": 1353.98, "time": "2023-04-03T10:00:00.000Z" }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "Alice",
+      "type": "employees",
+      "attributes": [
+        { "name": "role", "value": "warehouse worker", "time": "2023-04-03T10:00:00.000Z" }
+      ],
+      "relationships": []
+    }
+  ],
+  "events": [
+    {
+      "id": "place_o-990001",
+      "type": "place order",
+      "time": "2023-04-03T10:00:00.000Z",
+      "attributes": [],
+      "relationships": [
+        { "objectId": "o-990001", "qualifier": "order" },
+        { "objectId": "o-990002", "qualifier": "order" },
+        { "objectId": "i-880001", "qualifier": "item" },
+        { "objectId": "i-880002", "qualifier": "item" },
+        { "objectId": "p-660001", "qualifier": "package" },
+        { "objectId": "p-660002", "qualifier": "package" },
+        { "objectId": "c-440001", "qualifier": "customer" },
+        { "objectId": "c-440002", "qualifier": "customer" },
+        { "objectId": "Echo", "qualifier": "product" },
+        { "objectId": "Alice", "qualifier": "employee" }
+      ]
+    },
+    {
+      "id": "confirm_o-990001",
+      "type": "confirm order",
+      "time": "2023-04-03T10:10:00.000Z",
+      "attributes": [],
+      "relationships": [
+        { "objectId": "o-990001", "qualifier": "order" },
+        { "objectId": "o-990002", "qualifier": "order" },
+        { "objectId": "i-880001", "qualifier": "item" },
+        { "objectId": "i-880002", "qualifier": "item" },
+        { "objectId": "p-660001", "qualifier": "package" },
+        { "objectId": "p-660002", "qualifier": "package" },
+        { "objectId": "c-440001", "qualifier": "customer" },
+        { "objectId": "c-440002", "qualifier": "customer" },
+        { "objectId": "Echo", "qualifier": "product" },
+        { "objectId": "Alice", "qualifier": "employee" }
+      ]
+    },
+    {
+      "id": "pay_o-990001",
+      "type": "pay order",
+      "time": "2023-04-03T10:20:00.000Z",
+      "attributes": [],
+      "relationships": [
+        { "objectId": "o-990001", "qualifier": "order" },
+        { "objectId": "o-990002", "qualifier": "order" },
+        { "objectId": "c-440001", "qualifier": "customer" },
+        { "objectId": "c-440002", "qualifier": "customer" }
+      ]
+    },
+    {
+      "id": "pick_i-880001",
+      "type": "pick item",
+      "time": "2023-04-03T10:21:00.000Z",
+      "attributes": [],
+      "relationships": [
+        { "objectId": "i-880001", "qualifier": "item" },
+        { "objectId": "i-880002", "qualifier": "item" },
+        { "objectId": "p-660001", "qualifier": "package" },
+        { "objectId": "p-660002", "qualifier": "package" },
+        { "objectId": "Echo", "qualifier": "product" },
+        { "objectId": "Alice", "qualifier": "employee" }
+      ]
+    },
+    {
+      "id": "create_p-660001",
+      "type": "create package",
+      "time": "2023-04-03T10:30:00.000Z",
+      "attributes": [],
+      "relationships": [
+        { "objectId": "i-880001", "qualifier": "item" },
+        { "objectId": "i-880002", "qualifier": "item" },
+        { "objectId": "p-660001", "qualifier": "package" },
+        { "objectId": "p-660002", "qualifier": "package" },
+        { "objectId": "Echo", "qualifier": "product" },
+        { "objectId": "Alice", "qualifier": "employee" }
+      ]
+    },
+    {
+      "id": "send_p-660001",
+      "type": "send package",
+      "time": "2023-04-03T10:40:00.000Z",
+      "attributes": [],
+      "relationships": [
+        { "objectId": "i-880001", "qualifier": "item" },
+        { "objectId": "i-880002", "qualifier": "item" },
+        { "objectId": "p-660001", "qualifier": "package" },
+        { "objectId": "p-660002", "qualifier": "package" },
+        { "objectId": "Echo", "qualifier": "product" },
+        { "objectId": "Alice", "qualifier": "employee" }
+      ]
+    },
+    {
+      "id": "delivered_p-660001",
+      "type": "package delivered",
+      "time": "2023-04-03T11:00:00.000Z",
+      "attributes": [],
+      "relationships": [
+        { "objectId": "o-990001", "qualifier": "order" },
+        { "objectId": "o-990002", "qualifier": "order" },
+        { "objectId": "i-880001", "qualifier": "item" },
+        { "objectId": "i-880002", "qualifier": "item" },
+        { "objectId": "p-660001", "qualifier": "package" },
+        { "objectId": "p-660002", "qualifier": "package" },
+        { "objectId": "c-440001", "qualifier": "customer" },
+        { "objectId": "c-440002", "qualifier": "customer" },
+        { "objectId": "Echo", "qualifier": "product" },
+        { "objectId": "Alice", "qualifier": "employee" }
+      ]
+    }
+  ]
+}

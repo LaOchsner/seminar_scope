@@ -33,6 +33,7 @@ interface OcptSidebarProps {
     onFilteredObjectTypesChange: (newFilteredObjectTypes: string[]) => void;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     conformanceData?: any;
+    candidateTreeCount?: number;
     showDetails: boolean;
     onShowDetailsChange: (value: boolean) => void;
     onExport: () => void;
@@ -45,6 +46,7 @@ const OcptSidebar: React.FC<OcptSidebarProps> = ({
     filteredObjectTypes,
     onFilteredObjectTypesChange,
     conformanceData,
+    candidateTreeCount,
     showDetails,
     onShowDetailsChange,
     onExport,
@@ -68,6 +70,21 @@ const OcptSidebar: React.FC<OcptSidebarProps> = ({
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
+                {candidateTreeCount !== undefined && (
+                    <SidebarGroup>
+                        <SidebarGroupLabel>Candidate Trees</SidebarGroupLabel>
+                        <SidebarGroupContent>
+                            <SidebarMenu>
+                                <SidebarMenuItem className="ml-1">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-muted-foreground">Generated</span>
+                                        <span className="font-semibold tabular-nums">{candidateTreeCount}</span>
+                                    </div>
+                                </SidebarMenuItem>
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+                )}
                 <SidebarGroup>
                     <SidebarGroupLabel>Display</SidebarGroupLabel>
                     <SidebarGroupContent>

@@ -33,6 +33,7 @@ const OcptViewer: React.FC = () => {
     const node = nodeId ? (getNode(nodeId) as OcptFileNode) : undefined;
     const nodeData = node?.data;
     const isIdentityOcpt = nodeData?.assets?.some((a) => a.type === 'identityOcptAsset') ?? false;
+    const candidateTreeCount = isIdentityOcpt ? nodeData?.candidateTreeCount : undefined;
     const viewState = nodeData?.viewState;
 
     // Reactively subscribe to colorMap so the tree re-renders when colors change
@@ -127,6 +128,7 @@ const OcptViewer: React.FC = () => {
                             });
                         }}
                         conformanceData={nodeData?.conformanceData}
+                        candidateTreeCount={candidateTreeCount}
                         showDetails={showDetails}
                         onShowDetailsChange={setShowDetails}
                         onExport={handleExport}
@@ -138,6 +140,7 @@ const OcptViewer: React.FC = () => {
                         nodeId={undefined}
                         filteredObjectTypes={filteredObjectTypes}
                         onFilteredObjectTypesChange={setFilteredObjectTypes}
+                        candidateTreeCount={candidateTreeCount}
                         showDetails={showDetails}
                         onShowDetailsChange={setShowDetails}
                         onExport={handleExport}

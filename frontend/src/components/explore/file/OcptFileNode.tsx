@@ -101,9 +101,12 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
 
     useEffect(() => {
         if (data) {
-            updateNodeData(id, { processedData: data.ocpt });
+            updateNodeData(id, {
+                processedData: data.ocpt,
+                candidateTreeCount: isIdentityAsset ? data.candidate_tree_count : undefined,
+            });
         }
-    }, [data, id, updateNodeData]);
+    }, [data, id, isIdentityAsset, updateNodeData]);
 
     const exportMutation = useMutation({
         mutationFn: () => exportOcptPm4py(ocptAsset!.id),

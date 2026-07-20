@@ -35,6 +35,7 @@ export const uploadFile = async (file: ExtendedFile) => {
 type GetOcptResponse = {
     ocpt: OcptSchemaApi;
     file_id: string;
+    candidate_tree_count?: number;
 };
 export const getOcpt = async (fileId: string): Promise<GetOcptResponse> => {
     const response = await api.get(`/v1/objects/ocpt/${fileId}`);
@@ -43,7 +44,11 @@ export const getOcpt = async (fileId: string): Promise<GetOcptResponse> => {
 
 export const getIdentityOcpt = async (fileId: string): Promise<GetOcptResponse> => {
     const response = await api.get(`/v1/objects/extended_ocpt/${fileId}`);
-    return { file_id: response.data.file_id, ocpt: response.data.extended_ocpt };
+    return {
+        file_id: response.data.file_id,
+        ocpt: response.data.extended_ocpt,
+        candidate_tree_count: response.data.candidate_tree_count,
+    };
 };
 
 export const mineIdentityOcpt = async (ocelFileId: string, baseAlgorithm: string = 'DF2'): Promise<GetOcptResponse> => {
@@ -53,12 +58,20 @@ export const mineIdentityOcpt = async (ocelFileId: string, baseAlgorithm: string
     const baseFileId: string = baseResponse.data.file_id;
     // Extend with identity relations using the same OCEL
     const extendedResponse = await api.get(`v1/ocpt/extend/${baseFileId}?ocel_id=${ocelFileId}`);
-    return { file_id: extendedResponse.data.file_id, ocpt: extendedResponse.data.extended_ocpt };
+    return {
+        file_id: extendedResponse.data.file_id,
+        ocpt: extendedResponse.data.extended_ocpt,
+        candidate_tree_count: extendedResponse.data.candidate_tree_count,
+    };
 };
 
 export const extendOcptWithIdentity = async (ocptFileId: string, ocelFileId: string, noiseThreshold: number): Promise<GetOcptResponse> => {
     const response = await api.get(`v1/ocpt/extend/${ocptFileId}`, { params: { ocel_id: ocelFileId, noise_threshold: noiseThreshold } });
-    return { file_id: response.data.file_id, ocpt: response.data.extended_ocpt };
+    return {
+        file_id: response.data.file_id,
+        ocpt: response.data.extended_ocpt,
+        candidate_tree_count: response.data.candidate_tree_count,
+    };
 };
 
 export const getOcel = async (fileId: string) => {

@@ -15,6 +15,7 @@ export interface FileNodeViewState {
 
 export interface FileExploreNodeData extends BaseExploreNodeData {
     processedData?: any;
+    candidateTreeCount?: number;
     viewState?: FileNodeViewState;
     conformanceData?: any;
     isDownstream: boolean;

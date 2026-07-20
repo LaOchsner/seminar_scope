@@ -1,4 +1,4 @@
-use crate::core::identity_relations::get_extended_ocpt as extend_ocpt_with_identity_relations;
+use crate::core::identity_relations::get_best_extended_ocpt;
 use crate::core::struct_converters::ocpt_frontend_backend::backend_to_frontend;
 use crate::core::utils::relations::build_relations_from_ocels;
 use crate::handlers::ocpt::ensure_temp_dir;
@@ -8,7 +8,7 @@ use crate::models::ocpt::OCPT;
 use crate::traits::import_export::ImportableFromPath;
 use axum::extract::{Path, Query};
 use axum::{Json, http::StatusCode, response::IntoResponse};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::io::ErrorKind;
 use tokio::fs;
@@ -18,6 +18,15 @@ use uuid::Uuid;
 pub struct ExtendOcptQuery {
     pub ocel_id: Option<String>,
     pub noise_threshold: Option<f64>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct ExtendedOcptMetadata {
+    candidate_tree_count: usize,
+}
+
+fn extended_ocpt_metadata_path(file_id: &str) -> String {
+    format!("./temp/extended_ocpt_{file_id}.metadata.json")
 }
 
 async fn load_source_ocels(ocel_id: &str) -> Result<Vec<OCEL>, (StatusCode, String)> {
@@ -36,7 +45,10 @@ async fn load_source_ocels(ocel_id: &str) -> Result<Vec<OCEL>, (StatusCode, Stri
     }
 }
 
-async fn persist_extended_ocpt(ocpt: &OCPT) -> Result<String, (StatusCode, String)> {
+async fn persist_extended_ocpt(
+    ocpt: &OCPT,
+    candidate_tree_count: usize,
+) -> Result<String, (StatusCode, String)> {
     ensure_temp_dir().await.map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -58,6 +70,25 @@ async fn persist_extended_ocpt(ocpt: &OCPT) -> Result<String, (StatusCode, Strin
             format!("Failed to save extended OCPT: {e}"),
         )
     })?;
+
+    let metadata = ExtendedOcptMetadata {
+        candidate_tree_count,
+    };
+    let metadata_path = extended_ocpt_metadata_path(&file_id);
+    let pretty_metadata = serde_json::to_string_pretty(&metadata).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Serialize extended OCPT metadata failed: {e}"),
+        )
+    })?;
+    fs::write(&metadata_path, pretty_metadata)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to save extended OCPT metadata: {e}"),
+            )
+        })?;
 
     Ok(file_id)
 }
@@ -101,13 +132,21 @@ pub async fn apply_extended_ocpt(
 
     let source_ocels = load_source_ocels(ocel_id).await?;
     let relations = build_relations_from_ocels(&source_ocels);
-    ocpt.root =
-        extend_ocpt_with_identity_relations(ocpt.root, &relations, None, violation_threshold);
+    let selection =
+        get_best_extended_ocpt(ocpt.root, &relations, violation_threshold).map_err(|err| {
+            (
+                StatusCode::BAD_REQUEST,
+                format!("Failed to generate candidate trees: {err}"),
+            )
+        })?;
+    let candidate_tree_count = selection.candidate_tree_count;
+    ocpt.root = selection.root;
 
-    let new_file_id = persist_extended_ocpt(&ocpt).await?;
+    let new_file_id = persist_extended_ocpt(&ocpt, candidate_tree_count).await?;
     let payload = json!({
         "file_id": new_file_id,
-        "extended_ocpt": backend_to_frontend(&ocpt)
+        "extended_ocpt": backend_to_frontend(&ocpt),
+        "candidate_tree_count": candidate_tree_count
     });
 
     Ok(Json(payload))
@@ -116,14 +155,24 @@ pub async fn apply_extended_ocpt(
 pub async fn get_extended_ocpt(Path(file_id): Path<String>) -> impl IntoResponse {
     let path = format!("./temp/extended_ocpt_{}.json", file_id);
     match OCPT::from_json_file(&path).await {
-        Ok(backend_ocpt) => (
-            StatusCode::OK,
-            Json(json!({
-                "file_id": file_id,
-                "extended_ocpt": backend_to_frontend(&backend_ocpt)
-            })),
-        )
-            .into_response(),
+        Ok(backend_ocpt) => {
+            let candidate_tree_count = fs::read_to_string(extended_ocpt_metadata_path(&file_id))
+                .await
+                .ok()
+                .and_then(|metadata| serde_json::from_str::<ExtendedOcptMetadata>(&metadata).ok())
+                .map(|metadata| metadata.candidate_tree_count)
+                .unwrap_or(1);
+
+            (
+                StatusCode::OK,
+                Json(json!({
+                    "file_id": file_id,
+                    "extended_ocpt": backend_to_frontend(&backend_ocpt),
+                    "candidate_tree_count": candidate_tree_count
+                })),
+            )
+                .into_response()
+        }
         Err((status, message)) => (status, message).into_response(),
     }
 }
@@ -131,7 +180,10 @@ pub async fn get_extended_ocpt(Path(file_id): Path<String>) -> impl IntoResponse
 pub async fn delete_extended_ocpt(Path(file_id): Path<String>) -> impl IntoResponse {
     let path = format!("./temp/extended_ocpt_{}.json", file_id);
     match fs::remove_file(&path).await {
-        Ok(_) => (StatusCode::NO_CONTENT, "Deleted file").into_response(),
+        Ok(_) => {
+            let _ = fs::remove_file(extended_ocpt_metadata_path(&file_id)).await;
+            (StatusCode::NO_CONTENT, "Deleted file").into_response()
+        }
         Err(e) if e.kind() == ErrorKind::NotFound => (
             StatusCode::NOT_FOUND,
             format!("Extended OCPT file not found for file_id: {}", file_id),

@@ -1,13 +1,15 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::models::ocpt::{
-    IdentityRelation, IdentityRelationKind, OCPTLeafLabel, OCPTNode, OCPTOperator,
+    IdentityRelation, IdentityRelationKind, OCPTLeafLabel, OCPTNode, OCPTOperator, OCPTOperatorType,
 };
 
-use super::Relation;
 use super::noise_resistant_check_relations::{
     NoiseResistantRelationFamily, NoiseResistantRelationMatch,
     check_noise_resistant_relation_by_indices, detect_object_merge_split_by_indices,
+};
+use super::{
+    NormalizationError, Relation, candidate_trees::duplicate_node, generate_candidate_trees,
 };
 
 fn collect_activities(node: &OCPTNode, out: &mut HashSet<String>) {
@@ -480,17 +482,155 @@ fn get_extended_ocpt_indexed(
     }
 }
 
+#[derive(Debug)]
+pub struct ExtendedCandidateSelection {
+    pub root: OCPTNode,
+    pub identity_relation_count: usize,
+    pub normal_form_distance: usize,
+    pub candidate_tree_count: usize,
+}
+
+pub fn get_best_extended_ocpt(
+    ocpt: OCPTNode,
+    relations: &[Relation],
+    violation_threshold: f64,
+) -> Result<ExtendedCandidateSelection, NormalizationError> {
+    let fallback_root = duplicate_node(&ocpt);
+    let mut best: Option<ExtendedCandidateSelection> = None;
+
+    let candidates = match generate_candidate_trees(ocpt) {
+        Ok(candidates) => candidates,
+        Err(_) => {
+            let extended = get_extended_ocpt(fallback_root, relations, None, violation_threshold);
+            return Ok(ExtendedCandidateSelection {
+                identity_relation_count: count_identity_relations(&extended),
+                root: extended,
+                normal_form_distance: usize::MAX,
+                candidate_tree_count: 1,
+            });
+        }
+    };
+    let candidate_tree_count = candidates.len();
+
+    for candidate in candidates {
+        let extended = get_extended_ocpt(candidate.root, relations, None, violation_threshold);
+        let identity_relation_count = count_identity_relations(&extended);
+        let selection = ExtendedCandidateSelection {
+            root: extended,
+            identity_relation_count,
+            normal_form_distance: candidate.normal_form_distance,
+            candidate_tree_count,
+        };
+
+        let replace_best = match &best {
+            Some(current) => {
+                selection.identity_relation_count > current.identity_relation_count
+                    || (selection.identity_relation_count == current.identity_relation_count
+                        && selection.normal_form_distance < current.normal_form_distance)
+            }
+            None => true,
+        };
+
+        if replace_best {
+            best = Some(selection);
+        }
+    }
+
+    Ok(best.expect("candidate generation always yields at least one candidate"))
+}
+
+fn count_identity_relations(node: &OCPTNode) -> usize {
+    match node {
+        OCPTNode::Leaf(_) => 0,
+        OCPTNode::Operator(operator) => {
+            let own = usize::from(matches!(
+                &operator.operator_type,
+                OCPTOperatorType::IdentityRelation(_)
+            ));
+            own + operator
+                .children
+                .iter()
+                .map(count_identity_relations)
+                .sum::<usize>()
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::get_extended_ocpt;
+    use super::{get_best_extended_ocpt, get_extended_ocpt};
     use crate::core::identity_relations::Relation;
     use crate::core::utils::relations::build_relations_from_ocels;
     use crate::models::ocel::OCEL;
     use crate::models::ocpt::{
-        IdentityRelationKind, OCPT, OCPTLeaf, OCPTNode, OCPTOperator, OCPTOperatorType,
+        IdentityRelationKind, OCPT, OCPTLeaf, OCPTLeafLabel, OCPTNode, OCPTOperator,
+        OCPTOperatorType,
     };
     use std::collections::HashSet;
     use std::path::PathBuf;
+    use uuid::Uuid;
+
+    fn leaf(activity: &str) -> OCPTNode {
+        OCPTNode::Leaf(OCPTLeaf {
+            uuid: Uuid::new_v4(),
+            activity_label: OCPTLeafLabel::Activity(activity.to_string()),
+            related_ob_types: HashSet::from(["x".to_string()]),
+            divergent_ob_types: HashSet::new(),
+            convergent_ob_types: HashSet::new(),
+            deficient_ob_types: HashSet::new(),
+        })
+    }
+
+    fn operator(operator_type: OCPTOperatorType, children: Vec<OCPTNode>) -> OCPTNode {
+        OCPTNode::Operator(OCPTOperator {
+            uuid: Uuid::new_v4(),
+            operator_type,
+            children,
+        })
+    }
+
+    #[test]
+    fn best_extended_candidate_uses_normal_form_distance_as_tiebreaker() {
+        let tree = operator(
+            OCPTOperatorType::Concurrency,
+            vec![
+                leaf("c"),
+                operator(OCPTOperatorType::Concurrency, vec![leaf("b"), leaf("a")]),
+            ],
+        );
+
+        let selection = get_best_extended_ocpt(tree, &[], 0.0).unwrap();
+
+        assert_eq!(selection.identity_relation_count, 0);
+        assert_eq!(selection.normal_form_distance, 0);
+        assert!(selection.candidate_tree_count > 1);
+        let OCPTNode::Operator(operator) = selection.root else {
+            panic!("expected normal-form concurrency root");
+        };
+        assert_eq!(operator.children.len(), 3);
+    }
+
+    #[test]
+    fn best_extended_candidate_falls_back_to_original_tree_when_candidates_fail() {
+        let mut tree = leaf("all divergent");
+        let OCPTNode::Leaf(leaf) = &mut tree else {
+            unreachable!();
+        };
+        leaf.divergent_ob_types = leaf.related_ob_types.clone();
+
+        let selection = get_best_extended_ocpt(tree, &[], 0.0).unwrap();
+
+        assert_eq!(selection.identity_relation_count, 0);
+        assert_eq!(selection.normal_form_distance, usize::MAX);
+        assert_eq!(selection.candidate_tree_count, 1);
+        let OCPTNode::Leaf(leaf) = selection.root else {
+            panic!("expected original leaf fallback");
+        };
+        assert_eq!(
+            leaf.activity_label,
+            OCPTLeafLabel::Activity("all divergent".to_string())
+        );
+    }
 
     fn row(event: &str, activity: &str, object: &str, object_type: &str) -> Relation {
         (
