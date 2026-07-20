@@ -118,7 +118,7 @@ const ProcessTreeOperatorNode: React.FC<ProcessTreeNodeProps> = ({
     onMouseMove,
     onMouseLeave,
     onClick,
-    
+
 }) => {
     const childRelationKeys = collectChildRelationKeys(node);
 
