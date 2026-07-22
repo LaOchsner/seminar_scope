@@ -126,7 +126,7 @@ export const nodeRegistry = {
     extendedOcpnMinerNode: {
         category: 'miner',
         allowedAssetTypes: ['identityOcptAsset'],
-        sidebar: { label: 'Extend Nets Identity', icon: 'network', group: 'miners' },
+        sidebar: { label: 'Extended OCPN Miner', icon: 'network', group: 'miners' },
     },
     resourceMinerNode: {
         category: 'miner',

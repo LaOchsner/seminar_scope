@@ -32,7 +32,7 @@ const ExtendedOcpnMinerNode = memo<NodeProps<MinerNode>>((node) => {
     return (
         <BaseMinerNode
             {...node}
-            title="Extend Nets with Identity"
+            title="Extended OCPN Miner"
             iconName="network"
             handleOptions={[
                 { id: 'target', position: Position.Left, type: 'target' as const },
