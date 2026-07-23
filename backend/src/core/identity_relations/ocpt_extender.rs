@@ -490,6 +490,66 @@ pub struct ExtendedCandidateSelection {
     pub candidate_tree_count: usize,
 }
 
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+enum IdentityRelationKindKey {
+    Sync,
+    SubsetSync,
+    SubsetSyncPartition,
+    SubsetSyncOverlap,
+    ImpConcurrent,
+    ImpOrdered,
+    ImpBatch(u32),
+    ObjectSplit,
+    ObjectMerge,
+}
+
+impl From<&IdentityRelationKind> for IdentityRelationKindKey {
+    fn from(kind: &IdentityRelationKind) -> Self {
+        match kind {
+            IdentityRelationKind::Sync => Self::Sync,
+            IdentityRelationKind::SubsetSync => Self::SubsetSync,
+            IdentityRelationKind::SubsetSyncPartition => Self::SubsetSyncPartition,
+            IdentityRelationKind::SubsetSyncOverlap => Self::SubsetSyncOverlap,
+            IdentityRelationKind::ImpConcurrent => Self::ImpConcurrent,
+            IdentityRelationKind::ImpOrdered => Self::ImpOrdered,
+            IdentityRelationKind::ImpBatch(k) => Self::ImpBatch(*k),
+            IdentityRelationKind::ObjectSplit => Self::ObjectSplit,
+            IdentityRelationKind::ObjectMerge => Self::ObjectMerge,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+struct IdentityRelationKey {
+    left: Vec<String>,
+    right: Vec<String>,
+    kind: IdentityRelationKindKey,
+}
+
+impl IdentityRelationKey {
+    fn new(relation: &IdentityRelation) -> Self {
+        let mut left = relation.left.clone();
+        left.sort();
+        left.dedup();
+
+        let mut right = relation.right.clone();
+        right.sort();
+        right.dedup();
+
+        // Strict synchronization is symmetric, so A <-> B and B <-> A
+        // represent the same unique identity relation.
+        if matches!(relation.kind, IdentityRelationKind::Sync) && right < left {
+            std::mem::swap(&mut left, &mut right);
+        }
+
+        Self {
+            left,
+            right,
+            kind: IdentityRelationKindKey::from(&relation.kind),
+        }
+    }
+}
+
 pub fn get_best_extended_ocpt(
     ocpt: OCPTNode,
     relations: &[Relation],
@@ -503,7 +563,7 @@ pub fn get_best_extended_ocpt(
         Err(_) => {
             let extended = get_extended_ocpt(fallback_root, relations, None, violation_threshold);
             return Ok(ExtendedCandidateSelection {
-                identity_relation_count: count_identity_relations(&extended),
+                identity_relation_count: count_unique_identity_relations(&extended),
                 root: extended,
                 normal_form_distance: usize::MAX,
                 candidate_tree_count: 1,
@@ -514,7 +574,7 @@ pub fn get_best_extended_ocpt(
 
     for candidate in candidates {
         let extended = get_extended_ocpt(candidate.root, relations, None, violation_threshold);
-        let identity_relation_count = count_identity_relations(&extended);
+        let identity_relation_count = count_unique_identity_relations(&extended);
         let selection = ExtendedCandidateSelection {
             root: extended,
             identity_relation_count,
@@ -539,21 +599,27 @@ pub fn get_best_extended_ocpt(
     Ok(best.expect("candidate generation always yields at least one candidate"))
 }
 
-fn count_identity_relations(node: &OCPTNode) -> usize {
+fn collect_unique_identity_relations(
+    node: &OCPTNode,
+    unique_relations: &mut HashSet<IdentityRelationKey>,
+) {
     match node {
-        OCPTNode::Leaf(_) => 0,
+        OCPTNode::Leaf(_) => {}
         OCPTNode::Operator(operator) => {
-            let own = usize::from(matches!(
-                &operator.operator_type,
-                OCPTOperatorType::IdentityRelation(_)
-            ));
-            own + operator
-                .children
-                .iter()
-                .map(count_identity_relations)
-                .sum::<usize>()
+            if let OCPTOperatorType::IdentityRelation(relation) = &operator.operator_type {
+                unique_relations.insert(IdentityRelationKey::new(relation));
+            }
+            for child in &operator.children {
+                collect_unique_identity_relations(child, unique_relations);
+            }
         }
     }
+}
+
+fn count_unique_identity_relations(node: &OCPTNode) -> usize {
+    let mut unique_relations = HashSet::new();
+    collect_unique_identity_relations(node, &mut unique_relations);
+    unique_relations.len()
 }
 
 #[cfg(test)]
