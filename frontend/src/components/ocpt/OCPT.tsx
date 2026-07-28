@@ -12,6 +12,7 @@ import NodeTooltip from '~/components/ocpt/ui/NodeTooltip';
 import ZoomButtons from '~/components/ocpt/ui/ZoomButtons';
 import { isExtendedProcessTreeOperatorNode, isIdentityOperatorApi } from '~/lib/ocpt/ocptGuards';
 import { type Node } from '~/types/ocpt/ocpt.types';
+import { getDeterministicColor } from '~/lib/colors';
 
 // Cast needed due to @visx/zoom + @types/react@18 incompatibility
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -230,7 +231,8 @@ const OCPTContent: React.FC<OCPTContentProps> = ({
                                 title={identityData?.title}
                                 objectTypes={identityData?.objectTypes ?? []}
                                 relations={identityData?.relations ?? []}
-                                getObjectColor={colorScale}
+                                getObjectColor={(ot) => getDeterministicColor(ot)}
+                                
                             />
                             <NodeTooltip
                                 hoverPoint={

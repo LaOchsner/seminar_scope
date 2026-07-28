@@ -71,7 +71,9 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
                 filteredObjectTypes: [],
                 colorScale: {
                     domain: data.ocpt.ots,
-                    range: schemeSet1.slice(0, data.ocpt.ots.length),
+                    range: data.ocpt.ots.map((ot: string) =>
+                    getDeterministicColor(ot)
+                ),
                 },
             };
             updateNodeData(id, { viewState: initialViewState });
@@ -140,15 +142,20 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
 
     // Build colorScale: if colorMap exists use it, otherwise fall back to viewState.colorScale.range
     const colorScale = useMemo(() => {
-        if (colorMap && viewState.colorScale.domain.length > 0) {
-            const domain = viewState.colorScale.domain;
-            const range = domain.map((ot) => colorMap[ot] || getDeterministicColor(ot));
-            return scaleOrdinal<string, string>({ domain, range });
-        }
-        return viewState
-            ? scaleOrdinal({ domain: viewState.colorScale.domain, range: viewState.colorScale.range })
-            : scaleOrdinal<string, string>({ domain: [], range: [] });
-    }, [colorMap, viewState]);
+    const domain = viewState.colorScale.domain;
+    
+    console.log(
+    domain.map((ot) => ({
+        ot,
+        color: getDeterministicColor(ot),
+    }))
+    );
+
+    return scaleOrdinal<string, string>({
+        domain,
+        range: domain.map((ot) => getDeterministicColor(ot)),
+    });
+    }, [viewState.colorScale.domain]);
 
     const hasFile = Boolean(ocptAsset);
 

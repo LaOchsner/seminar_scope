@@ -3,6 +3,7 @@ import { HierarchyPointNode } from '@visx/hierarchy/lib/types';
 import ProcessTreeOperatorSVG from '~/components/ocpt/nodes/ProcessTreeOperatorSVG';
 import * as Ocpt from '~/types/ocpt/ocpt.types';
 import { ScaleOrdinal } from 'd3';
+import { getDeterministicColor } from '~/lib/colors';
 
 interface ProcessTreeNodeProps {
     width: number;
@@ -281,7 +282,7 @@ const ProcessTreeOperatorNode: React.FC<ProcessTreeNodeProps> = ({
                             cx={12 + index * 12}
                             cy={chipHeight / 2}
                             r={5}
-                            fill={colorScale(ot)}
+                            fill={getDeterministicColor(ot)}
                             opacity={opacity}
                         />
                     ))}
@@ -307,7 +308,7 @@ const ProcessTreeOperatorNode: React.FC<ProcessTreeNodeProps> = ({
                             cx={chipWidth - 12 - index * 12}
                             cy={chipHeight / 2}
                             r={5}
-                            fill={colorScale(ot)}
+                            fill={getDeterministicColor(ot)}
                             opacity={opacity}
                         />
                     ))}

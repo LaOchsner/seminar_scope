@@ -7,6 +7,7 @@ import { isActivity, isExtendedProcessTreeOperatorNode, isIdentityOperatorApi } 
 //import type { IdentityRelation } from '~/types/ocpt/ocpt.types';
 import type { IdentityRelation, IdentityRelationKind } from '~/types/ocpt/ocpt.types';
 import type { Activity } from '~/types/ocpt/ocpt.types';
+import { getDeterministicColor } from '~/lib/colors';
 
 const ActivityTooltipContent = ({ value, coloring }: { value: Activity; coloring: any }) => {
     const legendGlyphSize = 15;
@@ -39,9 +40,9 @@ const ActivityTooltipContent = ({ value, coloring }: { value: Activity; coloring
     );
 };
 
-const OtLabel = ({ ot, coloring }: { ot: string; coloring: any }) => (
+const OtLabel = ({ ot }: { ot: string }) => (
     <span className="inline-flex items-center gap-0.5">
-        <LegendRect fill={coloring(ot)} size={12} />
+        <LegendRect fill={getDeterministicColor(ot)} size={12} />
         <span className="font-medium">{ot}</span>
     </span>
 );
@@ -97,6 +98,7 @@ const getIdentityRelationSymbol = (relation: IdentityRelation) => {
 };
 
 const IdentityRelationItem = ({ relation, coloring }: { relation: IdentityRelation; coloring: any }) => {
+    console.log('Identity relation in tooltip:', relation);
     const kindLabel = getIdentityRelationLabel(relation.kind);
     const symbol = getIdentityRelationSymbol(relation);
 
@@ -108,7 +110,7 @@ const IdentityRelationItem = ({ relation, coloring }: { relation: IdentityRelati
                 {relation.left.map((ot, i) => (
                     <span key={i} className="inline-flex items-center">
                         {i > 0 && <span className="text-gray-400 mr-1">,</span>}
-                        <OtLabel ot={ot} coloring={coloring} />
+                        <OtLabel ot={ot} />
                     </span>
                 ))}
 
@@ -117,7 +119,7 @@ const IdentityRelationItem = ({ relation, coloring }: { relation: IdentityRelati
                 {relation.right.map((ot, i) => (
                     <span key={i} className="inline-flex items-center">
                         {i > 0 && <span className="text-gray-400 mr-1">,</span>}
-                        <OtLabel ot={ot} coloring={coloring} />
+                        <OtLabel ot={ot} />
                     </span>
                 ))}
             </div>

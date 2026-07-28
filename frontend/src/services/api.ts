@@ -44,6 +44,10 @@ export const getOcpt = async (fileId: string): Promise<GetOcptResponse> => {
 
 export const getIdentityOcpt = async (fileId: string): Promise<GetOcptResponse> => {
     const response = await api.get(`/v1/objects/extended_ocpt/${fileId}`);
+    console.log(
+        'Extended OCPT from backend:',
+        response.data.extended_ocpt
+    );
     return {
         file_id: response.data.file_id,
         ocpt: response.data.extended_ocpt,

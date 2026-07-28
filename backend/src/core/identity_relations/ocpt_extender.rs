@@ -408,6 +408,16 @@ fn get_extended_ocpt_indexed(
                         if ot1 == ot2 {
                             continue;
                         }
+                        
+                        let Some(found) = lookup.check_noise_resistant_relation(
+                        &activities,
+                        ot1,
+                        ot2,
+                        violation_threshold,
+                        family,
+                    ) else {
+                        continue;
+                    };
 
                         let mut union_types = ot1.clone();
                         union_types.extend(ot2.iter().cloned());
@@ -462,6 +472,7 @@ fn get_extended_ocpt_indexed(
                     }
                 }
             }
+            
 
             let extended_children = op
                 .children
@@ -478,6 +489,7 @@ fn get_extended_ocpt_indexed(
 
             op.children = extended_children;
             OCPTNode::Operator(op)
+
         }
     }
 }
