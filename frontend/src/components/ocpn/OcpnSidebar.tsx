@@ -84,7 +84,7 @@ const RelationSymbol = ({ kind }: { kind: string }) => (
 
 const TypeChip = ({ type, colorMap }: { type: string; colorMap: Record<string, string> }) => (
     <span className="inline-flex items-center gap-1 rounded-sm border bg-white px-1.5 py-0.5 text-[11px] font-medium text-slate-700">
-        <span className="h-2 w-2 rounded-full" style={{ background: getObjectTypeBackground(type, colorMap) }} />
+        <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: getObjectTypeBackground(type, colorMap) }} />
         {type}
     </span>
 );
@@ -160,12 +160,12 @@ const OcpnSidebar: React.FC<OcpnSidebarProps> = ({
                                                     key={type}
                                                     className="flex items-center justify-between rounded-md p-2 text-sm hover:bg-slate-50"
                                                 >
-                                                    <span className="flex items-center gap-2 text-slate-700">
+                                                    <span className="flex min-w-0 items-center gap-2 text-slate-700">
                                                         <span
-                                                            className="h-2.5 w-2.5 rounded-full"
+                                                            className="h-2.5 w-2.5 shrink-0 rounded-full"
                                                             style={{ background: getObjectTypeBackground(type, colorMap) }}
                                                         />
-                                                        {type}
+                                                        <span className="min-w-0 break-words">{type}</span>
                                                     </span>
                                                     <Switch
                                                         checked={visibleObjectTypes.has(type)}
