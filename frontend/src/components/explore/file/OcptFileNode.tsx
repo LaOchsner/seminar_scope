@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { scaleOrdinal } from '@visx/scale';
 import type { NodeProps } from '@xyflow/react';
 import { Position } from '@xyflow/react';
-import { schemeSet1 } from 'd3-scale-chromatic';
+//import { schemeSet1 } from 'd3-scale-chromatic';
 import { ChevronDown, TreePine } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
